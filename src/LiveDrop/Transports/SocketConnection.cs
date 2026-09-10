@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Windows.Networking;
@@ -45,13 +46,47 @@ namespace LiveDrop.Transports
 
         internal async Task<byte[]> ReadFrameAsync(CancellationToken cancellationToken)
         {
-            await _reader.LoadAsync(4);
+            await LoadExactlyAsync(4, cancellationToken);
             var length = _reader.ReadUInt32();
             if (length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException("Frame is too large.");
-            await _reader.LoadAsync(length);
+            await LoadExactlyAsync(length, cancellationToken);
             var data = new byte[length];
             _reader.ReadBytes(data);
             return data;
+        }
+
+        internal async Task<byte[]> ReadRawAsync(int length, CancellationToken cancellationToken)
+        {
+            if (length < 0) throw new ArgumentOutOfRangeException("length");
+            await LoadExactlyAsync((uint)length, cancellationToken);
+            var data = new byte[length];
+            _reader.ReadBytes(data);
+            return data;
+        }
+
+        internal async Task WriteRawAsync(byte[] data, CancellationToken cancellationToken)
+        {
+            if (data == null) throw new ArgumentNullException("data");
+            await _writeLock.WaitAsync(cancellationToken);
+            try
+            {
+                _writer.WriteBytes(data);
+                await _writer.StoreAsync();
+                await _writer.FlushAsync();
+            }
+            finally { _writeLock.Release(); }
+        }
+
+        private async Task LoadExactlyAsync(uint length, CancellationToken cancellationToken)
+        {
+            var loaded = 0u;
+            while (loaded < length)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var count = await _reader.LoadAsync(length - loaded);
+                if (count == 0) throw new EndOfStreamException("The peer closed the connection.");
+                loaded += count;
+            }
         }
 
         public void Dispose()
@@ -63,4 +98,3 @@ namespace LiveDrop.Transports
         }
     }
 }
-

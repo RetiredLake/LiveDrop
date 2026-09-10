@@ -51,7 +51,9 @@ namespace LiveDrop.Services
                     hash.Append(CryptographicBuffer.CreateFromByteArray(buffer));
                 }
             }
-            return CryptographicBuffer.CopyToByteArray(hash.GetValueAndReset());
+            byte[] result;
+            CryptographicBuffer.CopyToByteArray(hash.GetValueAndReset(), out result);
+            return result;
         }
     }
 }

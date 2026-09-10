@@ -52,6 +52,14 @@ namespace LiveDrop.Models
             MimeType = string.IsNullOrWhiteSpace(mimeType) ? "application/octet-stream" : mimeType;
             Size = size;
         }
+
+        public ShareFileDescriptor(string name, string mimeType, long size)
+        {
+            SourceFile = null;
+            Name = string.IsNullOrWhiteSpace(name) ? "file" : name;
+            MimeType = string.IsNullOrWhiteSpace(mimeType) ? "application/octet-stream" : mimeType;
+            Size = size;
+        }
     }
 
     public sealed class ShareOffer
@@ -128,6 +136,12 @@ namespace LiveDrop.Models
                 }
             }
             if (data != null && data.Contains(StandardDataFormats.Text)) text = await data.GetTextAsync();
+            if (files.Count == 0 && !string.IsNullOrWhiteSpace(text))
+            {
+                var textFile = await ApplicationData.Current.LocalFolder.CreateFileAsync("SharedText.txt", CreationCollisionOption.GenerateUniqueName);
+                await FileIO.WriteTextAsync(textFile, text);
+                files.Add(new ShareFileDescriptor(textFile, "text/plain", text.Length));
+            }
             return new ShareOffer(files, text);
         }
 
@@ -146,4 +160,3 @@ namespace LiveDrop.Models
         }
     }
 }
-

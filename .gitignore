@@ -12,4 +12,5 @@ TestResults/
 *.cer
 *.msix
 *.msixbundle
-
+tests/ProtocolVectors/*.exe
+tests/ProtocolVectors/*.dll

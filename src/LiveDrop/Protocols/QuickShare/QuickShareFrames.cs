@@ -13,6 +13,31 @@ namespace LiveDrop.Protocols.QuickShare
         internal QuickShareUkeyMessage(int type, byte[] data) { Type = type; Data = data ?? new byte[0]; }
     }
 
+    internal sealed class QuickShareConnectionRequest
+    {
+        internal string EndpointId { get; set; }
+        internal string EndpointName { get; set; }
+        internal byte[] EndpointInfo { get; set; }
+    }
+
+    internal sealed class QuickSharePayloadChunk
+    {
+        internal long PayloadId { get; set; }
+        internal int PayloadType { get; set; }
+        internal long TotalSize { get; set; }
+        internal long Offset { get; set; }
+        internal bool Last { get; set; }
+        internal byte[] Body { get; set; }
+    }
+
+    internal sealed class QuickShareFileMetadata
+    {
+        internal string Name { get; set; }
+        internal string MimeType { get; set; }
+        internal long PayloadId { get; set; }
+        internal long Size { get; set; }
+    }
+
     internal static class QuickShareFrames
     {
         internal const int UkeyClientInit = 2;
@@ -51,6 +76,36 @@ namespace LiveDrop.Protocols.QuickShare
             return new QuickShareUkeyMessage(type, body);
         }
 
+        internal static byte[] ParseClientCommitment(byte[] clientInitBody)
+        {
+            var reader = new ProtoReader(clientInitBody);
+            while (!reader.End)
+            {
+                var tag = reader.ReadTag();
+                if ((tag >> 3) != 3 || (tag & 7) != 2) { reader.Skip(tag & 7); continue; }
+                var commitment = new ProtoReader(reader.ReadBytes());
+                while (!commitment.End)
+                {
+                    var field = commitment.ReadTag();
+                    if ((field >> 3) == 2 && (field & 7) == 2) return commitment.ReadBytes();
+                    commitment.Skip(field & 7);
+                }
+            }
+            return new byte[0];
+        }
+
+        internal static byte[] ParseClientFinishedPublicKey(byte[] clientFinishBody)
+        {
+            var reader = new ProtoReader(clientFinishBody);
+            while (!reader.End)
+            {
+                var tag = reader.ReadTag();
+                if ((tag >> 3) == 1 && (tag & 7) == 2) return reader.ReadBytes();
+                reader.Skip(tag & 7);
+            }
+            return new byte[0];
+        }
+
         internal static byte[] BuildClientInit(byte[] random, byte[] commitment)
         {
             var commitmentWriter = new ProtoWriter();
@@ -71,6 +126,20 @@ namespace LiveDrop.Protocols.QuickShare
             return WrapUkey(UkeyClientFinish, finish.ToArray());
         }
 
+        internal static byte[] BuildPairedKeyEncryption()
+        {
+            var paired = new ProtoWriter();
+            paired.WriteBytes(1, RandomBytes(72));
+            paired.WriteBytes(2, RandomBytes(6));
+            return BuildSharingFrame(3, 4, paired.ToArray());
+        }
+
+        internal static byte[] BuildPairedKeyResult()
+        {
+            var paired = new ProtoWriter(); paired.WriteEnum(1, 3);
+            return BuildSharingFrame(4, 5, paired.ToArray());
+        }
+
         internal static byte[] BuildServerInit(byte[] random, byte[] genericPublicKey)
         {
             var init = new ProtoWriter();
@@ -86,7 +155,10 @@ namespace LiveDrop.Protocols.QuickShare
             var name = Encoding.UTF8.GetBytes(displayName ?? "LiveDrop");
             var length = Math.Min(255, name.Length);
             var result = new byte[18 + length];
-            result[0] = (byte)((deviceType & 7) << 1);
+            // EndpointInfo's first byte is version (bits 0-2), visibility (bit 3),
+            // device type (bits 4-6), and one reserved bit.  LiveDrop advertises
+            // a visible RTM-era endpoint with version 1.
+            result[0] = (byte)(1 | ((deviceType & 7) << 4));
             var random = new byte[16];
             new Random().NextBytes(random);
             Buffer.BlockCopy(random, 0, result, 1, random.Length);
@@ -138,6 +210,146 @@ namespace LiveDrop.Protocols.QuickShare
             return 0;
         }
 
+        internal static QuickShareConnectionRequest ParseConnectionRequest(byte[] data)
+        {
+            var request = new QuickShareConnectionRequest();
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 2 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var body = new ProtoReader(v1.ReadBytes());
+                while (!body.End)
+                {
+                    var field = body.ReadTag();
+                    if ((field >> 3) == 1 && (field & 7) == 2) request.EndpointId = body.ReadString();
+                    else if ((field >> 3) == 2 && (field & 7) == 2) request.EndpointName = body.ReadString();
+                    else if ((field >> 3) == 6 && (field & 7) == 2) request.EndpointInfo = body.ReadBytes();
+                    else body.Skip(field & 7);
+                }
+                break;
+            }
+            return request;
+        }
+
+        internal static bool IsAcceptedConnection(byte[] data)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 3 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var response = new ProtoReader(v1.ReadBytes());
+                while (!response.End)
+                {
+                    var field = response.ReadTag();
+                    if ((field >> 3) == 3 && (field & 7) == 0) return response.ReadVarint() == 1;
+                    response.Skip(field & 7);
+                }
+            }
+            return false;
+        }
+
+        internal static bool IsAcceptedSharingResponse(byte[] data)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 3 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var response = new ProtoReader(v1.ReadBytes());
+                while (!response.End)
+                {
+                    var field = response.ReadTag();
+                    if ((field >> 3) == 1 && (field & 7) == 0) return response.ReadVarint() == 1;
+                    response.Skip(field & 7);
+                }
+            }
+            return false;
+        }
+
+        internal static byte[] ReadSharingPayload(byte[] data)
+        {
+            var chunk = ParsePayloadChunk(data);
+            return chunk == null ? null : chunk.Body;
+        }
+
+        internal static QuickSharePayloadChunk ParsePayloadChunk(byte[] data)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 4 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var transfer = new ProtoReader(v1.ReadBytes());
+                var header = new byte[0]; var chunk = new byte[0];
+                while (!transfer.End)
+                {
+                    var field = transfer.ReadTag();
+                    if ((field >> 3) == 2 && (field & 7) == 2) header = transfer.ReadBytes();
+                    else if ((field >> 3) == 3 && (field & 7) == 2) chunk = transfer.ReadBytes();
+                    else transfer.Skip(field & 7);
+                }
+                var result = new QuickSharePayloadChunk { Body = new byte[0] };
+                var headerReader = new ProtoReader(header);
+                while (!headerReader.End)
+                {
+                    var field = headerReader.ReadTag();
+                    if ((field >> 3) == 1 && (field & 7) == 0) result.PayloadId = (long)headerReader.ReadVarint();
+                    else if ((field >> 3) == 2 && (field & 7) == 0) result.PayloadType = (int)headerReader.ReadVarint();
+                    else if ((field >> 3) == 3 && (field & 7) == 0) result.TotalSize = (long)headerReader.ReadVarint();
+                    else headerReader.Skip(field & 7);
+                }
+                var chunkReader = new ProtoReader(chunk);
+                while (!chunkReader.End)
+                {
+                    var field = chunkReader.ReadTag();
+                    if ((field >> 3) == 1 && (field & 7) == 0) result.Last = chunkReader.ReadVarint() != 0;
+                    else if ((field >> 3) == 2 && (field & 7) == 0) result.Offset = (long)chunkReader.ReadVarint();
+                    else if ((field >> 3) == 3 && (field & 7) == 2) result.Body = chunkReader.ReadBytes();
+                    else chunkReader.Skip(field & 7);
+                }
+                return result;
+            }
+            return null;
+        }
+
+        internal static IList<QuickShareFileMetadata> ParseIntroduction(byte[] data)
+        {
+            var result = new List<QuickShareFileMetadata>();
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 2 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var intro = new ProtoReader(v1.ReadBytes());
+                while (!intro.End)
+                {
+                    var field = intro.ReadTag();
+                    if ((field >> 3) != 1 || (field & 7) != 2) { intro.Skip(field & 7); continue; }
+                    var meta = new ProtoReader(intro.ReadBytes());
+                    var file = new QuickShareFileMetadata { MimeType = "application/octet-stream" };
+                    while (!meta.End)
+                    {
+                        var metaField = meta.ReadTag();
+                        if ((metaField >> 3) == 1 && (metaField & 7) == 2) file.Name = meta.ReadString();
+                        else if ((metaField >> 3) == 3 && (metaField & 7) == 0) file.PayloadId = (long)meta.ReadVarint();
+                        else if ((metaField >> 3) == 4 && (metaField & 7) == 0) file.Size = (long)meta.ReadVarint();
+                        else if ((metaField >> 3) == 5 && (metaField & 7) == 2) file.MimeType = meta.ReadString();
+                        else meta.Skip(metaField & 7);
+                    }
+                    result.Add(file);
+                }
+                break;
+            }
+            return result;
+        }
+
+        internal static byte[] BuildBytesPayload(byte[] body, long payloadId, bool last)
+        {
+            return BuildPayloadChunk(payloadId, 1, body == null ? 0 : body.Length, 0, body, last);
+        }
+
         internal static byte[] BuildIntroduction(IReadOnlyList<ShareFileDescriptor> files)
         {
             var intro = new ProtoWriter();
@@ -165,11 +377,39 @@ namespace LiveDrop.Protocols.QuickShare
             return BuildSharingFrame(SharingResponse, 3, response.ToArray());
         }
 
+        internal static byte[] BuildRejectTransfer()
+        {
+            var response = new ProtoWriter();
+            response.WriteEnum(1, 2);
+            return BuildSharingFrame(SharingResponse, 3, response.ToArray());
+        }
+
+        internal static byte[] BuildDisconnection()
+        {
+            return BuildOfflineFrame(6, 7, new byte[0]);
+        }
+
+        internal static byte[] BuildKeepAlive()
+        {
+            return BuildOfflineFrame(NearbyKeepAlive, 6, new byte[0]);
+        }
+
+        internal static byte[] BuildFileChunk(long payloadId, long totalSize, long offset, byte[] body, bool last)
+        {
+            return BuildPayloadChunk(payloadId, 2, totalSize, offset, body, last);
+        }
+
         internal static byte[] BuildPayloadChunk(long payloadId, long offset, byte[] body, bool last)
+        {
+            return BuildPayloadChunk(payloadId, 2, body == null ? 0 : body.Length, offset, body, last);
+        }
+
+        internal static byte[] BuildPayloadChunk(long payloadId, int payloadType, long totalSize, long offset, byte[] body, bool last)
         {
             var header = new ProtoWriter();
             header.WriteInt64(1, payloadId);
-            header.WriteEnum(2, 2);
+            header.WriteEnum(2, payloadType);
+            header.WriteInt64(3, totalSize);
             var chunk = new ProtoWriter();
             chunk.WriteInt32(1, last ? 1 : 0);
             chunk.WriteInt64(2, offset);
@@ -179,6 +419,25 @@ namespace LiveDrop.Protocols.QuickShare
             transfer.WriteMessage(2, header.ToArray());
             transfer.WriteMessage(3, chunk.ToArray());
             return BuildOfflineFrame(NearbyPayloadTransfer, 4, transfer.ToArray());
+        }
+
+        private static ProtoReader ReadV1(byte[] data)
+        {
+            var outer = new ProtoReader(data);
+            while (!outer.End)
+            {
+                var tag = outer.ReadTag();
+                if ((tag >> 3) == 2 && (tag & 7) == 2) return new ProtoReader(outer.ReadBytes());
+                outer.Skip(tag & 7);
+            }
+            return new ProtoReader(new byte[0]);
+        }
+
+        private static byte[] RandomBytes(int count)
+        {
+            var value = new byte[count];
+            using (var random = System.Security.Cryptography.RandomNumberGenerator.Create()) random.GetBytes(value);
+            return value;
         }
 
         private static byte[] BuildOfflineFrame(int type, int nestedField, byte[] nested)
@@ -216,4 +475,3 @@ namespace LiveDrop.Protocols.QuickShare
         }
     }
 }
-

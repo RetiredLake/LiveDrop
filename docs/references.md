@@ -7,5 +7,3 @@ LiveDrop uses public specifications and implementation behavior as references. N
 - NearDrop: repository license and its [`PROTOCOL.md`](https://github.com/grishka/NearDrop/blob/master/PROTOCOL.md) are the primary Quick Share LAN reference.
 - Packet, rquickshare, and pyquickshare: cross-platform interoperability references for discovery, payload framing, and current device behavior.
 - Google UKEY2: Apache-2.0 reference for the handshake and cryptographic transcript.
-- OWL, OpenDrop, opendrop-rs, and PrivateDrop: AirDrop feasibility and security references only. They are not LiveDrop dependencies and do not create an AirDrop feature requirement.
-

@@ -4,19 +4,22 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
   <Grid Padding="24">
-    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
     <TextBlock Text="LiveDrop" FontSize="32" FontWeight="SemiBold" />
     <TextBlock Grid.Row="1" Margin="0,8,0,16" Text="Windows 10 Mobile nearby sharing" Opacity="0.75" />
     <ScrollViewer Grid.Row="2">
       <StackPanel>
         <TextBlock Text="Supported peers" FontSize="20" Margin="0,0,0,8" />
-        <TextBlock Text="Microsoft Nearby Share for Windows PCs and Google Quick Share for Android devices are being brought up as independent protocol adapters." TextWrapping="Wrap" />
-        <TextBlock Text="`nDiscovery" FontSize="20" Margin="0,24,0,8" />
-        <ListView x:Name="PeersList" MinHeight="120" />
-        <TextBlock x:Name="StatusText" Text="Starting foreground discovery…" TextWrapping="Wrap" Margin="0,16,0,0" />
+        <TextBlock Text="Microsoft Nearby Share for Windows PCs and Google Quick Share for Android devices are supported by independent protocol adapters." TextWrapping="Wrap" />
+        <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
+        <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged" />
+        <Button x:Name="SendButton" Content="Send selected share" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
+        <TextBlock x:Name="StatusText" Text="Starting foreground discovery..." TextWrapping="Wrap" Margin="0,16,0,0" />
       </StackPanel>
     </ScrollViewer>
-    <TextBlock Grid.Row="3" Text="AirDrop is outside this milestone." Opacity="0.6" Margin="0,16,0,0" />
   </Grid>
 </Page>
-

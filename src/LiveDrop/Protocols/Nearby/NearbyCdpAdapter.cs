@@ -12,6 +12,7 @@ using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
+using LiveDrop.Transports;
 
 namespace LiveDrop.Protocols.Nearby
 {
@@ -21,12 +22,18 @@ namespace LiveDrop.Protocols.Nearby
         private const int TcpPort = 5040;
         private const ushort Signature = 0x3030;
         private readonly string _displayName;
+        private readonly CdpIdentity _identity;
         private DatagramSocket _udp;
+        private StreamSocketListener _tcp;
         private CancellationTokenSource _stopSource;
         private Task _queryLoop;
         private int _sequence;
 
-        internal NearbyCdpAdapter(string displayName) { _displayName = string.IsNullOrWhiteSpace(displayName) ? "LiveDrop" : displayName; }
+        internal NearbyCdpAdapter(string displayName)
+        {
+            _displayName = string.IsNullOrWhiteSpace(displayName) ? "LiveDrop" : displayName;
+            _identity = CdpIdentity.Create(_displayName);
+        }
 
         public string Name { get { return "Microsoft Nearby Share"; } }
         public ShareTransport Transport { get { return ShareTransport.MicrosoftNearby; } }
@@ -38,6 +45,9 @@ namespace LiveDrop.Protocols.Nearby
         {
             if (_stopSource != null) return;
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            _tcp = new StreamSocketListener();
+            _tcp.ConnectionReceived += OnConnectionReceived;
+            await _tcp.BindServiceNameAsync(TcpPort.ToString());
             _udp = new DatagramSocket();
             _udp.MessageReceived += OnMessageReceived;
             await _udp.BindServiceNameAsync(UdpPort.ToString());
@@ -53,13 +63,22 @@ namespace LiveDrop.Protocols.Nearby
             source.Cancel();
             if (_queryLoop != null) { try { await _queryLoop; } catch { } _queryLoop = null; }
             if (_udp != null) { _udp.MessageReceived -= OnMessageReceived; _udp.Dispose(); _udp = null; }
+            if (_tcp != null) { _tcp.ConnectionReceived -= OnConnectionReceived; _tcp.Dispose(); _tcp = null; }
             source.Dispose();
         }
 
         public async Task SendAsync(PeerDescriptor peer, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
         {
-            if (peer == null || peer.Transport != ShareTransport.MicrosoftNearby) throw new ShareProtocolException("The selected peer is not a Microsoft Nearby peer.");
-            throw new ShareProtocolException("Microsoft Nearby discovery is enabled; CDP authentication and transfer are the next protocol milestone.");
+            if (peer == null || peer.Transport != ShareTransport.MicrosoftNearby)
+                throw new ShareProtocolException("The selected peer is not a Microsoft Nearby peer.");
+            if (offer == null || offer.Files == null || offer.Files.Count == 0)
+                throw new ShareProtocolException("Microsoft Nearby requires at least one file.");
+
+            using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
+            {
+                var session = await CdpClientSession.ConnectAsync(connection, _identity, cancellationToken);
+                await session.SendFilesAsync(offer, progress, cancellationToken);
+            }
         }
 
         private async Task QueryLoopAsync(CancellationToken cancellationToken)
@@ -101,6 +120,35 @@ namespace LiveDrop.Protocols.Nearby
             }
             catch { }
             await Task.CompletedTask;
+        }
+
+        private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
+        {
+            args.Socket.Control.NoDelay = true;
+            var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
+            _ = HandleIncomingAsync(args.Socket, token);
+        }
+
+        private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
+        {
+            var address = socket.Information.RemoteAddress == null ? string.Empty : socket.Information.RemoteAddress.RawName;
+            var peer = new PeerDescriptor("nearby:" + address, "Nearby device", Transport, address, TcpPort, "CDP v3/TCP");
+            try
+            {
+                using (var connection = new SocketConnection(socket))
+                {
+                    await CdpServerSession.ReceiveAsync(connection, _identity, peer, async (remote, offer) =>
+                    {
+                        var decision = new TaskCompletionSource<bool>();
+                        var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                        if (OfferReceived == null) return false;
+                        OfferReceived(this, new ShareOfferReceivedEventArgs(remote, offer, complete));
+                        return await decision.Task;
+                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken);
+                }
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Microsoft Nearby transfer failed: " + ex.Message)); }
         }
 
         private async Task SendDatagramAsync(byte[] data, string address, CancellationToken cancellationToken)

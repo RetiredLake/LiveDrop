@@ -1,4 +1,5 @@
 using System;
+using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer.ShareTarget;
 using Windows.UI.Xaml;
@@ -52,7 +53,7 @@ namespace LiveDrop
 
         private void OnSuspending(object sender, SuspendingEventArgs e) { }
 
-        private void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        private void OnUnhandledException(object sender, Windows.UI.Xaml.UnhandledExceptionEventArgs e)
         {
             try
             {
@@ -64,4 +65,3 @@ namespace LiveDrop
         }
     }
 }
-

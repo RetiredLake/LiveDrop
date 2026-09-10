@@ -78,11 +78,7 @@ namespace LiveDrop.Protocols.QuickShare
             if (offer == null || offer.Files.Count == 0) throw new ShareProtocolException("Quick Share currently requires at least one file.");
             using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
             {
-                await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionRequest(_endpointId, _displayName, _endpointInfo), cancellationToken);
-                // The UKEY2 session is deliberately isolated behind this point. The serializer and
-                // mDNS discovery are usable on RTM now; the crypto/session port is gated until its
-                // P-256 interop vectors pass against Android and NearDrop.
-                throw new ShareProtocolException("Quick Share transport connected, but the UKEY2 session is not enabled in this build.");
+                await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken);
             }
         }
 
@@ -120,11 +116,26 @@ namespace LiveDrop.Protocols.QuickShare
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            // A later session stage will pass the accepted socket to the consent UI. Keeping the
-            // socket open here would make the Android sender wait indefinitely, so close malformed
-            // or unsupported sessions immediately and leave a status breadcrumb for testing.
-            args.Socket.Dispose();
-            StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share connection received; UKEY2 session support is pending interop validation."));
+            args.Socket.Control.NoDelay = true;
+            var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
+            _ = HandleIncomingAsync(args.Socket, token);
+        }
+
+        private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
+                {
+                    var decision = new TaskCompletionSource<bool>();
+                    var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                    if (OfferReceived == null) return false;
+                    OfferReceived(this, new ShareOfferReceivedEventArgs(peer, offer, complete));
+                    return await decision.Task;
+                }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken);
+            }
+            catch (OperationCanceledException) { }
+            catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share transfer failed: " + ex.Message)); }
         }
 
         private static string CreateEndpointId()
@@ -168,4 +179,3 @@ namespace LiveDrop.Protocols.QuickShare
         public void Dispose() { StopAsync().GetAwaiter().GetResult(); }
     }
 }
-

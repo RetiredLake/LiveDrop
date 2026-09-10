@@ -49,8 +49,16 @@
     <Compile Include="Protocols\ProtocolUtilities.cs" />
     <Compile Include="Protocols\QuickShare\ProtoWriter.cs" />
     <Compile Include="Protocols\QuickShare\QuickShareFrames.cs" />
+    <Compile Include="Protocols\QuickShare\P256KeyAgreement.cs" />
+    <Compile Include="Protocols\QuickShare\QuickShareCrypto.cs" />
+    <Compile Include="Protocols\QuickShare\QuickShareSession.cs" />
     <Compile Include="Protocols\QuickShare\QuickShareAdapter.cs" />
     <Compile Include="Protocols\Nearby\NearbyCdpAdapter.cs" />
+    <Compile Include="Protocols\Nearby\CdpIdentity.cs" />
+    <Compile Include="Protocols\Nearby\CdpWire.cs" />
+    <Compile Include="Protocols\Nearby\CdpBondValueSet.cs" />
+    <Compile Include="Protocols\Nearby\CdpClientSession.cs" />
+    <Compile Include="Protocols\Nearby\CdpServerSession.cs" />
     <Compile Include="Transports\MdnsCodec.cs" />
     <Compile Include="Transports\MdnsMulticastService.cs" />
     <Compile Include="Transports\SocketConnection.cs" />
@@ -78,4 +86,3 @@
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
 </Project>
-

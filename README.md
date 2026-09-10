@@ -11,7 +11,7 @@ AirDrop is outside this project milestone. No AirDrop code or compatibility prom
 
 ## Current execution state
 
-The repository currently contains the RTM-floor UWP shell, Windows Share Target activation, peer and offer models, safe file-storage primitives, Microsoft CDP UDP presence discovery, and Quick Share mDNS discovery plus wire serializers. The encrypted CDP and UKEY2 transfer sessions remain gated behind interop vectors; discovery code intentionally does not present an unverified transfer path as complete.
+The repository currently contains the RTM-floor UWP shell, Windows Share Target activation, peer and offer models, safe file-storage primitives, Microsoft CDP v3 discovery plus authenticated NearShare send/receive sessions, and Quick Share mDNS discovery plus UKEY2/encrypted send/receive sessions. Real Windows 10 Mobile, Windows PC, and Android peers still need to validate the wire paths before an RTM build can be called interoperable.
 
 ## Build
 
@@ -41,9 +41,10 @@ The adapter design and wire comments are based on these public projects and spec
 
 The practical behavior from GPL-3.0 protocol projects is being ported behind LiveDrop interfaces rather than copying modern .NET or platform-specific application code into the RTM UWP project. Any future ported source must retain its upstream notices and GPL obligations.
 
+The checked-in protocol smoke test covers P-256, Quick Share encryption, CDP certificate authentication, CDP NearShare ValueSets, and CDP packet encryption. The local source-level UWP compile uses the cached WpBlueBubbles UWP reference assemblies when the machine lacks the classic XAML build targets.
+
 ## Testing boundary
 
 Testing artifacts may be produced for Windows PC and real Windows 10 Mobile hardware. The acceptance matrix begins with same-LAN foreground transfer, then adds BLE-triggered discovery, Wi-Fi Direct, suspension, network loss, duplicate names, cancellation, malformed messages, and large files. Real Lumia hardware is required for the RTM claim; an emulator is not treated as evidence.
 
 No GitHub release artifact has been created.
-

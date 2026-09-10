@@ -25,13 +25,12 @@ Microsoft CDP    Google Quick Share
 
 ## Quick Share LAN path
 
-The receiver publishes `_FC9F5ED42C8A._tcp.local.`. The service instance contains the PCP byte, a four-character endpoint ID, the Quick Share service hash, and two reserved bytes. TXT `n=` carries endpoint information. TCP frames use a four-byte big-endian length prefix. The next work item is the complete UKEY2 P-256 exchange and encrypted `OfflineFrame`/`sharing.nearby.Frame` state machine.
+The receiver publishes `_FC9F5ED42C8A._tcp.local.`. The service instance contains the PCP byte, a four-character endpoint ID, the Quick Share service hash, and two reserved bytes. TXT `n=` carries endpoint information. TCP frames use a four-byte big-endian length prefix. The adapter implements the UKEY2 P-256 exchange, encrypted `OfflineFrame`/`sharing.nearby.Frame` state machine, consent, file send, and atomic receive paths. Android/NearDrop interop remains an acceptance test.
 
 ## Microsoft Nearby path
 
-The discovery adapter follows the current CDP v3 common header, UDP 5050 presence request/response, and TCP 5040 endpoint convention used by `nearby-sharing/android`. The next work item is the CDP connection header, P-256 authentication, encrypted channel, and NearShare data/control messages.
+The discovery adapter follows the current CDP v3 common header, UDP 5050 presence request/response, and TCP 5040 endpoint convention used by `nearby-sharing/android`. The adapter implements the CDP connection header, P-256 certificate authentication, encrypted channel, NearShare handshake, range-based file send, consent, and atomic receive paths. Windows PC interop remains an acceptance test.
 
 ## File safety
 
 Incoming names pass through `ProtocolUtilities.NormalizeFileName`. Completed files are written to a generated temporary file and renamed only after the stream flushes. SHA-256 verification is available in `TransferFileStore` and is part of the transfer-session acceptance tests.
-
