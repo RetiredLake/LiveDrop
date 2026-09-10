@@ -1,0 +1,7 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Keep classic UWP builds usable when the SDK registry value is missing after a drive move. -->
+  <PropertyGroup Condition="'$(WindowsKitsPath)' == '' and Exists('$(MSBuildProgramFiles32)\Windows Kits\10\bin\10.0.19041.0\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets')">
+    <WindowsKitsPath>$(MSBuildProgramFiles32)\Windows Kits\10\</WindowsKitsPath>
+  </PropertyGroup>
+</Project>
+

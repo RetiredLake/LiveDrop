@@ -1,0 +1,15 @@
+.vs/
+.packages/
+bin/
+obj/
+AppPackages/
+TestResults/
+*.user
+*.suo
+*.pdb
+*.appx
+*.appxbundle
+*.cer
+*.msix
+*.msixbundle
+
