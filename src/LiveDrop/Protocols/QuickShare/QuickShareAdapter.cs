@@ -14,6 +14,7 @@ namespace LiveDrop.Protocols.QuickShare
 {
     internal sealed class QuickShareAdapter : IShareProtocolAdapter
     {
+        private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> LocalEndpoints = new System.Collections.Concurrent.ConcurrentDictionary<string, byte>();
         private readonly string _displayName;
         private readonly string _endpointId;
         private readonly string _instanceName;
@@ -47,6 +48,7 @@ namespace LiveDrop.Protocols.QuickShare
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             if (_stopSource != null) return;
+            LocalEndpoints.TryAdd(_endpointId, 0);
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _listener = new StreamSocketListener();
             _listener.ConnectionReceived += OnConnectionReceived;
@@ -74,7 +76,8 @@ namespace LiveDrop.Protocols.QuickShare
                 await StopAsync();
                 throw new InvalidOperationException("Windows could not register the Quick Share DNS-SD service.");
             }
-            _queryLoop = QueryLoopAsync(_stopSource.Token);
+            var discoveryToken = _stopSource.Token;
+            _queryLoop = Task.Run(() => QueryLoopAsync(discoveryToken));
             StatusChanged?.Invoke(this, new StatusChangedEventArgs(
                 bleStarted
                     ? "Quick Share Bluetooth and LAN discovery is active."
@@ -87,9 +90,10 @@ namespace LiveDrop.Protocols.QuickShare
             if (source == null) return;
             _stopSource = null;
             source.Cancel();
+            // Keep this process's retired IDs filtered while other views retain DNS records.
             if (_queryLoop != null)
             {
-                try { await _queryLoop; } catch { }
+                try { await _queryLoop.ConfigureAwait(false); } catch { }
                 _queryLoop = null;
             }
             if (_bleBeacon != null) { _bleBeacon.Dispose(); _bleBeacon = null; }
@@ -143,7 +147,7 @@ namespace LiveDrop.Protocols.QuickShare
                     string.Equals(service.InstanceName, _serviceInstanceName, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase)) continue;
                 var id = ExtractEndpointId(service.InstanceName);
-                if (string.IsNullOrWhiteSpace(id)) continue;
+                if (string.IsNullOrWhiteSpace(id) || LocalEndpoints.ContainsKey(id)) continue;
                 var peer = new PeerDescriptor(id, service.DisplayName ?? "Android device", Transport, service.Address, service.Port, "mDNS/TCP,UKEY2");
                 PeerDiscovered?.Invoke(this, new PeerDiscoveredEventArgs(peer));
             }

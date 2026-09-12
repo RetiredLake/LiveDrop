@@ -15,13 +15,11 @@ namespace LiveDrop.Services
         private readonly CancellationTokenSource _stopSource = new CancellationTokenSource();
         private bool _started;
 
-        internal ShareCoordinator(string displayName)
+        internal ShareCoordinator(string displayName, bool nearbyEnabled, bool quickShareEnabled)
         {
-            _adapters = new List<IShareProtocolAdapter>
-            {
-                new NearbyCdpAdapter(displayName),
-                new QuickShareAdapter(displayName)
-            };
+            _adapters = new List<IShareProtocolAdapter>();
+            if (nearbyEnabled) _adapters.Add(new NearbyCdpAdapter(displayName));
+            if (quickShareEnabled) _adapters.Add(new QuickShareAdapter(displayName));
             foreach (var adapter in _adapters)
             {
                 adapter.PeerDiscovered += OnPeerDiscovered;
@@ -66,7 +64,7 @@ namespace LiveDrop.Services
             _stopSource.Cancel();
             foreach (var adapter in _adapters)
             {
-                try { await adapter.StopAsync(); } catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Discovery shutdown: " + ex.Message)); }
+                try { await adapter.StopAsync().ConfigureAwait(false); } catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Discovery shutdown: " + ex.Message)); }
             }
         }
 

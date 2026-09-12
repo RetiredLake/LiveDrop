@@ -128,10 +128,8 @@ namespace LiveDrop.Models
                 {
                     var file = item as StorageFile;
                     if (file == null) continue;
-                    var properties = await file.Properties.RetrievePropertiesAsync(new[] { "System.Size", "System.FileExtension" });
-                    long size = 0;
-                    object rawSize;
-                    if (properties.TryGetValue("System.Size", out rawSize) && rawSize is ulong) size = (long)(ulong)rawSize;
+                    var properties = await file.GetBasicPropertiesAsync();
+                    var size = checked((long)properties.Size);
                     files.Add(new ShareFileDescriptor(file, GuessMimeType(file.FileType), size));
                 }
             }
@@ -140,7 +138,7 @@ namespace LiveDrop.Models
             {
                 var textFile = await ApplicationData.Current.LocalFolder.CreateFileAsync("SharedText.txt", CreationCollisionOption.GenerateUniqueName);
                 await FileIO.WriteTextAsync(textFile, text);
-                files.Add(new ShareFileDescriptor(textFile, "text/plain", text.Length));
+                files.Add(new ShareFileDescriptor(textFile, "text/plain", checked((long)(await textFile.GetBasicPropertiesAsync()).Size)));
             }
             return new ShareOffer(files, text);
         }

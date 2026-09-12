@@ -62,7 +62,8 @@ namespace LiveDrop.Protocols.Nearby
             }
             _bleBeacon = new MicrosoftNearbyBleBeacon();
             var bleStarted = await _bleBeacon.StartAsync(_displayName);
-            _queryLoop = QueryLoopAsync(_stopSource.Token);
+            var discoveryToken = _stopSource.Token;
+            _queryLoop = Task.Run(() => QueryLoopAsync(discoveryToken));
             StatusChanged?.Invoke(this, new StatusChangedEventArgs(
                 bleStarted
                     ? "Microsoft Nearby Bluetooth and LAN discovery is active."
@@ -75,7 +76,7 @@ namespace LiveDrop.Protocols.Nearby
             if (source == null) return;
             _stopSource = null;
             source.Cancel();
-            if (_queryLoop != null) { try { await _queryLoop; } catch { } _queryLoop = null; }
+            if (_queryLoop != null) { try { await _queryLoop.ConfigureAwait(false); } catch { } _queryLoop = null; }
             if (_udp != null) { _udp.MessageReceived -= OnMessageReceived; _udp.Dispose(); _udp = null; }
             if (_bleBeacon != null) { _bleBeacon.Dispose(); _bleBeacon = null; }
             if (_tcp != null) { _tcp.ConnectionReceived -= OnConnectionReceived; _tcp.Dispose(); _tcp = null; }

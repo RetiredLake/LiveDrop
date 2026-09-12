@@ -21,11 +21,24 @@ namespace LiveDrop
         private CancellationTokenSource _sendCancellation;
         private readonly MenuFlyout _moreMenu;
         private bool _updateCheckInProgress;
+        private readonly CoreDispatcher _viewDispatcher;
+        private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
+        private bool _viewClosed;
+        private bool _loaded;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
 
         public MainPage()
         {
             InitializeComponent();
+            _viewDispatcher = Dispatcher;
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            NearbyCheckBox.IsChecked = !(settings["NearbyEnabled"] is bool) || (bool)settings["NearbyEnabled"];
+            QuickShareCheckBox.IsChecked = !(settings["QuickShareEnabled"] is bool) || (bool)settings["QuickShareEnabled"];
+            NearbyCheckBox.Checked += OnProtocolsChanged;
+            NearbyCheckBox.Unchecked += OnProtocolsChanged;
+            QuickShareCheckBox.Checked += OnProtocolsChanged;
+            QuickShareCheckBox.Unchecked += OnProtocolsChanged;
+            Window.Current.Closed += OnWindowClosed;
             _moreMenu = new MenuFlyout();
             var githubItem = new MenuFlyoutItem { Text = "About" };
             githubItem.Click += OnAboutClicked;
@@ -112,51 +125,133 @@ namespace LiveDrop
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
-            if (_coordinator != null) return;
-            _coordinator = new ShareCoordinator("LiveDrop");
-            _coordinator.PeerDiscovered += OnPeerDiscovered;
-            _coordinator.OfferReceived += OnOfferReceived;
-            _coordinator.StatusChanged += OnStatusChanged;
-            await _coordinator.StartAsync();
-            ConsumePendingShare();
+            _loaded = true;
+            await ApplyProtocolsAsync();
         }
 
         private async void OnUnloaded(object sender, RoutedEventArgs e)
         {
-            if (_sendCancellation != null) _sendCancellation.Cancel();
-            if (_coordinator == null) return;
-            await _coordinator.StopAsync();
-            _coordinator.Dispose();
-            _coordinator = null;
+            _loaded = false;
+            await ApplyProtocolsAsync();
         }
 
-        internal async void ConsumePendingShare()
+        private async void OnWindowClosed(object sender, CoreWindowEventArgs e)
         {
-            var args = (Application.Current as App)?.TakePendingShare();
-            if (args == null || _coordinator == null) return;
-            var offer = await ShareOfferFactory.FromShareOperationAsync(args.ShareOperation);
-            _pendingShareOperation = args.ShareOperation;
-            _pendingOffer = offer;
-            StatusText.Text = offer.Files.Count == 0
-                ? "Text is ready to share after selecting a peer."
-                : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
-            SendButton.IsEnabled = PeersList.SelectedItem != null && offer.Files.Count > 0;
+            _viewClosed = true;
+            _loaded = false;
+            try { _pendingShareOperation?.ReportError("Share canceled."); } catch { }
+            _pendingShareOperation = null;
+            if (_sendCancellation != null) _sendCancellation.Cancel();
+            await ApplyProtocolsAsync();
+        }
+
+        private async void OnProtocolsChanged(object sender, RoutedEventArgs e)
+        {
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            settings["NearbyEnabled"] = NearbyCheckBox.IsChecked == true;
+            settings["QuickShareEnabled"] = QuickShareCheckBox.IsChecked == true;
+            if (_loaded) await ApplyProtocolsAsync();
+        }
+
+        private async Task ApplyProtocolsAsync()
+        {
+            await _lifecycle.WaitAsync();
+            try
+            {
+                var previous = _coordinator;
+                _coordinator = null;
+                if (previous != null)
+                {
+                    previous.PeerDiscovered -= OnPeerDiscovered;
+                    previous.OfferReceived -= OnOfferReceived;
+                    previous.StatusChanged -= OnStatusChanged;
+                    await previous.StopAsync();
+                    previous.Dispose();
+                }
+                if (_viewClosed || !_loaded) return;
+                PeersList.Items.Clear();
+                SendButton.IsEnabled = false;
+                _discoveryStatus.Clear();
+                var nearby = NearbyCheckBox.IsChecked == true;
+                var quickShare = QuickShareCheckBox.IsChecked == true;
+                if (!nearby && !quickShare)
+                {
+                    StatusText.Text = "Discovery is off. Select a protocol to find peers.";
+                    return;
+                }
+                _coordinator = new ShareCoordinator("LiveDrop", nearby, quickShare);
+                _coordinator.PeerDiscovered += OnPeerDiscovered;
+                _coordinator.OfferReceived += OnOfferReceived;
+                _coordinator.StatusChanged += OnStatusChanged;
+                await _coordinator.StartAsync();
+            }
+            catch (Exception ex)
+            {
+                await RunOnViewAsync(() => StatusText.Text = "Discovery could not start: " + ex.Message);
+            }
+            finally { _lifecycle.Release(); }
+        }
+
+        // A share-target view can disappear while discovery callbacks are still queued.
+        // Capture its dispatcher once; never query a disposed XAML Page for Dispatcher.
+        private async Task RunOnViewAsync(Action action)
+        {
+            if (_viewClosed) return;
+            try
+            {
+                await _viewDispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+                {
+                    try { if (!_viewClosed) action(); }
+                    catch (System.Runtime.InteropServices.InvalidComObjectException) { _viewClosed = true; }
+                    catch (System.Runtime.InteropServices.COMException) { _viewClosed = true; }
+                });
+            }
+            catch (System.Runtime.InteropServices.InvalidComObjectException) { }
+            catch (System.Runtime.InteropServices.COMException) { }
+            catch (TaskCanceledException) { }
+        }
+
+        internal async Task ReceiveShareAsync(ShareOperation operation)
+        {
+            try
+            {
+                operation.ReportStarted();
+                var offer = await ShareOfferFactory.FromShareOperationAsync(operation);
+                if (_viewClosed) return;
+                operation.ReportDataRetrieved();
+                _pendingShareOperation = operation;
+                _pendingOffer = offer;
+                StatusText.Text = offer.Files.Count == 0
+                    ? "This share contains no supported files or text."
+                    : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
+                SendButton.IsEnabled = PeersList.SelectedItem != null && offer.Files.Count > 0;
+            }
+            catch (Exception ex)
+            {
+                _pendingShareOperation = null;
+                _pendingOffer = null;
+                await RunOnViewAsync(() => StatusText.Text = "Could not read the shared content: " + ex.Message);
+                try { operation.ReportError("LiveDrop could not read the shared content. Please share it again."); } catch { }
+            }
         }
 
         private async void OnPeerDiscovered(object sender, PeerDiscoveredEventArgs e)
         {
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            await RunOnViewAsync(() =>
             {
-                if (!PeersList.Items.OfType<PeerListItem>().Any(x => x.Peer.StableId == e.Peer.StableId))
-                    PeersList.Items.Add(new PeerListItem(e.Peer));
+                if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
+                if (!PeersList.Items.OfType<PeerListItem>().Any(x => x.Peer.StableId == e.Peer.StableId && x.Peer.Transport == e.Peer.Transport))
+                    PeersList.Items.Add(new PeerListItem(e.Peer, NearbyCheckBox.IsChecked == true && QuickShareCheckBox.IsChecked == true));
             });
         }
 
         private async void OnStatusChanged(object sender, StatusChangedEventArgs e)
         {
             var adapter = sender as LiveDrop.Protocols.IShareProtocolAdapter;
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, () =>
+            var coordinator = _coordinator;
+            await RunOnViewAsync(() =>
             {
+                if (!_loaded || !ReferenceEquals(coordinator, _coordinator)) return;
                 _discoveryStatus[adapter == null ? "Discovery" : adapter.Name] = e.Message;
                 if (!_updateCheckInProgress) StatusText.Text = string.Join("\n", _discoveryStatus.Values);
             });
@@ -172,54 +267,73 @@ namespace LiveDrop
             var selected = PeersList.SelectedItem as PeerListItem;
             if (selected == null || _pendingOffer == null || _coordinator == null) return;
             SendButton.IsEnabled = false;
+            NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
             _sendCancellation = new CancellationTokenSource();
             try
             {
                 var progress = new Progress<ShareProgress>(value =>
-                    StatusText.Text = value.FileName + ": " + value.BytesTransferred + "/" + value.TotalBytes + " bytes");
+                {
+                    if (!_viewClosed) StatusText.Text = value.FileName + ": " + value.BytesTransferred + "/" + value.TotalBytes + " bytes";
+                });
                 await _coordinator.SendAsync(selected.Peer, _pendingOffer, progress, _sendCancellation.Token);
-                _pendingShareOperation?.ReportCompleted();
+                if (_viewClosed) return;
+                try { _pendingShareOperation?.ReportCompleted(); } catch (System.Runtime.InteropServices.COMException) { }
                 _pendingShareOperation = null;
                 _pendingOffer = null;
                 StatusText.Text = "Share completed.";
             }
             catch (OperationCanceledException)
             {
-                StatusText.Text = "Share canceled.";
+                if (!_viewClosed) StatusText.Text = "Share canceled.";
             }
             catch (Exception ex)
             {
-                StatusText.Text = "Share failed: " + ex.Message;
-                _pendingShareOperation?.ReportError(ex.Message);
+                if (!_viewClosed) StatusText.Text = "Share failed: " + ex.Message;
+                try { _pendingShareOperation?.ReportError(ex.Message); } catch { }
+                _pendingShareOperation = null;
             }
             finally
             {
                 if (_sendCancellation != null) { _sendCancellation.Dispose(); _sendCancellation = null; }
-                SendButton.IsEnabled = _pendingOffer != null && PeersList.SelectedItem != null;
+                if (!_viewClosed)
+                {
+                    NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = true;
+                    SendButton.IsEnabled = _pendingOffer != null && PeersList.SelectedItem != null;
+                }
             }
         }
 
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
-            var decision = new System.Threading.Tasks.TaskCompletionSource<bool>();
-            await Dispatcher.RunAsync(CoreDispatcherPriority.Normal, async () =>
+            var accepted = false;
+            try
             {
-                var dialog = new MessageDialog(e.Peer.DisplayName + " wants to send " + e.Offer.Files.Count + " file(s).", "Accept nearby transfer?");
-                dialog.Commands.Add(new UICommand("Accept"));
-                dialog.Commands.Add(new UICommand("Reject"));
-                dialog.DefaultCommandIndex = 0;
-                dialog.CancelCommandIndex = 1;
-                var result = await dialog.ShowAsync();
-                decision.TrySetResult(result.Label == "Accept");
-            });
-            await e.CompleteAsync(await decision.Task);
+                Task<IUICommand> dialogTask = null;
+                await RunOnViewAsync(() =>
+                {
+                    if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
+                    var dialog = new MessageDialog(e.Peer.DisplayName + " wants to send " + e.Offer.Files.Count + " file(s).", "Accept nearby transfer?");
+                    dialog.Commands.Add(new UICommand("Accept"));
+                    dialog.Commands.Add(new UICommand("Reject"));
+                    dialog.DefaultCommandIndex = 1;
+                    dialog.CancelCommandIndex = 1;
+                    dialogTask = dialog.ShowAsync().AsTask();
+                });
+                if (dialogTask != null) accepted = (await dialogTask).Label == "Accept" && !_viewClosed;
+            }
+            catch { accepted = false; }
+            try { await e.CompleteAsync(accepted); } catch { }
         }
     }
 
     internal sealed class PeerListItem
     {
         internal PeerDescriptor Peer { get; private set; }
-        internal PeerListItem(PeerDescriptor peer) { Peer = peer; }
-        public override string ToString() { return Peer.DisplayName + " - " + Peer.Transport; }
+        private readonly bool _showProtocol;
+        internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }
+        public override string ToString()
+        {
+            return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? "Quick Share" : "Microsoft Nearby Share") : "");
+        }
     }
 }

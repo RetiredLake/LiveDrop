@@ -9,7 +9,6 @@ namespace LiveDrop
 {
     sealed partial class App : Application
     {
-        internal ShareTargetActivatedEventArgs PendingShare { get; private set; }
 
         public App()
         {
@@ -24,13 +23,19 @@ namespace LiveDrop
             Window.Current.Activate();
         }
 
-        protected override void OnShareTargetActivated(ShareTargetActivatedEventArgs args)
+        protected override async void OnShareTargetActivated(ShareTargetActivatedEventArgs args)
         {
-            PendingShare = args;
-            NavigateToMainPage();
-            Window.Current.Activate();
-            var page = (Window.Current.Content as Frame)?.Content as MainPage;
-            if (page != null) page.ConsumePendingShare();
+            try
+            {
+                NavigateToMainPage();
+                Window.Current.Activate();
+                var page = (Window.Current.Content as Frame)?.Content as MainPage;
+                if (page != null) await page.ReceiveShareAsync(args.ShareOperation);
+            }
+            catch (Exception ex)
+            {
+                try { args.ShareOperation.ReportError("LiveDrop could not open this share: " + ex.Message); } catch { }
+            }
         }
 
         private static void NavigateToMainPage()
@@ -42,13 +47,6 @@ namespace LiveDrop
                 Window.Current.Content = frame;
             }
             if (frame.Content == null) frame.Navigate(typeof(MainPage));
-        }
-
-        internal ShareTargetActivatedEventArgs TakePendingShare()
-        {
-            var share = PendingShare;
-            PendingShare = null;
-            return share;
         }
 
         private void OnSuspending(object sender, SuspendingEventArgs e) { }
