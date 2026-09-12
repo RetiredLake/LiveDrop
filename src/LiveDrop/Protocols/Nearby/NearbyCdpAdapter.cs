@@ -25,6 +25,7 @@ namespace LiveDrop.Protocols.Nearby
         private readonly CdpIdentity _identity;
         private DatagramSocket _udp;
         private StreamSocketListener _tcp;
+        private MicrosoftNearbyBleBeacon _bleBeacon;
         private CancellationTokenSource _stopSource;
         private Task _queryLoop;
         private int _sequence;
@@ -47,12 +48,25 @@ namespace LiveDrop.Protocols.Nearby
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _tcp = new StreamSocketListener();
             _tcp.ConnectionReceived += OnConnectionReceived;
-            await _tcp.BindServiceNameAsync(TcpPort.ToString());
+            try { await _tcp.BindServiceNameAsync(TcpPort.ToString()); }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Could not open TCP 5040 (" + SocketError.GetStatus(ex.HResult) + "). Windows Nearby Sharing may already be using this port.", ex);
+            }
             _udp = new DatagramSocket();
             _udp.MessageReceived += OnMessageReceived;
-            await _udp.BindServiceNameAsync(UdpPort.ToString());
+            try { await _udp.BindServiceNameAsync(UdpPort.ToString()); }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Could not open UDP 5050 (" + SocketError.GetStatus(ex.HResult) + "). Windows Nearby Sharing may already be using this port.", ex);
+            }
+            _bleBeacon = new MicrosoftNearbyBleBeacon();
+            var bleStarted = await _bleBeacon.StartAsync(_displayName);
             _queryLoop = QueryLoopAsync(_stopSource.Token);
-            StatusChanged?.Invoke(this, new StatusChangedEventArgs("Microsoft Nearby discovery is active."));
+            StatusChanged?.Invoke(this, new StatusChangedEventArgs(
+                bleStarted
+                    ? "Microsoft Nearby Bluetooth and LAN discovery is active."
+                    : "Microsoft Nearby LAN discovery is active; Bluetooth discovery is unavailable."));
         }
 
         public async Task StopAsync()
@@ -63,6 +77,7 @@ namespace LiveDrop.Protocols.Nearby
             source.Cancel();
             if (_queryLoop != null) { try { await _queryLoop; } catch { } _queryLoop = null; }
             if (_udp != null) { _udp.MessageReceived -= OnMessageReceived; _udp.Dispose(); _udp = null; }
+            if (_bleBeacon != null) { _bleBeacon.Dispose(); _bleBeacon = null; }
             if (_tcp != null) { _tcp.ConnectionReceived -= OnConnectionReceived; _tcp.Dispose(); _tcp = null; }
             source.Dispose();
         }
@@ -87,11 +102,14 @@ namespace LiveDrop.Protocols.Nearby
             {
                 try
                 {
-                    await SendDatagramAsync(BuildPresenceRequest(), "255.255.255.255", cancellationToken);
-                    await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
+                    var request = BuildPresenceRequest();
+                    foreach (var address in GetBroadcastAddresses())
+                        await SendDatagramAsync(request, address, cancellationToken);
                 }
                 catch (OperationCanceledException) { return; }
                 catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Nearby discovery: " + ex.Message)); }
+                try { await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken); }
+                catch (OperationCanceledException) { return; }
             }
         }
 
@@ -102,7 +120,10 @@ namespace LiveDrop.Protocols.Nearby
                 var reader = args.GetDataReader();
                 var data = new byte[checked((int)reader.UnconsumedBufferLength)];
                 reader.ReadBytes(data);
-                if (data.Length >= 43 && data[42] == 0)
+                var payloadOffset = GetDiscoveryPayloadOffset(data);
+                if (payloadOffset < 0) return;
+                if (NetworkInformation.GetHostNames().Any(host => host.Type == HostNameType.Ipv4 && host.RawName == args.RemoteAddress.RawName)) return;
+                if (data[payloadOffset] == 0)
                 {
                     await SendDatagramAsync(BuildPresenceResponse(), args.RemoteAddress.RawName, _stopSource == null ? CancellationToken.None : _stopSource.Token);
                     return;
@@ -120,6 +141,24 @@ namespace LiveDrop.Protocols.Nearby
             }
             catch { }
             await Task.CompletedTask;
+        }
+
+        private static string[] GetBroadcastAddresses()
+        {
+            var addresses = new System.Collections.Generic.HashSet<string>();
+            foreach (var host in NetworkInformation.GetHostNames())
+            {
+                if (host.Type != HostNameType.Ipv4 || host.IPInformation == null || !host.IPInformation.PrefixLength.HasValue ||
+                    host.RawName.StartsWith("127.") || host.RawName.StartsWith("169.254.")) continue;
+                var prefix = (int)host.IPInformation.PrefixLength.Value;
+                if (prefix < 1 || prefix > 30) continue;
+                var bytes = IPAddress.Parse(host.RawName).GetAddressBytes();
+                var value = ((uint)bytes[0] << 24) | ((uint)bytes[1] << 16) | ((uint)bytes[2] << 8) | bytes[3];
+                var broadcast = value | (uint.MaxValue >> prefix);
+                addresses.Add(new IPAddress(new byte[] { (byte)(broadcast >> 24), (byte)(broadcast >> 16), (byte)(broadcast >> 8), (byte)broadcast }).ToString());
+            }
+            if (addresses.Count == 0) addresses.Add("255.255.255.255");
+            return addresses.ToArray();
         }
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
@@ -205,14 +244,9 @@ namespace LiveDrop.Protocols.Nearby
         private static bool TryParsePresence(byte[] data, out NearbyPresence presence)
         {
             presence = null;
-            if (data == null || data.Length < 43) return false;
-            var offset = 0;
-            if (ReadUInt16(data, ref offset) != Signature) return false;
-            var messageLength = ReadUInt16(data, ref offset);
-            if (messageLength > data.Length || data[offset++] != 3 || data[offset++] != 1) return false;
-            offset += 2 + 4 + 8 + 2 + 2 + 8 + 8 + 2;
-            if (offset >= data.Length || data[offset++] != 1) return false;
-            if (offset + 2 > data.Length) return false;
+            var offset = GetDiscoveryPayloadOffset(data);
+            if (offset < 0 || data[offset++] != 1) return false;
+            if (offset + 6 > data.Length) return false;
             var mode = ReadInt16(data, ref offset);
             var deviceType = ReadInt16(data, ref offset);
             var nameLength = ReadUInt16(data, ref offset);
@@ -222,6 +256,25 @@ namespace LiveDrop.Protocols.Nearby
             offset += 4 + 32;
             presence = new NearbyPresence { DeviceName = string.IsNullOrWhiteSpace(name) ? "Windows PC" : name, DeviceType = deviceType, Mode = mode };
             return true;
+        }
+
+        private static int GetDiscoveryPayloadOffset(byte[] data)
+        {
+            if (data == null || data.Length < 43) return -1;
+            var offset = 0;
+            if (ReadUInt16(data, ref offset) != Signature || ReadUInt16(data, ref offset) != data.Length ||
+                data[4] != 3 || data[5] != 1 || data[20] != 0 || data[21] != 0 || data[22] != 0 || data[23] != 1)
+                return -1;
+            offset = 40;
+            while (offset + 2 <= data.Length)
+            {
+                var type = data[offset++];
+                var length = data[offset++];
+                if (type == 0) return length == 0 && offset < data.Length ? offset : -1;
+                if (offset + length > data.Length) return -1;
+                offset += length;
+            }
+            return -1;
         }
 
         private static ushort ReadUInt16(byte[] data, ref int offset) { var value = (ushort)((data[offset] << 8) | data[offset + 1]); offset += 2; return value; }

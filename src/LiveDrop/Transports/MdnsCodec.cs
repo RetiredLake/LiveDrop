@@ -25,7 +25,7 @@ namespace LiveDrop.Transports
         internal static byte[] BuildQuery(string serviceType)
         {
             var stream = new MemoryStream();
-            WriteUInt16(stream, (ushort)new Random().Next(1, ushort.MaxValue));
+            WriteUInt16(stream, 0);
             WriteUInt16(stream, 0);
             WriteUInt16(stream, 1);
             WriteUInt16(stream, 0); WriteUInt16(stream, 0); WriteUInt16(stream, 0);
@@ -40,11 +40,12 @@ namespace LiveDrop.Transports
             var stream = new MemoryStream();
             WriteUInt16(stream, 0);
             WriteUInt16(stream, 0x8400);
+            WriteUInt16(stream, 0);
             WriteUInt16(stream, 4);
-            WriteUInt16(stream, 0); WriteUInt16(stream, 0); WriteUInt16(stream, 0);
+            WriteUInt16(stream, 0); WriteUInt16(stream, 0);
 
-            WriteRecord(stream, serviceType, 12, 4500, BuildNameRdata(instanceName));
-            var service = instanceName;
+            var service = BuildServiceInstanceName(instanceName, serviceType);
+            WriteRecord(stream, serviceType, 12, 4500, BuildNameRdata(service));
             var host = string.IsNullOrWhiteSpace(hostName) ? "livedrop.local." : hostName;
             WriteRecord(stream, service, 33, 120, BuildSrvRdata(port, host));
             WriteRecord(stream, service, 16, 120, BuildTxtRdata(endpointInfo));
@@ -55,6 +56,14 @@ namespace LiveDrop.Transports
         internal static IList<MdnsServiceRecord> Parse(byte[] data, string serviceType)
         {
             var results = new Dictionary<string, MdnsServiceRecord>(StringComparer.OrdinalIgnoreCase);
+            var addresses = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            return Parse(data, serviceType, results, addresses);
+        }
+
+        // Records commonly arrive in separate DNS responses. The caller owns the cache.
+        internal static IList<MdnsServiceRecord> Parse(byte[] data, string serviceType,
+            Dictionary<string, MdnsServiceRecord> results, Dictionary<string, string> addresses)
+        {
             if (data == null || data.Length < 12) return results.Values.ToList();
             var offset = 0;
             ReadUInt16(data, ref offset); ReadUInt16(data, ref offset);
@@ -85,15 +94,16 @@ namespace LiveDrop.Transports
                     var instance = ReadName(data, ref ptrOffset);
                     if (string.Equals(name, serviceType, StringComparison.OrdinalIgnoreCase))
                         Get(results, instance).InstanceName = instance;
+                    offset += length;
                 }
-                else if (type == 33 && length >= 6)
+                else if (type == 33 && length >= 7 && name.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase))
                 {
                     offset += 4;
                     var record = Get(results, name);
                     record.Port = ReadUInt16(data, ref offset);
                     record.HostName = ReadName(data, ref offset);
                 }
-                else if (type == 16)
+                else if (type == 16 && name.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase))
                 {
                     var record = Get(results, name);
                     ParseTxt(data, rdataOffset, length, record);
@@ -101,13 +111,19 @@ namespace LiveDrop.Transports
                 }
                 else if (type == 1 && length == 4)
                 {
-                    var record = results.Values.FirstOrDefault(x => string.Equals(x.HostName, name, StringComparison.OrdinalIgnoreCase));
-                    if (record != null) record.Address = new IPAddress(data.Skip(offset).Take(4).ToArray()).ToString();
+                    addresses[name] = new IPAddress(data.Skip(offset).Take(4).ToArray()).ToString();
                     offset += length;
                 }
                 else offset += length;
+                offset = rdataOffset + length;
             }
-            return results.Values.Where(x => x.Port > 0 && !string.IsNullOrWhiteSpace(x.Address)).ToList();
+            foreach (var record in results.Values)
+            {
+                string address;
+                if (record != null && !string.IsNullOrWhiteSpace(record.HostName) && addresses.TryGetValue(record.HostName, out address))
+                    record.Address = address;
+            }
+            return results.Values.Where(x => x.InstanceName.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase) && x.Port > 0 && !string.IsNullOrWhiteSpace(x.Address)).ToList();
         }
 
         private static MdnsServiceRecord Get(Dictionary<string, MdnsServiceRecord> records, string name)
@@ -158,6 +174,11 @@ namespace LiveDrop.Transports
             var stream = new MemoryStream(); WriteName(stream, name); return stream.ToArray();
         }
 
+        private static string BuildServiceInstanceName(string instanceName, string serviceType)
+        {
+            return (instanceName ?? string.Empty).TrimEnd('.') + "." + (serviceType ?? string.Empty).TrimStart('.');
+        }
+
         private static byte[] BuildSrvRdata(int port, string hostName)
         {
             var stream = new MemoryStream(); WriteUInt16(stream, 0); WriteUInt16(stream, 0); WriteUInt16(stream, (ushort)port); WriteName(stream, hostName); return stream.ToArray();
@@ -178,7 +199,9 @@ namespace LiveDrop.Transports
 
         private static void WriteRecord(MemoryStream stream, string name, ushort type, uint ttl, byte[] rdata)
         {
-            WriteName(stream, name); WriteUInt16(stream, type); WriteUInt16(stream, 1); WriteUInt32(stream, ttl); WriteUInt16(stream, (ushort)rdata.Length); stream.Write(rdata, 0, rdata.Length);
+            WriteName(stream, name); WriteUInt16(stream, type);
+            WriteUInt16(stream, type == 12 ? (ushort)1 : (ushort)0x8001);
+            WriteUInt32(stream, ttl); WriteUInt16(stream, (ushort)rdata.Length); stream.Write(rdata, 0, rdata.Length);
         }
 
         private static void WriteName(MemoryStream stream, string name)

@@ -47,4 +47,6 @@ The checked-in protocol smoke test covers P-256, Quick Share encryption, CDP cer
 
 Testing artifacts may be produced for Windows PC and real Windows 10 Mobile hardware. The acceptance matrix begins with same-LAN foreground transfer, then adds BLE-triggered discovery, Wi-Fi Direct, suspension, network loss, duplicate names, cancellation, malformed messages, and large files. Real Lumia hardware is required for the RTM claim; an emulator is not treated as evidence.
 
-No GitHub release artifact has been created.
+Version 0.1.2.0 is a testing release with an ARM/x64 app bundle and in-app update checking. Quick Share peer discovery has been observed on the development PC; cross-device transfers and W10M RTM behavior remain unverified. On desktop Windows, the built-in Connected Devices service can occupy TCP 5040/UDP 5050 and prevent LiveDrop's Microsoft Nearby listener from starting; the app reports this alongside Quick Share status.
+
+The next UI pass will make the two supported-protocol checkmarks selectable, including an all-off state. Peer rows will show friendly protocol labels only while both protocols are selected.

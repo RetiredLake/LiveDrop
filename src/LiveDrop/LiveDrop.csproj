@@ -62,8 +62,12 @@
     <Compile Include="Protocols\Nearby\CdpServerSession.cs" />
     <Compile Include="Transports\MdnsCodec.cs" />
     <Compile Include="Transports\MdnsMulticastService.cs" />
+    <Compile Include="Transports\QuickShareBleBeacon.cs" />
+    <Compile Include="Transports\QuickShareDnssdPublisher.cs" />
+    <Compile Include="Transports\MicrosoftNearbyBleBeacon.cs" />
     <Compile Include="Transports\SocketConnection.cs" />
     <Compile Include="Services\ShareCoordinator.cs" />
+    <Compile Include="Services\GitHubUpdateService.cs" />
     <Compile Include="Services\TransferFileStore.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

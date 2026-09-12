@@ -9,12 +9,27 @@
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
-    <TextBlock Text="LiveDrop" FontSize="32" FontWeight="SemiBold" />
-    <TextBlock Grid.Row="1" Margin="0,8,0,16" Text="Windows 10 Mobile nearby sharing" Opacity="0.75" />
-    <ScrollViewer Grid.Row="2">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+      <TextBlock Text="LiveDrop" FontSize="32" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <Button x:Name="MoreButton" Grid.Column="1" Width="44" Height="44" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Right" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" AutomationProperties.Name="More" Click="OnMoreClicked">
+        <SymbolIcon Symbol="More" />
+      </Button>
+    </Grid>
+    <ScrollViewer Grid.Row="2" Margin="0,16,0,0">
       <StackPanel>
         <TextBlock Text="Supported peers" FontSize="20" Margin="0,0,0,8" />
-        <TextBlock Text="Microsoft Nearby Share for Windows PCs and Google Quick Share for Android devices are supported by independent protocol adapters." TextWrapping="Wrap" />
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+          <SymbolIcon Symbol="Accept" Width="24" Margin="0,0,8,0" />
+          <TextBlock Text="Microsoft Nearby Share" VerticalAlignment="Center" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal">
+          <SymbolIcon Symbol="Accept" Width="24" Margin="0,0,8,0" />
+          <TextBlock Text="Google Quick Share" VerticalAlignment="Center" />
+        </StackPanel>
         <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
         <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged" />
         <Button x:Name="SendButton" Content="Send selected share" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />

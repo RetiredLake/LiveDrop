@@ -17,19 +17,24 @@ namespace LiveDrop.Protocols.QuickShare
         private readonly string _displayName;
         private readonly string _endpointId;
         private readonly string _instanceName;
+        private readonly string _serviceInstanceName;
         private readonly byte[] _endpointInfo;
         private StreamSocketListener _listener;
         private MdnsMulticastService _mdns;
+        private QuickShareDnssdPublisher _dnssd;
+        private QuickShareBleBeacon _bleBeacon;
         private CancellationTokenSource _stopSource;
         private Task _queryLoop;
         private int _port;
         private string _address;
+        private bool _mdnsStarted;
 
         internal QuickShareAdapter(string displayName)
         {
             _displayName = string.IsNullOrWhiteSpace(displayName) ? "LiveDrop" : displayName;
             _endpointId = CreateEndpointId();
             _instanceName = CreateInstanceName(_endpointId);
+            _serviceInstanceName = _instanceName + "." + MdnsCodec.QuickShareService;
             _endpointInfo = QuickShareFrames.BuildEndpointInfo(_displayName, 1);
         }
 
@@ -50,10 +55,30 @@ namespace LiveDrop.Protocols.QuickShare
             _address = FindLocalIpv4();
             _mdns = new MdnsMulticastService(MdnsCodec.QuickShareService);
             _mdns.ServicesReceived += OnServicesReceived;
-            await _mdns.StartAsync(_stopSource.Token);
-            await AnnounceAsync(_stopSource.Token);
+            try
+            {
+                await _mdns.StartAsync(_stopSource.Token);
+                _mdnsStarted = true;
+            }
+            catch (Exception ex)
+            {
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share mDNS socket unavailable: " + ex.Message));
+            }
+            _dnssd = new QuickShareDnssdPublisher(_serviceInstanceName, _endpointInfo);
+            var dnssdStarted = !_mdnsStarted && await _dnssd.RegisterAsync(_listener, _address);
+            _bleBeacon = new QuickShareBleBeacon();
+            var bleStarted = await _bleBeacon.StartAsync();
+            if (_mdnsStarted) await AnnounceAsync(_stopSource.Token);
+            if (!_mdnsStarted && !dnssdStarted)
+            {
+                await StopAsync();
+                throw new InvalidOperationException("Windows could not register the Quick Share DNS-SD service.");
+            }
             _queryLoop = QueryLoopAsync(_stopSource.Token);
-            StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share LAN discovery is active."));
+            StatusChanged?.Invoke(this, new StatusChangedEventArgs(
+                bleStarted
+                    ? "Quick Share Bluetooth and LAN discovery is active."
+                    : "Quick Share LAN discovery is active; Bluetooth discovery is unavailable."));
         }
 
         public async Task StopAsync()
@@ -67,7 +92,10 @@ namespace LiveDrop.Protocols.QuickShare
                 try { await _queryLoop; } catch { }
                 _queryLoop = null;
             }
+            if (_bleBeacon != null) { _bleBeacon.Dispose(); _bleBeacon = null; }
+            if (_dnssd != null) { _dnssd.Dispose(); _dnssd = null; }
             if (_mdns != null) { _mdns.ServicesReceived -= OnServicesReceived; _mdns.Dispose(); _mdns = null; }
+            _mdnsStarted = false;
             if (_listener != null) { _listener.ConnectionReceived -= OnConnectionReceived; _listener.Dispose(); _listener = null; }
             source.Dispose();
         }
@@ -88,11 +116,16 @@ namespace LiveDrop.Protocols.QuickShare
             {
                 try
                 {
-                    await _mdns.QueryAsync(cancellationToken);
-                    await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
+                    if (_mdnsStarted)
+                    {
+                        await AnnounceAsync(cancellationToken);
+                        await _mdns.QueryAsync(cancellationToken);
+                    }
                 }
                 catch (OperationCanceledException) { return; }
                 catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share discovery: " + ex.Message)); }
+                try { await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); }
+                catch (OperationCanceledException) { return; }
             }
         }
 
@@ -106,7 +139,9 @@ namespace LiveDrop.Protocols.QuickShare
         {
             foreach (var service in services)
             {
-                if (service == null || string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase)) continue;
+                if (service == null ||
+                    string.Equals(service.InstanceName, _serviceInstanceName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase)) continue;
                 var id = ExtractEndpointId(service.InstanceName);
                 if (string.IsNullOrWhiteSpace(id)) continue;
                 var peer = new PeerDescriptor(id, service.DisplayName ?? "Android device", Transport, service.Address, service.Port, "mDNS/TCP,UKEY2");
@@ -158,7 +193,8 @@ namespace LiveDrop.Protocols.QuickShare
             try
             {
                 var rawName = (instanceName ?? string.Empty).TrimEnd('.');
-                var raw = Convert.FromBase64String(rawName.Replace('-', '+').Replace('_', '/').PadRight(((rawName.Length + 3) / 4) * 4, '='));
+                var label = rawName.Split('.')[0];
+                var raw = Convert.FromBase64String(label.Replace('-', '+').Replace('_', '/').PadRight(((label.Length + 3) / 4) * 4, '='));
                 if (raw.Length < 8 || raw[0] != 0x23 || raw[5] != 0xFC || raw[6] != 0x9F || raw[7] != 0x5E) return string.Empty;
                 return System.Text.Encoding.ASCII.GetString(raw, 1, 4);
             }
@@ -170,8 +206,29 @@ namespace LiveDrop.Protocols.QuickShare
             try
             {
                 var names = NetworkInformation.GetHostNames();
-                var host = names.FirstOrDefault(x => x.Type == HostNameType.Ipv4 && x.RawName != "127.0.0.1");
-                return host == null ? "127.0.0.1" : host.RawName;
+                var profiles = NetworkInformation.GetConnectionProfiles()
+                    .Where(profile => profile.NetworkAdapter != null && profile.GetNetworkConnectivityLevel() != NetworkConnectivityLevel.None)
+                    .OrderBy(profile => profile.ProfileName != null && profile.ProfileName.IndexOf("vEthernet", StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 0)
+                    .ToList();
+                foreach (var profile in profiles)
+                {
+                    var adapterId = profile.NetworkAdapter.NetworkAdapterId;
+                    var host = names.FirstOrDefault(x =>
+                        x.Type == HostNameType.Ipv4 &&
+                        x.IPInformation != null &&
+                        x.IPInformation.NetworkAdapter != null &&
+                        x.IPInformation.NetworkAdapter.NetworkAdapterId == adapterId &&
+                        x.RawName != "127.0.0.1" &&
+                        !x.RawName.StartsWith("127.") &&
+                        !x.RawName.StartsWith("169.254."));
+                    if (host != null) return host.RawName;
+                }
+                var fallbackHost = names.FirstOrDefault(x =>
+                    x.Type == HostNameType.Ipv4 &&
+                    x.RawName != "127.0.0.1" &&
+                    !x.RawName.StartsWith("127.") &&
+                    !x.RawName.StartsWith("169.254."));
+                return fallbackHost == null ? "127.0.0.1" : fallbackHost.RawName;
             }
             catch { return "127.0.0.1"; }
         }

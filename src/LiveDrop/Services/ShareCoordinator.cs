@@ -39,9 +39,24 @@ namespace LiveDrop.Services
             if (_started) return;
             _started = true;
             var tasks = new List<Task>();
-            foreach (var adapter in _adapters) tasks.Add(adapter.StartAsync(_stopSource.Token));
-            try { await Task.WhenAll(tasks); }
-            catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Discovery startup: " + ex.Message)); }
+            foreach (var adapter in _adapters)
+            {
+                tasks.Add(StartAdapterAsync(adapter));
+            }
+            await Task.WhenAll(tasks);
+        }
+
+        private async Task StartAdapterAsync(IShareProtocolAdapter adapter)
+        {
+            try
+            {
+                await adapter.StartAsync(_stopSource.Token);
+            }
+            catch (Exception ex)
+            {
+                await adapter.StopAsync();
+                StatusChanged?.Invoke(adapter, new StatusChangedEventArgs(adapter.Name + " startup: " + ex.Message));
+            }
         }
 
         internal async Task StopAsync()
@@ -64,7 +79,7 @@ namespace LiveDrop.Services
 
         private void OnPeerDiscovered(object sender, PeerDiscoveredEventArgs e) { PeerDiscovered?.Invoke(this, e); }
         private void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e) { OfferReceived?.Invoke(this, e); }
-        private void OnStatusChanged(object sender, StatusChangedEventArgs e) { StatusChanged?.Invoke(this, e); }
+        private void OnStatusChanged(object sender, StatusChangedEventArgs e) { StatusChanged?.Invoke(sender, e); }
 
         public void Dispose()
         {
@@ -80,4 +95,3 @@ namespace LiveDrop.Services
         }
     }
 }
-
