@@ -166,14 +166,16 @@ namespace LiveDrop.Protocols.QuickShare
             try
             {
                 // QuickShareSession owns the socket and its single reader/writer pair.
+                ShareOfferReceivedEventArgs received = null;
                 await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
                 {
                     var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                     if (OfferReceived == null) return false;
-                    OfferReceived(this, new ShareOfferReceivedEventArgs(peer, offer, complete));
+                    received = new ShareOfferReceivedEventArgs(peer, offer, complete);
+                    OfferReceived(this, received);
                     return await decision.Task;
-                }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken);
+                }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken);
             }
             catch (OperationCanceledException) { }
             catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share transfer failed: " + ex.Message)); }

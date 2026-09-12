@@ -61,7 +61,7 @@ namespace LiveDrop.Protocols.QuickShare
             }
         }
 
-        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken)
+        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
         {
             using (var connection = new SocketConnection(socket))
             {
@@ -104,7 +104,7 @@ namespace LiveDrop.Protocols.QuickShare
                         var accepted = consent == null || await consent(peer, offer);
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
-                        await ReceiveFilesAsync(connection, crypto, metadata, status, cancellationToken);
+                        await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken);
                         await ReadDisconnectionAsync(connection, crypto, cancellationToken);
                         status?.Invoke("Quick Share transfer received in the app's Received folder.");
                     }
@@ -124,6 +124,7 @@ namespace LiveDrop.Protocols.QuickShare
             using (var reader = new DataReader(input))
             {
                 long offset = 0;
+                progress?.Report(new ShareProgress(file.Name, 0, file.Size));
                 while (offset < (long)input.Size)
                 {
                     var remaining = (long)input.Size - offset;
@@ -139,7 +140,7 @@ namespace LiveDrop.Protocols.QuickShare
             }
         }
 
-        private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, CancellationToken cancellationToken)
+        private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
         {
             var folder = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Received", CreationCollisionOption.OpenIfExists);
             var writers = new Dictionary<long, IncomingFile>();
@@ -150,6 +151,7 @@ namespace LiveDrop.Protocols.QuickShare
                     var temp = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(item.Name) + ".part", CreationCollisionOption.GenerateUniqueName);
                     var stream = await temp.OpenAsync(FileAccessMode.ReadWrite);
                     writers[item.PayloadId] = new IncomingFile { Metadata = item, Temporary = temp, Stream = stream, Writer = new DataWriter(stream) };
+                    progress?.Invoke(new ShareProgress(item.Name, 0, item.Size));
                 }
                 var completed = 0;
                 while (completed < metadata.Count)
@@ -158,7 +160,7 @@ namespace LiveDrop.Protocols.QuickShare
                     IncomingFile file;
                     if (chunk.PayloadType != 2 || !writers.TryGetValue(chunk.PayloadId, out file)) throw new ShareProtocolException("Quick Share sent an unknown file payload.");
                     if (chunk.Offset != file.Offset) throw new ShareProtocolException("Quick Share sent a file chunk at the wrong offset.");
-                    if (chunk.Body != null && chunk.Body.Length > 0) { file.Writer.WriteBytes(chunk.Body); await file.Writer.StoreAsync(); file.Offset += chunk.Body.Length; }
+                    if (chunk.Body != null && chunk.Body.Length > 0) { file.Writer.WriteBytes(chunk.Body); await file.Writer.StoreAsync(); file.Offset += chunk.Body.Length; progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Offset, file.Metadata.Size)); }
                     if (!chunk.Last) continue;
                     if (file.Offset != file.Metadata.Size) throw new ShareProtocolException("Quick Share file size did not match its introduction metadata.");
                     await file.Writer.FlushAsync();
@@ -166,6 +168,7 @@ namespace LiveDrop.Protocols.QuickShare
                     await file.Temporary.RenameAsync(ProtocolUtilities.NormalizeFileName(file.Metadata.Name), NameCollisionOption.GenerateUniqueName);
                     file.Completed = true;
                     completed++;
+                    progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Offset, file.Metadata.Size));
                     status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + ").");
                 }
             }

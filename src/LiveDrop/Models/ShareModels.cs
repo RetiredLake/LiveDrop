@@ -99,12 +99,19 @@ namespace LiveDrop.Models
         public PeerDescriptor Peer { get; private set; }
         public ShareOffer Offer { get; private set; }
         public Func<bool, Task> CompleteAsync { get; private set; }
+        public event System.Action<ShareProgress> ProgressChanged;
 
         public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync)
         {
             Peer = peer;
             Offer = offer;
             CompleteAsync = completeAsync;
+        }
+
+        internal void ReportProgress(ShareProgress progress)
+        {
+            var handler = ProgressChanged;
+            if (handler != null) handler(progress);
         }
     }
 

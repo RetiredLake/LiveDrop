@@ -36,6 +36,7 @@ namespace LiveDrop
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
         private const int HostNameMinimumLength = 1;
         private const int HostNameMaximumLength = 32;
+        private const string HostNameAllowedSpecialCharacters = " '._-()&+";
 
         public MainPage()
         {
@@ -81,6 +82,7 @@ namespace LiveDrop
             CancelButton.Visibility = Visibility.Collapsed;
             SelectedFileText.Text = string.Empty;
             SelectedFileText.Visibility = Visibility.Collapsed;
+            ResetTransferProgress();
         }
 
         internal void BeginShareTargetSession()
@@ -96,6 +98,7 @@ namespace LiveDrop
             SendButton.Visibility = Visibility.Visible;
             SendButton.IsEnabled = false;
             SendButton.Content = "Send selected share";
+            ResetTransferProgress();
         }
 
         private async void OnAboutClicked(object sender, RoutedEventArgs e)
@@ -120,11 +123,11 @@ namespace LiveDrop
             {
                 Text = GetBroadcastName(),
                 MaxLength = HostNameMaximumLength,
-                PlaceholderText = "Letters and numbers only"
+                PlaceholderText = "Letters, numbers, spaces, ' _ - . ( ) & +"
             };
             var errorText = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.DarkRed) };
             var panel = new StackPanel();
-            panel.Children.Add(new TextBlock { Text = "Choose the name other devices will see (1–32 letters or numbers).", TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(new TextBlock { Text = "Choose the name other devices will see (1-32 letters, numbers, spaces, and ' _ - . ( ) & +).", TextWrapping = TextWrapping.Wrap });
             panel.Children.Add(nameBox);
             panel.Children.Add(errorText);
             var dialog = new ContentDialog
@@ -163,9 +166,7 @@ namespace LiveDrop
             var result = new System.Text.StringBuilder();
             foreach (var character in value ?? string.Empty)
             {
-                if ((character >= '0' && character <= '9') ||
-                    (character >= 'A' && character <= 'Z') ||
-                    (character >= 'a' && character <= 'z'))
+                if (char.IsLetterOrDigit(character) || HostNameAllowedSpecialCharacters.IndexOf(character) >= 0)
                 {
                     result.Append(character);
                     if (result.Length == HostNameMaximumLength) break;
@@ -187,13 +188,16 @@ namespace LiveDrop
                 error = "Use no more than " + HostNameMaximumLength + " characters.";
                 return false;
             }
+            if (value[0] == ' ' || value[value.Length - 1] == ' ')
+            {
+                error = "Spaces cannot be at the beginning or end.";
+                return false;
+            }
             foreach (var character in value)
             {
-                if ((character < '0' || character > '9') &&
-                    (character < 'A' || character > 'Z') &&
-                    (character < 'a' || character > 'z'))
+                if (!char.IsLetterOrDigit(character) && HostNameAllowedSpecialCharacters.IndexOf(character) < 0)
                 {
-                    error = "Use letters and numbers only.";
+                    error = "Use letters, numbers, spaces, and ' _ - . ( ) & + only.";
                     return false;
                 }
             }
@@ -293,23 +297,20 @@ namespace LiveDrop
             _filePickerPending = true;
             try
             {
-                var picker = new FileOpenPicker
-                {
-                    ViewMode = PickerViewMode.Thumbnail,
-                    SuggestedStartLocation = PickerLocationId.PicturesLibrary
-                };
-                picker.FileTypeFilter.Add("*");
+                var phonePicker = IsWindowsPhonePicker();
+                var picker = CreateFilePicker(phonePicker);
                 StatusText.Text = "Choose a file from Photos or File Explorer.";
-                if (IsWindowsPhonePicker())
+                if (phonePicker)
                 {
-#pragma warning disable 0618
-                    picker.ContinuationData["LiveDrop.FilePicker"] = true;
-                    picker.PickSingleFileAndContinue();
-#pragma warning restore 0618
-                    return;
+                    // WpBlueBubbles uses the multiple-file broker on Windows 10 Mobile.
+                    // Pick the first item here because LiveDrop sends one selected file.
+                    var files = await picker.PickMultipleFilesAsync();
+                    await CompletePickedFileAsync(files == null ? null : files.FirstOrDefault());
                 }
-
-                await CompletePickedFileAsync(await picker.PickSingleFileAsync());
+                else
+                {
+                    await CompletePickedFileAsync(await picker.PickSingleFileAsync());
+                }
             }
             catch (Exception ex)
             {
@@ -317,21 +318,30 @@ namespace LiveDrop
             }
             finally
             {
-                if (!IsWindowsPhonePicker())
-                    _filePickerPending = false;
+                _filePickerPending = false;
             }
+        }
+
+        private static FileOpenPicker CreateFilePicker(bool phonePicker)
+        {
+            var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
+            if (!phonePicker) picker.ViewMode = PickerViewMode.Thumbnail;
+            var extensions = new[]
+            {
+                ".jpg", ".jpeg", ".png", ".heic", ".gif", ".bmp", ".webp",
+                ".mp4", ".m4v", ".mov", ".wmv", ".avi", ".mkv",
+                ".mp3", ".m4a", ".wav", ".flac", ".pdf", ".txt",
+                ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+                ".csv", ".json", ".xml", ".zip", ".7z", ".rar"
+            };
+            foreach (var extension in extensions) picker.FileTypeFilter.Add(extension);
+            return picker;
         }
 
         private static bool IsWindowsPhonePicker()
         {
             return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
                 ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
-        }
-
-        internal async void CompleteFilePicker(FileOpenPickerContinuationEventArgs args)
-        {
-            _filePickerPending = false;
-            await CompletePickedFileAsync(args == null || args.Files == null ? null : args.Files.FirstOrDefault());
         }
 
         private async Task CompletePickedFileAsync(StorageFile file)
@@ -345,6 +355,7 @@ namespace LiveDrop
             _pendingOffer = await ShareOfferFactory.FromPickedFileAsync(file);
             SelectedFileText.Text = file.Name;
             SelectedFileText.Visibility = Visibility.Visible;
+            ResetTransferProgress();
             ShareButton.Visibility = Visibility.Collapsed;
             SendButton.Visibility = Visibility.Visible;
             SendButton.Content = "Send selected share";
@@ -364,7 +375,33 @@ namespace LiveDrop
             SendButton.IsEnabled = false;
             CancelButton.Visibility = Visibility.Collapsed;
             ShareButton.Visibility = Visibility.Visible;
+            ResetTransferProgress();
             StatusText.Text = "Choose a file to share.";
+        }
+
+        private void ResetTransferProgress()
+        {
+            TransferProgressPanel.Visibility = Visibility.Collapsed;
+            TransferProgressBar.IsIndeterminate = false;
+            TransferProgressBar.Value = 0;
+            TransferProgressText.Text = string.Empty;
+        }
+
+        private void ShowTransferProgress(ShareProgress progress)
+        {
+            if (progress == null) return;
+            TransferProgressPanel.Visibility = Visibility.Visible;
+            var total = progress.TotalBytes;
+            if (total <= 0)
+            {
+                TransferProgressBar.IsIndeterminate = false;
+                TransferProgressBar.Value = 1;
+                TransferProgressText.Text = "0 B";
+                return;
+            }
+            TransferProgressBar.IsIndeterminate = false;
+            TransferProgressBar.Value = Math.Min(1.0, Math.Max(0.0, (double)progress.BytesTransferred / total));
+            TransferProgressText.Text = ((int)(TransferProgressBar.Value * 100)) + "%";
         }
 
         private async Task ApplyProtocolsAsync()
@@ -456,7 +493,7 @@ namespace LiveDrop
             await RunOnViewAsync(() =>
             {
                 if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
-                if (!PeersList.Items.OfType<PeerListItem>().Any(x => x.Peer.StableId == e.Peer.StableId && x.Peer.Transport == e.Peer.Transport))
+                if (!PeersList.Items.OfType<PeerListItem>().Any(x => x.Matches(e.Peer)))
                     PeersList.Items.Add(new PeerListItem(e.Peer, NearbyCheckBox.IsChecked == true && QuickShareCheckBox.IsChecked == true));
             });
         }
@@ -469,6 +506,17 @@ namespace LiveDrop
             {
                 if (!_loaded || !ReferenceEquals(coordinator, _coordinator)) return;
                 _discoveryStatus[adapter == null ? "Discovery" : adapter.Name] = e.Message;
+                if (adapter != null && adapter.Transport == ShareTransport.GoogleQuickShare)
+                {
+                    if (e.Message.IndexOf("transfer received", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        TransferNotification.Show("Share complete", e.Message);
+                    }
+                    else if (e.Message.IndexOf("transfer failed", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        TransferNotification.Show("Share failed", e.Message);
+                    }
+                }
                 if (!_updateCheckInProgress) StatusText.Text = string.Join("\n", _discoveryStatus.Values);
             });
         }
@@ -493,18 +541,22 @@ namespace LiveDrop
             _sendCancellation = new CancellationTokenSource();
             try
             {
+                var outgoingName = _pendingOffer.Files.Count == 0 ? "file" : _pendingOffer.Files[0].Name;
+                TransferNotification.Show("Sending", "Sending " + outgoingName + " to " + selected.Peer.DisplayName + ".");
+                StatusText.Text = "Sending " + outgoingName + " to " + selected.Peer.DisplayName + "...";
                 var progress = new Progress<ShareProgress>(value =>
                 {
-                    if (!_viewClosed) StatusText.Text = value.FileName + ": " + value.BytesTransferred + "/" + value.TotalBytes + " bytes";
+                    if (!_viewClosed) ShowTransferProgress(value);
                 });
                 await _coordinator.SendAsync(selected.Peer, _pendingOffer, progress, _sendCancellation.Token);
                 if (_viewClosed) return;
                 TryReportShareCompleted();
+                var completedSize = _pendingOffer.Files.Count == 0 ? 0 : _pendingOffer.Files[0].Size;
+                ShowTransferProgress(new ShareProgress(outgoingName, completedSize, completedSize));
+                TransferNotification.Show("Share complete", "Sent " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 _pendingOffer = null;
                 if (!_shareTargetSession)
                 {
-                    SelectedFileText.Text = string.Empty;
-                    SelectedFileText.Visibility = Visibility.Collapsed;
                     SendButton.Visibility = Visibility.Collapsed;
                     CancelButton.Visibility = Visibility.Collapsed;
                     ShareButton.Visibility = Visibility.Visible;
@@ -513,11 +565,19 @@ namespace LiveDrop
             }
             catch (OperationCanceledException)
             {
-                if (!_viewClosed) StatusText.Text = "Share canceled.";
+                if (!_viewClosed)
+                {
+                    StatusText.Text = "Share canceled.";
+                    TransferNotification.Show("Share canceled", "The file share was canceled.");
+                }
             }
             catch (Exception ex)
             {
-                if (!_viewClosed) StatusText.Text = "Share failed: " + ex.Message;
+                if (!_viewClosed)
+                {
+                    StatusText.Text = "Share failed: " + ex.Message;
+                    TransferNotification.Show("Share failed", ex.Message);
+                }
                 TryReportShareError(ex.Message);
             }
             finally
@@ -559,12 +619,23 @@ namespace LiveDrop
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
             var accepted = false;
+            var fileName = e.Offer == null || e.Offer.Files.Count == 0 ? "file" : e.Offer.Files[0].Name;
+            e.ProgressChanged += progress =>
+            {
+                _ = RunOnViewAsync(() => ShowTransferProgress(progress));
+            };
             try
             {
                 Task<IUICommand> dialogTask = null;
                 await RunOnViewAsync(() =>
                 {
                     if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
+                    SelectedFileText.Text = fileName;
+                    SelectedFileText.Visibility = Visibility.Visible;
+                    ResetTransferProgress();
+                    TransferProgressPanel.Visibility = Visibility.Visible;
+                    TransferProgressText.Text = "Waiting for acceptance";
+                    TransferNotification.Show("Incoming share", e.Peer.DisplayName + " wants to send " + fileName + ".");
                     var dialog = new MessageDialog(e.Peer.DisplayName + " wants to send " + e.Offer.Files.Count + " file(s).", "Accept nearby transfer?");
                     dialog.Commands.Add(new UICommand("Accept"));
                     dialog.Commands.Add(new UICommand("Reject"));
@@ -575,6 +646,15 @@ namespace LiveDrop
                 if (dialogTask != null) accepted = (await dialogTask).Label == "Accept" && !_viewClosed;
             }
             catch { accepted = false; }
+            if (accepted)
+            {
+                TransferNotification.Show("Receiving", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
+                await RunOnViewAsync(() => StatusText.Text = "Receiving " + fileName + " from " + e.Peer.DisplayName + "...");
+            }
+            else
+            {
+                await RunOnViewAsync(() => ResetTransferProgress());
+            }
             try { await e.CompleteAsync(accepted); } catch { }
         }
     }
@@ -584,6 +664,13 @@ namespace LiveDrop
         internal PeerDescriptor Peer { get; private set; }
         private readonly bool _showProtocol;
         internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }
+        internal bool Matches(PeerDescriptor peer)
+        {
+            if (peer == null || Peer == null || Peer.Transport != peer.Transport) return false;
+            if (!string.IsNullOrWhiteSpace(Peer.StableId) &&
+                string.Equals(Peer.StableId, peer.StableId, StringComparison.OrdinalIgnoreCase)) return true;
+            return string.Equals(Peer.DisplayName, peer.DisplayName, StringComparison.OrdinalIgnoreCase);
+        }
         public override string ToString()
         {
             return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? "Quick Share" : "Microsoft Nearby Share") : "");

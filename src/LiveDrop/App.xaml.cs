@@ -27,15 +27,6 @@ namespace LiveDrop
 
         protected override void OnActivated(IActivatedEventArgs args)
         {
-            var pickerArgs = args as FileOpenPickerContinuationEventArgs;
-            if (pickerArgs != null)
-            {
-                NavigateToMainPage();
-                var page = (Window.Current.Content as Frame)?.Content as MainPage;
-                page?.CompleteFilePicker(pickerArgs);
-                Window.Current.Activate();
-                return;
-            }
             base.OnActivated(args);
         }
 

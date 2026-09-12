@@ -27,6 +27,14 @@
         <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
         <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged" />
         <TextBlock x:Name="SelectedFileText" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,12,0,0" />
+        <Grid x:Name="TransferProgressPanel" Visibility="Collapsed" Margin="0,8,0,0">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="Auto" />
+          </Grid.ColumnDefinitions>
+          <ProgressBar x:Name="TransferProgressBar" Grid.Column="0" Height="6" Minimum="0" Maximum="1" VerticalAlignment="Center" />
+          <TextBlock x:Name="TransferProgressText" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" />
+        </Grid>
         <Button x:Name="ShareButton" Content="Share" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnShareClicked" />
         <Button x:Name="SendButton" Content="Send selected share" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
         <Button x:Name="CancelButton" Content="Cancel" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnCancelClicked" />
