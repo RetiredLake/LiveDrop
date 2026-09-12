@@ -26,7 +26,10 @@
         <CheckBox x:Name="QuickShareCheckBox" Content="Google Quick Share" IsChecked="True" />
         <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
         <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged" />
-        <Button x:Name="SendButton" Content="Send selected share" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
+        <TextBlock x:Name="SelectedFileText" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,12,0,0" />
+        <Button x:Name="ShareButton" Content="Share" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnShareClicked" />
+        <Button x:Name="SendButton" Content="Send selected share" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
+        <Button x:Name="CancelButton" Content="Cancel" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnCancelClicked" />
         <TextBlock x:Name="StatusText" Text="Starting foreground discovery..." TextWrapping="Wrap" Margin="0,16,0,0" />
       </StackPanel>
     </ScrollViewer>

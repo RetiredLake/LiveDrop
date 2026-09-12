@@ -116,6 +116,15 @@ namespace LiveDrop.Models
 
     public static class ShareOfferFactory
     {
+        public static async Task<ShareOffer> FromPickedFileAsync(StorageFile file)
+        {
+            if (file == null) return new ShareOffer(new List<ShareFileDescriptor>(), string.Empty);
+            var properties = await file.GetBasicPropertiesAsync();
+            return new ShareOffer(
+                new List<ShareFileDescriptor> { new ShareFileDescriptor(file, GuessMimeType(file.FileType), checked((long)properties.Size)) },
+                string.Empty);
+        }
+
         public static async Task<ShareOffer> FromShareOperationAsync(ShareOperation operation)
         {
             var files = new List<ShareFileDescriptor>();

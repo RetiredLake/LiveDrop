@@ -2,8 +2,12 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer.ShareTarget;
+using Windows.Storage;
+using Windows.Storage.Pickers;
 using Windows.System;
+using Windows.System.Profile;
 using Windows.UI.Core;
 using Windows.UI.Popups;
 using Windows.UI.Xaml;
@@ -25,6 +29,8 @@ namespace LiveDrop
         private readonly SemaphoreSlim _lifecycle = new SemaphoreSlim(1, 1);
         private bool _viewClosed;
         private bool _loaded;
+        private bool _shareTargetSession;
+        private bool _filePickerPending;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
 
         public MainPage()
@@ -53,6 +59,34 @@ namespace LiveDrop
         private void OnMoreClicked(object sender, RoutedEventArgs e)
         {
             _moreMenu.ShowAt(MoreButton);
+        }
+
+        internal void BeginRegularSession()
+        {
+            _shareTargetSession = false;
+            _pendingShareOperation = null;
+            _pendingOffer = null;
+            MoreButton.Visibility = Visibility.Visible;
+            ShareButton.Visibility = Visibility.Visible;
+            SendButton.Visibility = Visibility.Collapsed;
+            SendButton.IsEnabled = false;
+            CancelButton.Visibility = Visibility.Collapsed;
+            SelectedFileText.Text = string.Empty;
+            SelectedFileText.Visibility = Visibility.Collapsed;
+        }
+
+        internal void BeginShareTargetSession()
+        {
+            _shareTargetSession = true;
+            _pendingShareOperation = null;
+            _pendingOffer = null;
+            MoreButton.Visibility = Visibility.Collapsed;
+            ShareButton.Visibility = Visibility.Collapsed;
+            CancelButton.Visibility = Visibility.Collapsed;
+            SelectedFileText.Visibility = Visibility.Collapsed;
+            SendButton.Visibility = Visibility.Visible;
+            SendButton.IsEnabled = false;
+            SendButton.Content = "Send selected share";
         }
 
         private async void OnAboutClicked(object sender, RoutedEventArgs e)
@@ -153,6 +187,77 @@ namespace LiveDrop
             if (_loaded) await ApplyProtocolsAsync();
         }
 
+        private async void OnShareClicked(object sender, RoutedEventArgs e)
+        {
+            if (_shareTargetSession || _filePickerPending) return;
+            _filePickerPending = true;
+            try
+            {
+                var picker = new FileOpenPicker
+                {
+                    ViewMode = PickerViewMode.Thumbnail,
+                    SuggestedStartLocation = PickerLocationId.PicturesLibrary
+                };
+                picker.FileTypeFilter.Add("*");
+                StatusText.Text = "Choose a file from Photos or File Explorer.";
+                if (string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase))
+                {
+                    picker.PickSingleFileAndContinue();
+                    return;
+                }
+
+                await CompletePickedFileAsync(await picker.PickSingleFileAsync());
+            }
+            catch (Exception ex)
+            {
+                StatusText.Text = "Could not open the file picker: " + ex.Message;
+            }
+            finally
+            {
+                if (!string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase))
+                    _filePickerPending = false;
+            }
+        }
+
+        internal async void CompleteFilePicker(FileOpenPickerContinuationEventArgs args)
+        {
+            _filePickerPending = false;
+            await CompletePickedFileAsync(args == null || args.Files == null ? null : args.Files.FirstOrDefault());
+        }
+
+        private async Task CompletePickedFileAsync(StorageFile file)
+        {
+            if (file == null)
+            {
+                StatusText.Text = "No file selected.";
+                return;
+            }
+
+            _pendingOffer = await ShareOfferFactory.FromPickedFileAsync(file);
+            SelectedFileText.Text = file.Name;
+            SelectedFileText.Visibility = Visibility.Visible;
+            ShareButton.Visibility = Visibility.Collapsed;
+            SendButton.Visibility = Visibility.Visible;
+            SendButton.Content = "Send selected share";
+            SendButton.IsEnabled = true;
+            CancelButton.Visibility = Visibility.Visible;
+            StatusText.Text = "Select a peer, then send the file.";
+        }
+
+        private void OnCancelClicked(object sender, RoutedEventArgs e)
+        {
+            if (_shareTargetSession) return;
+            _pendingOffer = null;
+            _pendingShareOperation = null;
+            SelectedFileText.Text = string.Empty;
+            SelectedFileText.Visibility = Visibility.Collapsed;
+            SendButton.Visibility = Visibility.Collapsed;
+            SendButton.IsEnabled = false;
+            CancelButton.Visibility = Visibility.Collapsed;
+            ShareButton.Visibility = Visibility.Visible;
+            StatusText.Text = "Choose a file to share.";
+        }
+
         private async Task ApplyProtocolsAsync()
         {
             await _lifecycle.WaitAsync();
@@ -224,6 +329,7 @@ namespace LiveDrop
                 StatusText.Text = offer.Files.Count == 0
                     ? "This share contains no supported files or text."
                     : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
+                SendButton.Visibility = Visibility.Visible;
                 SendButton.IsEnabled = PeersList.SelectedItem != null && offer.Files.Count > 0;
             }
             catch (Exception ex)
@@ -259,13 +365,19 @@ namespace LiveDrop
 
         private void OnPeerSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SendButton.IsEnabled = _pendingOffer != null && _pendingOffer.Files.Count > 0 && PeersList.SelectedItem != null;
+            SendButton.IsEnabled = _pendingOffer != null && _pendingOffer.Files.Count > 0 &&
+                (_shareTargetSession ? PeersList.SelectedItem != null : true);
         }
 
         private async void OnSendClicked(object sender, RoutedEventArgs e)
         {
             var selected = PeersList.SelectedItem as PeerListItem;
-            if (selected == null || _pendingOffer == null || _coordinator == null) return;
+            if (_pendingOffer == null || _coordinator == null) return;
+            if (selected == null)
+            {
+                StatusText.Text = "Select a peer first.";
+                return;
+            }
             SendButton.IsEnabled = false;
             NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
             _sendCancellation = new CancellationTokenSource();
@@ -280,6 +392,14 @@ namespace LiveDrop
                 try { _pendingShareOperation?.ReportCompleted(); } catch (System.Runtime.InteropServices.COMException) { }
                 _pendingShareOperation = null;
                 _pendingOffer = null;
+                if (!_shareTargetSession)
+                {
+                    SelectedFileText.Text = string.Empty;
+                    SelectedFileText.Visibility = Visibility.Collapsed;
+                    SendButton.Visibility = Visibility.Collapsed;
+                    CancelButton.Visibility = Visibility.Collapsed;
+                    ShareButton.Visibility = Visibility.Visible;
+                }
                 StatusText.Text = "Share completed.";
             }
             catch (OperationCanceledException)
@@ -298,7 +418,8 @@ namespace LiveDrop
                 if (!_viewClosed)
                 {
                     NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = true;
-                    SendButton.IsEnabled = _pendingOffer != null && PeersList.SelectedItem != null;
+                    SendButton.IsEnabled = _pendingOffer != null &&
+                        (_shareTargetSession ? PeersList.SelectedItem != null : true);
                 }
             }
         }

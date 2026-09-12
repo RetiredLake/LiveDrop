@@ -20,7 +20,23 @@ namespace LiveDrop
         protected override void OnLaunched(LaunchActivatedEventArgs e)
         {
             NavigateToMainPage();
+            var page = (Window.Current.Content as Frame)?.Content as MainPage;
+            page?.BeginRegularSession();
             Window.Current.Activate();
+        }
+
+        protected override void OnActivated(IActivatedEventArgs args)
+        {
+            var pickerArgs = args as FileOpenPickerContinuationEventArgs;
+            if (pickerArgs != null)
+            {
+                NavigateToMainPage();
+                var page = (Window.Current.Content as Frame)?.Content as MainPage;
+                page?.CompleteFilePicker(pickerArgs);
+                Window.Current.Activate();
+                return;
+            }
+            base.OnActivated(args);
         }
 
         protected override async void OnShareTargetActivated(ShareTargetActivatedEventArgs args)
@@ -30,7 +46,11 @@ namespace LiveDrop
                 NavigateToMainPage();
                 Window.Current.Activate();
                 var page = (Window.Current.Content as Frame)?.Content as MainPage;
-                if (page != null) await page.ReceiveShareAsync(args.ShareOperation);
+                if (page != null)
+                {
+                    page.BeginShareTargetSession();
+                    await page.ReceiveShareAsync(args.ShareOperation);
+                }
             }
             catch (Exception ex)
             {
