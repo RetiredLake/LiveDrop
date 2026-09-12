@@ -10,6 +10,8 @@ using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+using Windows.Foundation.Metadata;
+using Windows.System.Profile;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 using LiveDrop.Transports;
@@ -45,6 +47,12 @@ namespace LiveDrop.Protocols.Nearby
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             if (_stopSource != null) return;
+            if (IsWindowsMobile())
+            {
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs(
+                    "Microsoft Nearby Share is unavailable on Windows 10 Mobile; Google Quick Share remains available."));
+                return;
+            }
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _tcp = new StreamSocketListener();
             _tcp.ConnectionReceived += OnConnectionReceived;
@@ -164,7 +172,7 @@ namespace LiveDrop.Protocols.Nearby
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            args.Socket.Control.NoDelay = true;
+            try { args.Socket.Control.NoDelay = true; } catch { }
             var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
             _ = HandleIncomingAsync(args.Socket, token);
         }
@@ -179,7 +187,7 @@ namespace LiveDrop.Protocols.Nearby
                 {
                     await CdpServerSession.ReceiveAsync(connection, _identity, peer, async (remote, offer) =>
                     {
-                        var decision = new TaskCompletionSource<bool>();
+                        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                         if (OfferReceived == null) return false;
                         OfferReceived(this, new ShareOfferReceivedEventArgs(remote, offer, complete));
@@ -293,5 +301,11 @@ namespace LiveDrop.Protocols.Nearby
         }
 
         public void Dispose() { StopAsync().GetAwaiter().GetResult(); }
+
+        private static bool IsWindowsMobile()
+        {
+            return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
+                ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
+        }
     }
 }

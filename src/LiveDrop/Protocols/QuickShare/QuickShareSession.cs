@@ -105,6 +105,7 @@ namespace LiveDrop.Protocols.QuickShare
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
                         await ReceiveFilesAsync(connection, crypto, metadata, status, cancellationToken);
+                        await ReadDisconnectionAsync(connection, crypto, cancellationToken);
                         status?.Invoke("Quick Share transfer received in the app's Received folder.");
                     }
                     finally
@@ -160,8 +161,10 @@ namespace LiveDrop.Protocols.QuickShare
                     if (chunk.Body != null && chunk.Body.Length > 0) { file.Writer.WriteBytes(chunk.Body); await file.Writer.StoreAsync(); file.Offset += chunk.Body.Length; }
                     if (!chunk.Last) continue;
                     if (file.Offset != file.Metadata.Size) throw new ShareProtocolException("Quick Share file size did not match its introduction metadata.");
-                    await file.Writer.FlushAsync(); file.Writer.DetachStream(); file.Writer.Dispose(); file.Stream.Dispose();
+                    await file.Writer.FlushAsync();
+                    CloseIncomingFile(file);
                     await file.Temporary.RenameAsync(ProtocolUtilities.NormalizeFileName(file.Metadata.Name), NameCollisionOption.GenerateUniqueName);
+                    file.Completed = true;
                     completed++;
                     status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + ").");
                 }
@@ -170,12 +173,38 @@ namespace LiveDrop.Protocols.QuickShare
             {
                 foreach (var file in writers.Values)
                 {
-                    try { file.Writer.Dispose(); } catch { }
-                    try { file.Stream.Dispose(); } catch { }
-                    try { await file.Temporary.DeleteAsync(); } catch { }
+                    CloseIncomingFile(file);
+                    if (!file.Completed) { try { await file.Temporary.DeleteAsync(); } catch { } }
                 }
                 throw;
             }
+        }
+
+        private static async Task ReadDisconnectionAsync(SocketConnection connection, QuickShareCrypto crypto, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                var frame = crypto.DecryptOffline(await connection.ReadFrameAsync(cancellationToken));
+                var type = QuickShareFrames.ReadOfflineFrameType(frame);
+                if (type == QuickShareFrames.NearbyKeepAlive) continue;
+                if (type != 6) throw new ShareProtocolException("Quick Share did not send a transfer disconnection.");
+                return;
+            }
+        }
+
+        private static void CloseIncomingFile(IncomingFile file)
+        {
+            if (file == null) return;
+            var writer = file.Writer;
+            file.Writer = null;
+            if (writer != null)
+            {
+                try { writer.DetachStream(); } catch { }
+                try { writer.Dispose(); } catch { }
+            }
+            var stream = file.Stream;
+            file.Stream = null;
+            if (stream != null) { try { stream.Dispose(); } catch { } }
         }
 
         private static async Task SendSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, byte[] frame, CancellationToken cancellationToken)
@@ -257,6 +286,7 @@ namespace LiveDrop.Protocols.QuickShare
             internal IRandomAccessStream Stream { get; set; }
             internal DataWriter Writer { get; set; }
             internal long Offset { get; set; }
+            internal bool Completed { get; set; }
         }
     }
 }

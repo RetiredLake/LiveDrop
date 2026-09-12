@@ -145,7 +145,8 @@ namespace LiveDrop.Protocols.QuickShare
             {
                 if (service == null ||
                     string.Equals(service.InstanceName, _serviceInstanceName, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase)) continue;
+                    string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase) ||
+                    IsLocalAddress(service.Address)) continue;
                 var id = ExtractEndpointId(service.InstanceName);
                 if (string.IsNullOrWhiteSpace(id) || LocalEndpoints.ContainsKey(id)) continue;
                 var peer = new PeerDescriptor(id, service.DisplayName ?? "Android device", Transport, service.Address, service.Port, "mDNS/TCP,UKEY2");
@@ -155,7 +156,7 @@ namespace LiveDrop.Protocols.QuickShare
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
-            args.Socket.Control.NoDelay = true;
+            try { args.Socket.Control.NoDelay = true; } catch { }
             var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
             _ = HandleIncomingAsync(args.Socket, token);
         }
@@ -164,9 +165,10 @@ namespace LiveDrop.Protocols.QuickShare
         {
             try
             {
+                // QuickShareSession owns the socket and its single reader/writer pair.
                 await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
                 {
-                    var decision = new TaskCompletionSource<bool>();
+                    var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                     if (OfferReceived == null) return false;
                     OfferReceived(this, new ShareOfferReceivedEventArgs(peer, offer, complete));
@@ -235,6 +237,20 @@ namespace LiveDrop.Protocols.QuickShare
                 return fallbackHost == null ? "127.0.0.1" : fallbackHost.RawName;
             }
             catch { return "127.0.0.1"; }
+        }
+
+        private bool IsLocalAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address)) return false;
+            if (address.StartsWith("127.", StringComparison.OrdinalIgnoreCase)) return true;
+            if (string.Equals(address, _address, StringComparison.OrdinalIgnoreCase)) return true;
+            try
+            {
+                return NetworkInformation.GetHostNames().Any(host =>
+                    host.Type == HostNameType.Ipv4 &&
+                    string.Equals(host.RawName, address, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { return false; }
         }
 
         public void Dispose() { StopAsync().GetAwaiter().GetResult(); }

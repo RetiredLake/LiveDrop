@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Windows.Networking.Connectivity;
+using Windows.Networking;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 using LiveDrop.Protocols.Nearby;
@@ -17,6 +20,7 @@ namespace LiveDrop.Services
 
         internal ShareCoordinator(string displayName, bool nearbyEnabled, bool quickShareEnabled)
         {
+            displayName = GetHostDisplayName(displayName);
             _adapters = new List<IShareProtocolAdapter>();
             if (nearbyEnabled) _adapters.Add(new NearbyCdpAdapter(displayName));
             if (quickShareEnabled) _adapters.Add(new QuickShareAdapter(displayName));
@@ -90,6 +94,29 @@ namespace LiveDrop.Services
                 adapter.Dispose();
             }
             _stopSource.Dispose();
+        }
+
+        private static string GetHostDisplayName(string fallback)
+        {
+            try
+            {
+                var hostNames = NetworkInformation.GetHostNames();
+                var hostName = hostNames
+                    .Where(host => host.Type == HostNameType.DomainName)
+                    .Select(host => host.RawName)
+                    .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name) &&
+                        !name.EndsWith(".local", StringComparison.OrdinalIgnoreCase));
+                if (!string.IsNullOrWhiteSpace(hostName)) return hostName;
+
+                hostName = hostNames
+                    .Where(host => host.Type == HostNameType.DomainName)
+                    .Select(host => host.RawName)
+                    .FirstOrDefault(name => !string.IsNullOrWhiteSpace(name));
+                if (!string.IsNullOrWhiteSpace(hostName)) return hostName;
+            }
+            catch { }
+
+            return string.IsNullOrWhiteSpace(fallback) ? "LiveDrop" : fallback;
         }
     }
 }

@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Windows.ApplicationModel.Activation;
 using Windows.ApplicationModel.DataTransfer.ShareTarget;
+using Windows.Foundation.Metadata;
 using Windows.Storage;
 using Windows.Storage.Pickers;
 using Windows.System;
@@ -31,6 +32,7 @@ namespace LiveDrop
         private bool _loaded;
         private bool _shareTargetSession;
         private bool _filePickerPending;
+        private bool _shareOperationStarted;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
 
         public MainPage()
@@ -66,6 +68,7 @@ namespace LiveDrop
             _shareTargetSession = false;
             _pendingShareOperation = null;
             _pendingOffer = null;
+            _shareOperationStarted = false;
             MoreButton.Visibility = Visibility.Visible;
             ShareButton.Visibility = Visibility.Visible;
             SendButton.Visibility = Visibility.Collapsed;
@@ -80,6 +83,7 @@ namespace LiveDrop
             _shareTargetSession = true;
             _pendingShareOperation = null;
             _pendingOffer = null;
+            _shareOperationStarted = false;
             MoreButton.Visibility = Visibility.Collapsed;
             ShareButton.Visibility = Visibility.Collapsed;
             CancelButton.Visibility = Visibility.Collapsed;
@@ -173,8 +177,7 @@ namespace LiveDrop
         {
             _viewClosed = true;
             _loaded = false;
-            try { _pendingShareOperation?.ReportError("Share canceled."); } catch { }
-            _pendingShareOperation = null;
+            TryReportShareError("Share canceled.");
             if (_sendCancellation != null) _sendCancellation.Cancel();
             await ApplyProtocolsAsync();
         }
@@ -200,9 +203,12 @@ namespace LiveDrop
                 };
                 picker.FileTypeFilter.Add("*");
                 StatusText.Text = "Choose a file from Photos or File Explorer.";
-                if (string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase))
+                if (IsWindowsPhonePicker())
                 {
+#pragma warning disable 0618
+                    picker.ContinuationData["LiveDrop.FilePicker"] = true;
                     picker.PickSingleFileAndContinue();
+#pragma warning restore 0618
                     return;
                 }
 
@@ -214,9 +220,15 @@ namespace LiveDrop
             }
             finally
             {
-                if (!string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase))
+                if (!IsWindowsPhonePicker())
                     _filePickerPending = false;
             }
+        }
+
+        private static bool IsWindowsPhonePicker()
+        {
+            return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
+                ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
         }
 
         internal async void CompleteFilePicker(FileOpenPickerContinuationEventArgs args)
@@ -321,6 +333,7 @@ namespace LiveDrop
             try
             {
                 operation.ReportStarted();
+                _shareOperationStarted = true;
                 var offer = await ShareOfferFactory.FromShareOperationAsync(operation);
                 if (_viewClosed) return;
                 operation.ReportDataRetrieved();
@@ -337,7 +350,7 @@ namespace LiveDrop
                 _pendingShareOperation = null;
                 _pendingOffer = null;
                 await RunOnViewAsync(() => StatusText.Text = "Could not read the shared content: " + ex.Message);
-                try { operation.ReportError("LiveDrop could not read the shared content. Please share it again."); } catch { }
+                TryReportShareError(operation, "LiveDrop could not read the shared content. Please share it again.");
             }
         }
 
@@ -389,8 +402,7 @@ namespace LiveDrop
                 });
                 await _coordinator.SendAsync(selected.Peer, _pendingOffer, progress, _sendCancellation.Token);
                 if (_viewClosed) return;
-                try { _pendingShareOperation?.ReportCompleted(); } catch (System.Runtime.InteropServices.COMException) { }
-                _pendingShareOperation = null;
+                TryReportShareCompleted();
                 _pendingOffer = null;
                 if (!_shareTargetSession)
                 {
@@ -409,8 +421,7 @@ namespace LiveDrop
             catch (Exception ex)
             {
                 if (!_viewClosed) StatusText.Text = "Share failed: " + ex.Message;
-                try { _pendingShareOperation?.ReportError(ex.Message); } catch { }
-                _pendingShareOperation = null;
+                TryReportShareError(ex.Message);
             }
             finally
             {
@@ -422,6 +433,30 @@ namespace LiveDrop
                         (_shareTargetSession ? PeersList.SelectedItem != null : true);
                 }
             }
+        }
+
+        private void TryReportShareCompleted()
+        {
+            var operation = _pendingShareOperation;
+            _pendingShareOperation = null;
+            _shareOperationStarted = false;
+            if (operation == null) return;
+            try { operation.ReportCompleted(); } catch { }
+        }
+
+        private void TryReportShareError(string message)
+        {
+            var operation = _pendingShareOperation;
+            _pendingShareOperation = null;
+            _shareOperationStarted = false;
+            TryReportShareError(operation, message);
+        }
+
+        private void TryReportShareError(ShareOperation operation, string message)
+        {
+            if (operation == null || !_shareOperationStarted) return;
+            try { operation.ReportError(message); } catch { }
+            _shareOperationStarted = false;
         }
 
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
