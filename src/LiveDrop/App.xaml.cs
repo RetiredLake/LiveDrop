@@ -35,11 +35,11 @@ namespace LiveDrop
             try
             {
                 NavigateToMainPage();
-                Window.Current.Activate();
                 var page = (Window.Current.Content as Frame)?.Content as MainPage;
                 if (page != null)
                 {
                     page.BeginShareTargetSession();
+                    Window.Current.Activate();
                     await page.ReceiveShareAsync(args.ShareOperation);
                 }
             }

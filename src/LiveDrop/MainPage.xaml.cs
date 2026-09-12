@@ -299,7 +299,7 @@ namespace LiveDrop
             {
                 var phonePicker = IsWindowsPhonePicker();
                 var picker = CreateFilePicker(phonePicker);
-                StatusText.Text = "Choose a file from Photos or File Explorer.";
+                StatusText.Text = "Select a file from Photos or File Explorer.";
                 if (phonePicker)
                 {
                     // WpBlueBubbles uses the multiple-file broker on Windows 10 Mobile.
@@ -326,7 +326,12 @@ namespace LiveDrop
         {
             var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
             if (!phonePicker) picker.ViewMode = PickerViewMode.Thumbnail;
-            var extensions = new[]
+            var extensions = phonePicker ? new[]
+            {
+                // Keep the Windows 10 Mobile broker filter aligned with WpBlueBubbles.
+                ".jpg", ".jpeg", ".png", ".heic", ".gif",
+                ".mp4", ".m4v", ".mov", ".wmv", ".pdf"
+            } : new[]
             {
                 ".jpg", ".jpeg", ".png", ".heic", ".gif", ".bmp", ".webp",
                 ".mp4", ".m4v", ".mov", ".wmv", ".avi", ".mkv",

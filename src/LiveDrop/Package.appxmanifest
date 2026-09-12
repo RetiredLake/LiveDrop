@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="RetiredLake.LiveDrop" Publisher="CN=7618A306-3963-4C2D-9E07-C5B799CBDCC5" Version="0.1.4.6" />
+  <Identity Name="RetiredLake.LiveDrop" Publisher="CN=7618A306-3963-4C2D-9E07-C5B799CBDCC5" Version="0.1.4.7" />
   <mp:PhoneIdentity PhoneProductId="c28b5dd9-2ce9-4db4-8c67-bb2e3d4f1831" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>LiveDrop</DisplayName>
@@ -23,7 +23,11 @@
         <uap:Extension Category="windows.shareTarget">
           <uap:ShareTarget>
             <uap:SupportedFileTypes>
-              <uap:FileType>.txt</uap:FileType><uap:FileType>.pdf</uap:FileType><uap:FileType>.jpg</uap:FileType><uap:FileType>.jpeg</uap:FileType><uap:FileType>.png</uap:FileType><uap:FileType>.gif</uap:FileType><uap:FileType>.mp4</uap:FileType><uap:FileType>.zip</uap:FileType>
+              <uap:FileType>.txt</uap:FileType><uap:FileType>.pdf</uap:FileType><uap:FileType>.jpg</uap:FileType><uap:FileType>.jpeg</uap:FileType><uap:FileType>.png</uap:FileType><uap:FileType>.heic</uap:FileType><uap:FileType>.gif</uap:FileType><uap:FileType>.bmp</uap:FileType><uap:FileType>.webp</uap:FileType>
+              <uap:FileType>.mp4</uap:FileType><uap:FileType>.m4v</uap:FileType><uap:FileType>.mov</uap:FileType><uap:FileType>.wmv</uap:FileType><uap:FileType>.avi</uap:FileType><uap:FileType>.mkv</uap:FileType>
+              <uap:FileType>.mp3</uap:FileType><uap:FileType>.m4a</uap:FileType><uap:FileType>.wav</uap:FileType><uap:FileType>.flac</uap:FileType>
+              <uap:FileType>.doc</uap:FileType><uap:FileType>.docx</uap:FileType><uap:FileType>.xls</uap:FileType><uap:FileType>.xlsx</uap:FileType><uap:FileType>.ppt</uap:FileType><uap:FileType>.pptx</uap:FileType>
+              <uap:FileType>.csv</uap:FileType><uap:FileType>.json</uap:FileType><uap:FileType>.xml</uap:FileType><uap:FileType>.zip</uap:FileType><uap:FileType>.7z</uap:FileType><uap:FileType>.rar</uap:FileType>
             </uap:SupportedFileTypes>
             <uap:DataFormat>Text</uap:DataFormat>
             <uap:DataFormat>StorageItems</uap:DataFormat>
@@ -35,6 +39,8 @@
   <Capabilities>
     <Capability Name="internetClient" />
     <Capability Name="privateNetworkClientServer" />
+    <uap:Capability Name="picturesLibrary" />
+    <uap:Capability Name="videosLibrary" />
     <DeviceCapability Name="bluetooth" />
   </Capabilities>
 </Package>
