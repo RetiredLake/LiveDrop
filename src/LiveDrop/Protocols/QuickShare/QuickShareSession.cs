@@ -33,17 +33,23 @@ namespace LiveDrop.Protocols.QuickShare
             var crypto = QuickShareCrypto.Create(sharedSecret, clientInit, serverInit, false, out authKey);
             using (var keepAliveSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                var keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
+                Task keepAlive = null;
                 try
                 {
                     await connection.WriteFrameAsync(clientFinish, cancellationToken);
-                    await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionAccept(), cancellationToken);
+                    // The server sends the connection response and paired-key
+                    // frame first. Official Quick Share clients wait for these
+                    // frames before replying; sending them in the opposite
+                    // order leaves the receiver and sender waiting on each
+                    // other before the introduction is sent.
                     if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share rejected the connection.");
+                    await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionAccept(), cancellationToken);
+                    keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
 
+                    await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyEncryption(), cancellationToken);
                     await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyResult(), cancellationToken);
-                    await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildIntroduction(offer.Files), cancellationToken);
                     if (!QuickShareFrames.IsAcceptedSharingResponse(await ReadSharingFrameAsync(connection, crypto, cancellationToken))) throw new ShareProtocolException("Quick Share recipient rejected the transfer.");
 
@@ -56,7 +62,7 @@ namespace LiveDrop.Protocols.QuickShare
                 finally
                 {
                     keepAliveSource.Cancel();
-                    try { await keepAlive; } catch (OperationCanceledException) { }
+                    if (keepAlive != null) { try { await keepAlive; } catch (OperationCanceledException) { } }
                 }
             }
         }
@@ -85,16 +91,16 @@ namespace LiveDrop.Protocols.QuickShare
                 var crypto = QuickShareCrypto.Create(sharedSecret, clientInit, serverInit, true, out authKey);
                 using (var keepAliveSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
-                    var keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
+                    Task keepAlive = null;
                     try
                     {
                         if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share client rejected the connection.");
                         await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionAccept(), cancellationToken);
-
-                        await ReadSharingFrameAsync(connection, crypto, cancellationToken);
+                        keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
                         await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyEncryption(), cancellationToken);
                         await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                         await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyResult(), cancellationToken);
+                        await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                         var introduction = await ReadSharingFrameAsync(connection, crypto, cancellationToken);
                         var metadata = QuickShareFrames.ParseIntroduction(introduction);
                         ValidateMetadata(metadata);
@@ -111,7 +117,7 @@ namespace LiveDrop.Protocols.QuickShare
                     finally
                     {
                         keepAliveSource.Cancel();
-                        try { await keepAlive; } catch (OperationCanceledException) { }
+                        if (keepAlive != null) { try { await keepAlive; } catch (OperationCanceledException) { } }
                     }
                 }
             }
