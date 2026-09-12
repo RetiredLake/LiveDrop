@@ -57,12 +57,12 @@ namespace LiveDrop.Protocols.QuickShare
                     {
                         await SendFileAsync(connection, crypto, offer.Files[fileIndex], 1000 + fileIndex, progress, cancellationToken);
                     }
-                    await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildDisconnection()), cancellationToken);
+                    await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildDisconnection(), cancellationToken);
                 }
                 finally
                 {
                     keepAliveSource.Cancel();
-                    if (keepAlive != null) { try { await keepAlive; } catch (OperationCanceledException) { } }
+                    if (keepAlive != null) { try { await keepAlive; } catch { } }
                 }
             }
         }
@@ -117,7 +117,7 @@ namespace LiveDrop.Protocols.QuickShare
                     finally
                     {
                         keepAliveSource.Cancel();
-                        if (keepAlive != null) { try { await keepAlive; } catch (OperationCanceledException) { } }
+                        if (keepAlive != null) { try { await keepAlive; } catch { } }
                     }
                 }
             }
@@ -138,11 +138,11 @@ namespace LiveDrop.Protocols.QuickShare
                     var count = await reader.LoadAsync(requested);
                     if (count == 0) throw new EndOfStreamException("The outgoing file ended early.");
                     var body = new byte[count]; reader.ReadBytes(body);
-                    await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildFileChunk(payloadId, file.Size, offset, body, false)), cancellationToken);
+                    await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildFileChunk(payloadId, file.Size, offset, body, false), cancellationToken);
                     offset += count;
                     progress?.Report(new ShareProgress(file.Name, offset, file.Size));
                 }
-                await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildFileChunk(payloadId, file.Size, offset, new byte[0], true)), cancellationToken);
+                await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildFileChunk(payloadId, file.Size, offset, new byte[0], true), cancellationToken);
             }
         }
 
@@ -219,8 +219,8 @@ namespace LiveDrop.Protocols.QuickShare
         private static async Task SendSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, byte[] frame, CancellationToken cancellationToken)
         {
             var id = Interlocked.Increment(ref _payloadSequence);
-            await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildBytesPayload(frame, id, false)), cancellationToken);
-            await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildBytesPayload(new byte[0], id, true)), cancellationToken);
+            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildBytesPayload(frame, id, false), cancellationToken);
+            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildBytesPayload(new byte[0], id, true), cancellationToken);
         }
 
         private static async Task<byte[]> ReadSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, CancellationToken cancellationToken)
@@ -255,7 +255,7 @@ namespace LiveDrop.Protocols.QuickShare
             while (!cancellationToken.IsCancellationRequested)
             {
                 await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken);
-                await connection.WriteFrameAsync(crypto.EncryptOffline(QuickShareFrames.BuildKeepAlive()), cancellationToken);
+                await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildKeepAlive(), cancellationToken);
             }
         }
 

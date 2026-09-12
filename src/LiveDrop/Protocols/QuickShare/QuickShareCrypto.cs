@@ -1,6 +1,8 @@
 using System;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using LiveDrop.Transports;
 
 namespace LiveDrop.Protocols.QuickShare
 {
@@ -16,6 +18,7 @@ namespace LiveDrop.Protocols.QuickShare
         private readonly byte[] _receiveEncryption;
         private readonly byte[] _sendHmac;
         private readonly byte[] _receiveHmac;
+        private readonly SemaphoreSlim _sendLock = new SemaphoreSlim(1, 1);
         private int _sendSequence;
         private int _receiveSequence;
 
@@ -78,6 +81,19 @@ namespace LiveDrop.Protocols.QuickShare
             var headerAndBodyBytes = headerAndBody.ToArray();
             var secure = new ProtoWriter(); secure.WriteBytes(1, headerAndBodyBytes); secure.WriteBytes(2, Hmac(headerAndBodyBytes, _sendHmac));
             return secure.ToArray();
+        }
+
+        // Sequence numbers belong to the encrypted wire stream. Keep
+        // encryption and socket writes together so the keep-alive task cannot
+        // assign a later sequence number and write it before a file frame.
+        internal async System.Threading.Tasks.Task SendOfflineAsync(SocketConnection connection, byte[] offlineFrame, CancellationToken cancellationToken)
+        {
+            await _sendLock.WaitAsync(cancellationToken);
+            try
+            {
+                await connection.WriteFrameAsync(EncryptOffline(offlineFrame), cancellationToken);
+            }
+            finally { _sendLock.Release(); }
         }
 
         internal byte[] DecryptOffline(byte[] secureMessage)

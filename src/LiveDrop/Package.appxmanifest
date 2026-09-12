@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="RetiredLake.LiveDrop" Publisher="CN=7618A306-3963-4C2D-9E07-C5B799CBDCC5" Version="0.1.4.8" />
+  <Identity Name="RetiredLake.LiveDrop" Publisher="CN=7618A306-3963-4C2D-9E07-C5B799CBDCC5" Version="0.1.4.9" />
   <mp:PhoneIdentity PhoneProductId="c28b5dd9-2ce9-4db4-8c67-bb2e3d4f1831" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
     <DisplayName>LiveDrop</DisplayName>
