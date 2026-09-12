@@ -20,7 +20,7 @@ namespace LiveDrop.Services
 
         internal ShareCoordinator(string displayName, bool nearbyEnabled, bool quickShareEnabled)
         {
-            displayName = GetHostDisplayName(displayName);
+            displayName = string.IsNullOrWhiteSpace(displayName) ? "LiveDrop" : displayName;
             _adapters = new List<IShareProtocolAdapter>();
             if (nearbyEnabled) _adapters.Add(new NearbyCdpAdapter(displayName));
             if (quickShareEnabled) _adapters.Add(new QuickShareAdapter(displayName));
@@ -96,7 +96,7 @@ namespace LiveDrop.Services
             _stopSource.Dispose();
         }
 
-        private static string GetHostDisplayName(string fallback)
+        internal static string GetHostDisplayName(string fallback)
         {
             try
             {

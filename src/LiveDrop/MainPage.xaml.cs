@@ -34,6 +34,8 @@ namespace LiveDrop
         private bool _filePickerPending;
         private bool _shareOperationStarted;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
+        private const int HostNameMinimumLength = 1;
+        private const int HostNameMaximumLength = 32;
 
         public MainPage()
         {
@@ -48,10 +50,13 @@ namespace LiveDrop
             QuickShareCheckBox.Unchecked += OnProtocolsChanged;
             Window.Current.Closed += OnWindowClosed;
             _moreMenu = new MenuFlyout();
+            var hostnameItem = new MenuFlyoutItem { Text = "Change Hostname" };
+            hostnameItem.Click += OnChangeHostnameClicked;
             var githubItem = new MenuFlyoutItem { Text = "About" };
             githubItem.Click += OnAboutClicked;
             var updateItem = new MenuFlyoutItem { Text = "Check for Update" };
             updateItem.Click += OnCheckForUpdateClicked;
+            _moreMenu.Items.Add(hostnameItem);
             _moreMenu.Items.Add(githubItem);
             _moreMenu.Items.Add(updateItem);
             Loaded += OnLoaded;
@@ -96,11 +101,103 @@ namespace LiveDrop
         private async void OnAboutClicked(object sender, RoutedEventArgs e)
         {
             var text = new TextBlock { TextWrapping = TextWrapping.Wrap };
+            var version = Windows.ApplicationModel.Package.Current.Id.Version;
+            text.Inlines.Add(new Windows.UI.Xaml.Documents.Run
+            {
+                Text = "Version " + version.Major + "." + version.Minor + "." + version.Build + "." + version.Revision
+            });
+            text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
             text.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "Developed by " });
             var link = new Windows.UI.Xaml.Documents.Hyperlink { NavigateUri = new Uri(GitHubUpdateService.RepositoryUrl) };
             link.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "retiredlake" });
             text.Inlines.Add(link);
             await new ContentDialog { Title = "About", Content = text, PrimaryButtonText = "Close" }.ShowAsync();
+        }
+
+        private async void OnChangeHostnameClicked(object sender, RoutedEventArgs e)
+        {
+            var nameBox = new TextBox
+            {
+                Text = GetBroadcastName(),
+                MaxLength = HostNameMaximumLength,
+                PlaceholderText = "Letters and numbers only"
+            };
+            var errorText = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.DarkRed) };
+            var panel = new StackPanel();
+            panel.Children.Add(new TextBlock { Text = "Choose the name other devices will see (1–32 letters or numbers).", TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(nameBox);
+            panel.Children.Add(errorText);
+            var dialog = new ContentDialog
+            {
+                Title = "Change Hostname",
+                Content = panel,
+                PrimaryButtonText = "OK",
+                CloseButtonText = "Cancel"
+            };
+            dialog.PrimaryButtonClick += (d, args) =>
+            {
+                string error;
+                if (!TryValidateHostName(nameBox.Text, out error))
+                {
+                    errorText.Text = error;
+                    args.Cancel = true;
+                }
+            };
+
+            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+            Windows.Storage.ApplicationData.Current.LocalSettings.Values["BroadcastHostName"] = nameBox.Text;
+            StatusText.Text = "Restarting discovery as " + nameBox.Text + "...";
+            await ApplyProtocolsAsync();
+        }
+
+        private string GetBroadcastName()
+        {
+            var value = Windows.Storage.ApplicationData.Current.LocalSettings.Values["BroadcastHostName"] as string;
+            string error;
+            if (TryValidateHostName(value, out error)) return value;
+            return NormalizeDefaultHostName(ShareCoordinator.GetHostDisplayName("LiveDrop"));
+        }
+
+        private static string NormalizeDefaultHostName(string value)
+        {
+            var result = new System.Text.StringBuilder();
+            foreach (var character in value ?? string.Empty)
+            {
+                if ((character >= '0' && character <= '9') ||
+                    (character >= 'A' && character <= 'Z') ||
+                    (character >= 'a' && character <= 'z'))
+                {
+                    result.Append(character);
+                    if (result.Length == HostNameMaximumLength) break;
+                }
+            }
+            return result.Length == 0 ? "LiveDrop" : result.ToString();
+        }
+
+        private static bool TryValidateHostName(string value, out string error)
+        {
+            error = null;
+            if (string.IsNullOrEmpty(value) || value.Length < HostNameMinimumLength)
+            {
+                error = "Enter at least one letter or number.";
+                return false;
+            }
+            if (value.Length > HostNameMaximumLength)
+            {
+                error = "Use no more than " + HostNameMaximumLength + " characters.";
+                return false;
+            }
+            foreach (var character in value)
+            {
+                if ((character < '0' || character > '9') &&
+                    (character < 'A' || character > 'Z') &&
+                    (character < 'a' || character > 'z'))
+                {
+                    error = "Use letters and numbers only.";
+                    return false;
+                }
+            }
+            return true;
         }
 
         private async void OnCheckForUpdateClicked(object sender, RoutedEventArgs e)
@@ -296,7 +393,7 @@ namespace LiveDrop
                     StatusText.Text = "Discovery is off. Select a protocol to find peers.";
                     return;
                 }
-                _coordinator = new ShareCoordinator("LiveDrop", nearby, quickShare);
+                _coordinator = new ShareCoordinator(GetBroadcastName(), nearby, quickShare);
                 _coordinator.PeerDiscovered += OnPeerDiscovered;
                 _coordinator.OfferReceived += OnOfferReceived;
                 _coordinator.StatusChanged += OnStatusChanged;
