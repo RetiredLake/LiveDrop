@@ -34,9 +34,12 @@ namespace LiveDrop
         private bool _filePickerPending;
         private bool _shareOperationStarted;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
+        private readonly System.Collections.Generic.Dictionary<string, DateTime> _peerLastSeen = new System.Collections.Generic.Dictionary<string, DateTime>();
+        private readonly DispatcherTimer _peerExpiryTimer;
         private const int HostNameMinimumLength = 1;
         private const int HostNameMaximumLength = 32;
         private const string HostNameAllowedSpecialCharacters = " '._-()&+";
+        private const int PeerTimeoutSeconds = 10;
 
         public MainPage()
         {
@@ -60,6 +63,8 @@ namespace LiveDrop
             _moreMenu.Items.Add(hostnameItem);
             _moreMenu.Items.Add(githubItem);
             _moreMenu.Items.Add(updateItem);
+            _peerExpiryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _peerExpiryTimer.Tick += OnPeerExpiryTimerTick;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
         }
@@ -265,12 +270,14 @@ namespace LiveDrop
         private async void OnLoaded(object sender, RoutedEventArgs e)
         {
             _loaded = true;
+            _peerExpiryTimer.Start();
             await ApplyProtocolsAsync();
         }
 
         private async void OnUnloaded(object sender, RoutedEventArgs e)
         {
             _loaded = false;
+            _peerExpiryTimer.Stop();
             await ApplyProtocolsAsync();
         }
 
@@ -286,6 +293,7 @@ namespace LiveDrop
         {
             _viewClosed = true;
             _loaded = false;
+            _peerExpiryTimer.Stop();
             TryReportShareError("Share canceled.");
             if (_sendCancellation != null) _sendCancellation.Cancel();
             await ApplyProtocolsAsync();
@@ -426,6 +434,7 @@ namespace LiveDrop
                 }
                 if (_viewClosed || !_loaded) return;
                 PeersList.Items.Clear();
+                _peerLastSeen.Clear();
                 SendButton.IsEnabled = false;
                 _discoveryStatus.Clear();
                 var nearby = NearbyCheckBox.IsChecked == true;
@@ -498,9 +507,31 @@ namespace LiveDrop
             await RunOnViewAsync(() =>
             {
                 if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
-                if (!PeersList.Items.OfType<PeerListItem>().Any(x => x.Matches(e.Peer)))
+                var key = PeerListItem.GetKey(e.Peer);
+                _peerLastSeen[key] = DateTime.UtcNow;
+                var existing = PeersList.Items.OfType<PeerListItem>().FirstOrDefault(x => x.Matches(e.Peer));
+                if (existing == null)
                     PeersList.Items.Add(new PeerListItem(e.Peer, NearbyCheckBox.IsChecked == true && QuickShareCheckBox.IsChecked == true));
+                else
+                    existing.Update(e.Peer);
             });
+        }
+
+        private void OnPeerExpiryTimerTick(object sender, object e)
+        {
+            if (!_loaded || _viewClosed) return;
+            var cutoff = DateTime.UtcNow - TimeSpan.FromSeconds(PeerTimeoutSeconds);
+            var stale = PeersList.Items.OfType<PeerListItem>().Where(item =>
+            {
+                DateTime lastSeen;
+                return !_peerLastSeen.TryGetValue(item.Key, out lastSeen) || lastSeen <= cutoff;
+            }).ToList();
+            foreach (var item in stale)
+            {
+                if (ReferenceEquals(PeersList.SelectedItem, item)) PeersList.SelectedItem = null;
+                PeersList.Items.Remove(item);
+                _peerLastSeen.Remove(item.Key);
+            }
         }
 
         private async void OnStatusChanged(object sender, StatusChangedEventArgs e)
@@ -659,12 +690,22 @@ namespace LiveDrop
         private readonly bool _showProtocol;
         internal PeerDescriptor Peer { get; private set; }
         internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }
+        internal string Key { get { return GetKey(Peer); } }
+        internal void Update(PeerDescriptor peer) { if (peer != null) Peer = peer; }
+        internal static string GetKey(PeerDescriptor peer)
+        {
+            if (peer == null) return string.Empty;
+            var identity = !string.IsNullOrWhiteSpace(peer.StableId)
+                ? peer.StableId
+                : peer.Address + ":" + peer.Port;
+            return peer.Transport + "|" + identity;
+        }
         internal bool Matches(PeerDescriptor peer)
         {
             if (peer == null || Peer == null || Peer.Transport != peer.Transport) return false;
-            if (!string.IsNullOrWhiteSpace(Peer.StableId) &&
-                string.Equals(Peer.StableId, peer.StableId, StringComparison.OrdinalIgnoreCase)) return true;
-            return string.Equals(Peer.DisplayName, peer.DisplayName, StringComparison.OrdinalIgnoreCase);
+            if (!string.IsNullOrWhiteSpace(Peer.StableId) && !string.IsNullOrWhiteSpace(peer.StableId))
+                return string.Equals(Peer.StableId, peer.StableId, StringComparison.OrdinalIgnoreCase);
+            return string.Equals(Peer.Address, peer.Address, StringComparison.OrdinalIgnoreCase) && Peer.Port == peer.Port;
         }
         public override string ToString()
         {

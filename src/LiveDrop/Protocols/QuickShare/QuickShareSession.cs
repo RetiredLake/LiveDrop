@@ -403,7 +403,8 @@ namespace LiveDrop.Protocols.QuickShare
                                 await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildKeepAlive(true, QuickShareFrames.ReadKeepAliveSequence(frame)), cancellationToken);
                             continue;
                         }
-                        if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation) continue;
+                        if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation ||
+                            type == QuickShareFrames.NearbyBandwidthUpgradeRetry) continue;
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -438,7 +439,8 @@ namespace LiveDrop.Protocols.QuickShare
                                 await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildKeepAlive(true, QuickShareFrames.ReadKeepAliveSequence(frame)), cancellationToken);
                             continue;
                         }
-                        if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation) continue;
+                        if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation ||
+                            type == QuickShareFrames.NearbyBandwidthUpgradeRetry) continue;
                     }
                 }
                 catch (OperationCanceledException) { }
@@ -464,7 +466,8 @@ namespace LiveDrop.Protocols.QuickShare
                 // A peer may advertise a bandwidth upgrade even though this
                 // session is already using the LAN socket. It is valid control
                 // traffic, not a payload, so leave the current channel alone.
-                if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation) continue;
+                if (type == QuickShareFrames.NearbyBandwidthUpgradeNegotiation ||
+                    type == QuickShareFrames.NearbyBandwidthUpgradeRetry) continue;
                 if (type == QuickShareFrames.NearbyDisconnection)
                     throw new ShareProtocolException("Quick Share peer disconnected during the transfer.");
                 throw new ShareProtocolException("Quick Share sent an unexpected encrypted control frame (type=" + type + ").");

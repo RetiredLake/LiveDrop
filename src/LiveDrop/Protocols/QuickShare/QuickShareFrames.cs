@@ -59,6 +59,7 @@ namespace LiveDrop.Protocols.QuickShare
         internal const int NearbyBandwidthUpgradeNegotiation = 4;
         internal const int NearbyKeepAlive = 5;
         internal const int NearbyDisconnection = 6;
+        internal const int NearbyBandwidthUpgradeRetry = 12;
         internal const int SharingIntroduction = 1;
         internal const int SharingResponse = 2;
         internal const int SharingPairedKeyEncryption = 3;

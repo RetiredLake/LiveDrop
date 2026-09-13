@@ -126,9 +126,13 @@ namespace LiveDrop.Models
         public static async Task<ShareOffer> FromPickedFileAsync(StorageFile file)
         {
             if (file == null) return new ShareOffer(new List<ShareFileDescriptor>(), string.Empty);
-            var properties = await file.GetBasicPropertiesAsync();
+            // Picker and share-target files can be broker-backed. Keep a local
+            // app-owned copy so the protocol can open it after discovery and
+            // authentication have completed.
+            var stagedFile = await StageOutgoingFileAsync(file);
+            var properties = await stagedFile.GetBasicPropertiesAsync();
             return new ShareOffer(
-                new List<ShareFileDescriptor> { new ShareFileDescriptor(file, GuessMimeType(file.FileType), checked((long)properties.Size)) },
+                new List<ShareFileDescriptor> { new ShareFileDescriptor(stagedFile, GuessMimeType(stagedFile.FileType), checked((long)properties.Size)) },
                 string.Empty);
         }
 
@@ -140,10 +144,12 @@ namespace LiveDrop.Models
             if (data != null && data.Contains(StandardDataFormats.StorageItems))
             {
                 var items = await data.GetStorageItemsAsync();
+                var outgoingFolder = await GetOutgoingFolderAsync();
                 foreach (var item in items)
                 {
-                    var file = item as StorageFile;
-                    if (file == null) continue;
+                    var sourceFile = item as StorageFile;
+                    if (sourceFile == null) continue;
+                    var file = await sourceFile.CopyAsync(outgoingFolder, sourceFile.Name, NameCollisionOption.GenerateUniqueName);
                     var properties = await file.GetBasicPropertiesAsync();
                     var size = checked((long)properties.Size);
                     files.Add(new ShareFileDescriptor(file, GuessMimeType(file.FileType), size));
@@ -157,6 +163,17 @@ namespace LiveDrop.Models
                 files.Add(new ShareFileDescriptor(textFile, "text/plain", checked((long)(await textFile.GetBasicPropertiesAsync()).Size)));
             }
             return new ShareOffer(files, text);
+        }
+
+        private static async Task<StorageFile> StageOutgoingFileAsync(StorageFile source)
+        {
+            if (source == null) return null;
+            return await source.CopyAsync(await GetOutgoingFolderAsync(), source.Name, NameCollisionOption.GenerateUniqueName);
+        }
+
+        private static async Task<StorageFolder> GetOutgoingFolderAsync()
+        {
+            return await ApplicationData.Current.LocalFolder.CreateFolderAsync("Outgoing", CreationCollisionOption.OpenIfExists);
         }
 
         private static string GuessMimeType(string extension)
