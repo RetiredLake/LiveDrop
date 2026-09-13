@@ -40,14 +40,16 @@ namespace LiveDrop
         private const int HostNameMaximumLength = 32;
         private const string HostNameAllowedSpecialCharacters = " '._-()&+";
         private const int PeerTimeoutSeconds = 10;
+        private const bool DefaultNearbyEnabled = false;
+        private const bool DefaultQuickShareEnabled = true;
 
         public MainPage()
         {
             InitializeComponent();
             _viewDispatcher = Dispatcher;
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            NearbyCheckBox.IsChecked = settings["NearbyEnabled"] is bool && (bool)settings["NearbyEnabled"];
-            QuickShareCheckBox.IsChecked = !(settings["QuickShareEnabled"] is bool) || (bool)settings["QuickShareEnabled"];
+            NearbyCheckBox.IsChecked = ReadProtocolSetting(settings, "NearbyEnabled", DefaultNearbyEnabled);
+            QuickShareCheckBox.IsChecked = ReadProtocolSetting(settings, "QuickShareEnabled", DefaultQuickShareEnabled);
             NearbyCheckBox.Checked += OnProtocolsChanged;
             NearbyCheckBox.Unchecked += OnProtocolsChanged;
             QuickShareCheckBox.Checked += OnProtocolsChanged;
@@ -67,6 +69,15 @@ namespace LiveDrop
             _peerExpiryTimer.Tick += OnPeerExpiryTimerTick;
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
+        }
+
+        private static bool ReadProtocolSetting(
+            Windows.Foundation.Collections.IPropertySet settings,
+            string key,
+            bool defaultValue)
+        {
+            var value = settings[key];
+            return value is bool ? (bool)value : defaultValue;
         }
 
         private void OnMoreClicked(object sender, RoutedEventArgs e)

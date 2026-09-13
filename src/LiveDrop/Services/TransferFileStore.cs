@@ -17,16 +17,13 @@ namespace LiveDrop.Services
             // Received files intentionally share one user-facing destination.
             // The MIME type is kept in the signature for protocol callers that
             // already pass it, but it must never choose Pictures/Videos/Documents.
-            var folder = await TryCreateReceiveFolderAsync(GetPublicUserFolderPath());
-            if (folder != null) return folder;
-
             try
             {
-                var documentsPath = KnownFolders.DocumentsLibrary.Path;
-                // DocumentsLibrary is user-scoped in UWP. Its parent is the
-                // user's profile on desktop Windows, which gives the normal
-                // user Downloads folder when Public is unavailable.
-                folder = await TryCreateReceiveFolderAsync(Path.GetDirectoryName(documentsPath));
+                // The parent of DocumentsLibrary is the user's profile on
+                // desktop Windows and the user storage root on Windows 10
+                // Mobile. Create the visible Downloads/LiveDrop path there.
+                var documentsParent = await KnownFolders.DocumentsLibrary.GetParentAsync();
+                var folder = await TryCreateReceiveFolderAsync(documentsParent);
                 if (folder != null) return folder;
             }
             catch
@@ -35,32 +32,36 @@ namespace LiveDrop.Services
 
             try
             {
-                var downloads = await KnownFolders.DocumentsLibrary.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
-                return await downloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
+                // Keep a path-based fallback for older Windows 10 builds where
+                // GetParentAsync may not resolve a KnownFolder parent.
+                var documentsPath = KnownFolders.DocumentsLibrary.Path;
+                var documentsParentPath = Path.GetDirectoryName(documentsPath);
+                var folder = await TryCreateReceiveFolderAsync(documentsParentPath);
+                if (folder != null) return folder;
             }
             catch
             {
-                // Some Windows 10 Mobile builds do not expose public folders to
-                // a sideloaded package. Keep the transfer usable in that case,
-                // while retaining the same Downloads/LiveDrop layout.
-                var downloads = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
-                return await downloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
             }
+
+            // Some Windows 10 Mobile builds do not expose the user storage root
+            // to a sideloaded package. Preserve the same folder layout inside
+            // app storage so the completed file is still retained.
+            var localDownloads = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
+            return await localDownloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
         }
 
-        private static string GetPublicUserFolderPath()
+        private static async Task<StorageFolder> TryCreateReceiveFolderAsync(StorageFolder parent)
         {
+            if (parent == null) return null;
             try
             {
-                var localPath = ApplicationData.Current.LocalFolder.Path;
-                var root = Path.GetPathRoot(localPath);
-                if (!string.IsNullOrWhiteSpace(root))
-                    return Path.Combine(root, "Users", "Public");
+                var downloads = await parent.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
+                return await downloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
             }
             catch
             {
+                return null;
             }
-            return null;
         }
 
         private static async Task<StorageFolder> TryCreateReceiveFolderAsync(string parentPath)
