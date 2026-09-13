@@ -23,6 +23,7 @@
     <AppxPackageSigningEnabled>true</AppxPackageSigningEnabled>
     <PackageCertificateThumbprint>B90DCB33BC1AB90DBF79B8BBF34A2592D25315C0</PackageCertificateThumbprint>
     <GenerateAppInstallerFile>false</GenerateAppInstallerFile>
+    <GenerateResourceMSBuildArchitecture>x86</GenerateResourceMSBuildArchitecture>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x86'">
     <DebugSymbols>true</DebugSymbols><OutputPath>bin\x86\Debug\</OutputPath><DefineConstants>DEBUG;TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants><DebugType>full</DebugType><PlatformTarget>x86</PlatformTarget><UseVSHostingProcess>false</UseVSHostingProcess><ErrorReport>prompt</ErrorReport><Prefer32Bit>true</Prefer32Bit>
@@ -90,32 +91,5 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.14" />
   </ItemGroup>
-  <PropertyGroup Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')">
-    <!-- Properties normally supplied by the classic UWP CSharp wrapper. -->
-    <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
-    <TargetFrameworkMoniker>.NETCore,Version=v5.0</TargetFrameworkMoniker>
-    <NuGetTargetMoniker>UAP,Version=v10.0.10586</NuGetTargetMoniker>
-    <ImportFrameworkWinFXTargets>false</ImportFrameworkWinFXTargets>
-    <ImplicitlyExpandTargetPlatform>true</ImplicitlyExpandTargetPlatform>
-    <SDKIdentifier>Windows</SDKIdentifier>
-    <SDKVersion>10.0</SDKVersion>
-    <WindowsSdkPath Condition="'$(WindowsSdkPath)' == ''">$(WindowsKitsPath)</WindowsSdkPath>
-    <TargetPlatformSdkPath Condition="'$(TargetPlatformSdkPath)' == ''">$(WindowsSdkPath)</TargetPlatformSdkPath>
-    <VCInstallDir Condition="'$(VCInstallDir)' == '' and Exists('$(MSBuildExtensionsPath)\..\VC')">$(MSBuildExtensionsPath)\..\VC\</VCInstallDir>
-  </PropertyGroup>
-  <Import Project="$(WindowsSdkPath)DesignTime\CommonConfiguration\Neutral\UAP\$(TargetPlatformVersion)\UAP.props"
-          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
-  <ItemGroup Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets') and Exists('$(WindowsSdkPath)UnionMetadata\$(TargetPlatformVersion)\Facade\Windows.winmd')">
-    <Reference Include="$(WindowsSdkPath)UnionMetadata\$(TargetPlatformVersion)\Facade\Windows.winmd">
-      <Private>False</Private>
-    </Reference>
-  </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets"
-          Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
-  <!-- BuildTools may have the Windows SDK XAML compiler but not the classic VS UWP wrapper. -->
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"
-          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
-  <Import Project="$(WindowsKitsPath)bin\$(TargetPlatformVersion)\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets"
-          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets') and Exists('$(WindowsKitsPath)bin\$(TargetPlatformVersion)\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets')" />
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
 </Project>
