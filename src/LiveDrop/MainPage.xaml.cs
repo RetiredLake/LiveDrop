@@ -511,7 +511,7 @@ namespace LiveDrop
             {
                 if (!_loaded || !ReferenceEquals(coordinator, _coordinator)) return;
                 _discoveryStatus[adapter == null ? "Discovery" : adapter.Name] = e.Message;
-                if (adapter != null && adapter.Transport == ShareTransport.GoogleQuickShare)
+                if (adapter != null)
                 {
                     if (e.Message.IndexOf("transfer received", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
@@ -623,7 +623,6 @@ namespace LiveDrop
 
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
-            var accepted = false;
             var fileName = e.Offer == null || e.Offer.Files.Count == 0 ? "file" : e.Offer.Files[0].Name;
             e.ProgressChanged += progress =>
             {
@@ -631,7 +630,6 @@ namespace LiveDrop
             };
             try
             {
-                Task<IUICommand> dialogTask = null;
                 await RunOnViewAsync(() =>
                 {
                     if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
@@ -639,28 +637,20 @@ namespace LiveDrop
                     SelectedFileText.Visibility = Visibility.Visible;
                     ResetTransferProgress();
                     TransferProgressPanel.Visibility = Visibility.Visible;
-                    TransferProgressText.Text = "Waiting for acceptance";
-                    TransferNotification.Show("Incoming share", e.Peer.DisplayName + " wants to send " + fileName + ".");
-                    var dialog = new MessageDialog(e.Peer.DisplayName + " wants to send " + e.Offer.Files.Count + " file(s).", "Accept nearby transfer?");
-                    dialog.Commands.Add(new UICommand("Accept"));
-                    dialog.Commands.Add(new UICommand("Reject"));
-                    dialog.DefaultCommandIndex = 1;
-                    dialog.CancelCommandIndex = 1;
-                    dialogTask = dialog.ShowAsync().AsTask();
+                    TransferProgressText.Text = "Accepting";
+                    TransferNotification.Show("Incoming share", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
+                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in the LiveDrop folder.";
                 });
-                if (dialogTask != null) accepted = (await dialogTask).Label == "Accept" && !_viewClosed;
+                // LiveDrop sessions accept automatically so two LiveDrop
+                // clients cannot wait forever for a consent UI. The protocol
+                // layer writes each completed file to a visible library folder.
+                if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed);
             }
-            catch { accepted = false; }
-            if (accepted)
+            catch
             {
-                TransferNotification.Show("Receiving", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
-                await RunOnViewAsync(() => StatusText.Text = "Receiving " + fileName + " from " + e.Peer.DisplayName + "...");
-            }
-            else
-            {
+                try { if (e.CompleteAsync != null) await e.CompleteAsync(false); } catch { }
                 await RunOnViewAsync(() => ResetTransferProgress());
             }
-            try { await e.CompleteAsync(accepted); } catch { }
         }
     }
 

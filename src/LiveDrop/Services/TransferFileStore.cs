@@ -10,6 +10,28 @@ namespace LiveDrop.Services
 {
     internal static class TransferFileStore
     {
+        internal static async Task<StorageFolder> GetReceiveFolderAsync(string mimeType)
+        {
+            try
+            {
+                StorageFolder library;
+                if (!string.IsNullOrWhiteSpace(mimeType) && mimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                    library = KnownFolders.PicturesLibrary;
+                else if (!string.IsNullOrWhiteSpace(mimeType) && mimeType.StartsWith("video/", StringComparison.OrdinalIgnoreCase))
+                    library = KnownFolders.VideosLibrary;
+                else
+                    library = KnownFolders.DocumentsLibrary;
+
+                return await library.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
+            }
+            catch
+            {
+                // Some Windows 10 Mobile builds do not expose a library to a
+                // sideloaded package. Keep the transfer usable in that case.
+                return await ApplicationData.Current.LocalFolder.CreateFolderAsync("Received", CreationCollisionOption.OpenIfExists);
+            }
+        }
+
         internal static async Task<StorageFile> CopyToAtomicAsync(StorageFile source, StorageFolder destination, string requestedName)
         {
             if (source == null || destination == null) throw new ArgumentNullException();

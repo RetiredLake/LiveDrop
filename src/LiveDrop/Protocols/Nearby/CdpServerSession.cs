@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
+using LiveDrop.Services;
 using LiveDrop.Transports;
 using LiveDrop.Protocols.QuickShare;
 using Windows.Storage;
@@ -148,9 +149,9 @@ namespace LiveDrop.Protocols.Nearby
             var received = new List<IncomingFile>();
             try
             {
-                var folder = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Received", CreationCollisionOption.OpenIfExists);
                 for (var i = 0; i < descriptors.Count; i++)
                 {
+                    var folder = await TransferFileStore.GetReceiveFolderAsync(descriptors[i].MimeType);
                     var temporary = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(descriptors[i].Name) + ".livedrop-part", CreationCollisionOption.GenerateUniqueName);
                     var stream = await temporary.OpenAsync(FileAccessMode.ReadWrite);
                     received.Add(new IncomingFile { Metadata = descriptors[i], Temporary = temporary, Stream = stream, Writer = new DataWriter(stream) });
@@ -189,7 +190,7 @@ namespace LiveDrop.Protocols.Nearby
                     file.Completed = true;
                 }
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 2), cancellationToken);
-                status?.Invoke("Microsoft Nearby transfer received in the app's Received folder.");
+                status?.Invoke("Microsoft Nearby transfer received. Files are saved in the LiveDrop folder.");
             }
             catch
             {

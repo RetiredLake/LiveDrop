@@ -189,7 +189,7 @@ namespace LiveDrop.Protocols.Nearby
                     {
                         var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
-                        if (OfferReceived == null) return false;
+                        if (OfferReceived == null) return true;
                         OfferReceived(this, new ShareOfferReceivedEventArgs(remote, offer, complete));
                         return await decision.Task;
                     }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken);

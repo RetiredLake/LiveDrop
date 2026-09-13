@@ -155,10 +155,11 @@ namespace LiveDrop.Protocols.QuickShare
             var name = Encoding.UTF8.GetBytes(displayName ?? "LiveDrop");
             var length = Math.Min(255, name.Length);
             var result = new byte[18 + length];
-            // EndpointInfo's first byte is version (bits 0-2), visibility (bit 3),
-            // device type (bits 4-6), and one reserved bit.  LiveDrop advertises
-            // a visible RTM-era endpoint with version 1.
-            result[0] = (byte)(1 | ((deviceType & 7) << 4));
+            // Quick Share endpoint info uses the device type in bits 1-3;
+            // bit 0 is reserved and the visible/default endpoint uses zero
+            // for the remaining flags. This is the encoding used by current
+            // interoperable clients.
+            result[0] = (byte)((deviceType & 7) << 1);
             var random = new byte[16];
             new Random().NextBytes(random);
             Buffer.BlockCopy(random, 0, result, 1, random.Length);

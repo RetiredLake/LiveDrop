@@ -1,5 +1,4 @@
 using System;
-using System.Security.Cryptography;
 using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Foundation.Metadata;
 using Windows.Storage.Streams;
@@ -20,16 +19,16 @@ namespace LiveDrop.Transports
             try
             {
                 var advertisement = new BluetoothLEAdvertisement();
-                var serviceData = new byte[26];
-                serviceData[0] = 0x2C;
-                serviceData[1] = 0xFE;
-                System.Buffer.BlockCopy(new byte[] { 0xFC, 0x12, 0x8E, 0x01, 0x42 }, 0, serviceData, 2, 5);
-                using (var random = RandomNumberGenerator.Create())
+                // This is the known Quick Share trigger advertisement. It
+                // wakes the Android discovery surface; identity and the TCP
+                // endpoint still come from mDNS.
+                var serviceData = new byte[]
                 {
-                    var randomBytes = new byte[10];
-                    random.GetBytes(randomBytes);
-                    System.Buffer.BlockCopy(randomBytes, 0, serviceData, 16, randomBytes.Length);
-                }
+                    0x2C, 0xFE,
+                    0xFC, 0x12, 0x8E, 0x01, 0x42,
+                    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                    0xBF, 0x2D, 0x5B, 0xA0, 0xE1, 0xD8, 0x75, 0x24, 0xCA, 0x00
+                };
                 using (var writer = new DataWriter())
                 {
                     writer.WriteBytes(serviceData);

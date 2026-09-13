@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using LiveDrop.Protocols.Nearby;
 using LiveDrop.Protocols.QuickShare;
 
@@ -30,6 +31,15 @@ internal static class P256Smoke
         var frame = QuickShareFrames.BuildBytesPayload(new byte[] { 9, 8, 7 }, 42, false);
         var decrypted = server.DecryptOffline(client.EncryptOffline(frame));
         if (!frame.SequenceEqual(decrypted)) throw new InvalidOperationException("Quick Share encrypted frame mismatch.");
+        var endpointInfo = QuickShareFrames.BuildEndpointInfo("LiveDrop", 3);
+        if (endpointInfo[0] != 6 || endpointInfo[17] != 8 || Encoding.UTF8.GetString(endpointInfo, 18, 8) != "LiveDrop")
+            throw new InvalidOperationException("Quick Share endpoint-info vector mismatch.");
+        var controlBody = new byte[] { 1, 2, 3 };
+        var controlStart = QuickShareFrames.ParsePayloadChunk(QuickShareFrames.BuildPayloadChunk(43, 1, controlBody.Length, 0, controlBody, false));
+        var controlEnd = QuickShareFrames.ParsePayloadChunk(QuickShareFrames.BuildPayloadChunk(43, 1, controlBody.Length, controlBody.Length, new byte[0], true));
+        if (controlStart == null || controlEnd == null || controlStart.Offset != 0 || controlEnd.Offset != controlBody.Length ||
+            controlEnd.TotalSize != controlBody.Length || !controlEnd.Last)
+            throw new InvalidOperationException("Quick Share control-payload marker vector mismatch.");
         var signed = alice.SignSha256(new byte[] { 5, 4, 3 });
         var coordinates = alice.ExportPublicCoordinates();
         if (!P256KeyAgreement.VerifySha256(new byte[] { 5, 4, 3 }, signed, coordinates[0], coordinates[1])) throw new InvalidOperationException("P-256 signature vector mismatch.");
@@ -48,6 +58,6 @@ internal static class P256Smoke
         if (parsed.GetUInt32("ControlMessage") != 6 || parsed.GetUInt64("BytesToSend") != 123456789UL ||
             parsed.GetGuid("OperationId") != new Guid("00112233-4455-6677-8899-aabbccddeeff"))
             throw new InvalidOperationException("CDP NearShare ValueSet vector mismatch.");
-        Console.WriteLine("P-256, Quick Share crypto, CDP certificate, and NearShare ValueSet smoke vectors passed.");
+        Console.WriteLine("P-256, Quick Share framing/crypto, CDP certificate, and NearShare ValueSet smoke vectors passed.");
     }
 }

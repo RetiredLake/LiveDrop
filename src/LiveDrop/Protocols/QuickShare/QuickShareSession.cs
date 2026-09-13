@@ -9,6 +9,7 @@ using Windows.Storage;
 using Windows.Storage.Streams;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
+using LiveDrop.Services;
 using LiveDrop.Transports;
 
 namespace LiveDrop.Protocols.QuickShare
@@ -111,8 +112,7 @@ namespace LiveDrop.Protocols.QuickShare
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
                         await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken);
-                        await ReadDisconnectionAsync(connection, crypto, cancellationToken);
-                        status?.Invoke("Quick Share transfer received in the app's Received folder.");
+                        status?.Invoke("Quick Share transfer received. Files are saved in the LiveDrop folder.");
                     }
                     finally
                     {
@@ -148,12 +148,12 @@ namespace LiveDrop.Protocols.QuickShare
 
         private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
         {
-            var folder = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Received", CreationCollisionOption.OpenIfExists);
             var writers = new Dictionary<long, IncomingFile>();
             try
             {
                 foreach (var item in metadata)
                 {
+                    var folder = await TransferFileStore.GetReceiveFolderAsync(item.MimeType);
                     var temp = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(item.Name) + ".part", CreationCollisionOption.GenerateUniqueName);
                     var stream = await temp.OpenAsync(FileAccessMode.ReadWrite);
                     writers[item.PayloadId] = new IncomingFile { Metadata = item, Temporary = temp, Stream = stream, Writer = new DataWriter(stream) };
@@ -175,7 +175,7 @@ namespace LiveDrop.Protocols.QuickShare
                     file.Completed = true;
                     completed++;
                     progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Offset, file.Metadata.Size));
-                    status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + ").");
+                    status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + "). Saved in the LiveDrop folder.");
                 }
             }
             catch
@@ -186,18 +186,6 @@ namespace LiveDrop.Protocols.QuickShare
                     if (!file.Completed) { try { await file.Temporary.DeleteAsync(); } catch { } }
                 }
                 throw;
-            }
-        }
-
-        private static async Task ReadDisconnectionAsync(SocketConnection connection, QuickShareCrypto crypto, CancellationToken cancellationToken)
-        {
-            while (true)
-            {
-                var frame = crypto.DecryptOffline(await connection.ReadFrameAsync(cancellationToken));
-                var type = QuickShareFrames.ReadOfflineFrameType(frame);
-                if (type == QuickShareFrames.NearbyKeepAlive) continue;
-                if (type != 6) throw new ShareProtocolException("Quick Share did not send a transfer disconnection.");
-                return;
             }
         }
 
@@ -219,8 +207,13 @@ namespace LiveDrop.Protocols.QuickShare
         private static async Task SendSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, byte[] frame, CancellationToken cancellationToken)
         {
             var id = Interlocked.Increment(ref _payloadSequence);
-            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildBytesPayload(frame, id, false), cancellationToken);
-            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildBytesPayload(new byte[0], id, true), cancellationToken);
+            var body = frame ?? new byte[0];
+            // The final marker continues the same payload: its offset and
+            // total size remain the size of the control message. Sending 0/0
+            // here makes the receiver reject the marker after buffering the
+            // first chunk, before the introduction or acceptance response.
+            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildPayloadChunk(id, 1, body.Length, 0, body, false), cancellationToken);
+            await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildPayloadChunk(id, 1, body.Length, body.Length, new byte[0], true), cancellationToken);
         }
 
         private static async Task<byte[]> ReadSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, CancellationToken cancellationToken)

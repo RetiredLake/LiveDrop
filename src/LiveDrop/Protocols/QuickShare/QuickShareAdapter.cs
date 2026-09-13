@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
+using Windows.Foundation.Metadata;
+using Windows.System.Profile;
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 using LiveDrop.Transports;
@@ -36,7 +38,7 @@ namespace LiveDrop.Protocols.QuickShare
             _endpointId = CreateEndpointId();
             _instanceName = CreateInstanceName(_endpointId);
             _serviceInstanceName = _instanceName + "." + MdnsCodec.QuickShareService;
-            _endpointInfo = QuickShareFrames.BuildEndpointInfo(_displayName, 1);
+            _endpointInfo = QuickShareFrames.BuildEndpointInfo(_displayName, IsWindowsMobile() ? 1 : 3);
         }
 
         public string Name { get { return "Google Quick Share"; } }
@@ -171,7 +173,7 @@ namespace LiveDrop.Protocols.QuickShare
                 {
                     var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                     var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
-                    if (OfferReceived == null) return false;
+                    if (OfferReceived == null) return true;
                     received = new ShareOfferReceivedEventArgs(peer, offer, complete);
                     OfferReceived(this, received);
                     return await decision.Task;
@@ -188,6 +190,12 @@ namespace LiveDrop.Protocols.QuickShare
             var chars = new char[4];
             for (var i = 0; i < chars.Length; i++) chars[i] = alphabet[random.Next(alphabet.Length)];
             return new string(chars);
+        }
+
+        private static bool IsWindowsMobile()
+        {
+            return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
+                ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
         }
 
         private static string CreateInstanceName(string endpointId)
