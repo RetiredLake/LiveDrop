@@ -133,10 +133,10 @@ namespace LiveDrop.Protocols.QuickShare
                         var accepted = consent == null || await consent(peer, offer);
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
-                        status?.Invoke("Quick Share security PIN: " + crypto.PinCode(authKey) + ". Compare it with the other device. Receiving files to Downloads/LiveDrop.");
+                        status?.Invoke("Quick Share security PIN: " + crypto.PinCode(authKey) + ". Compare it with the other device. Receiving files to Pictures/LiveDrop.");
                         await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken, receiveFolder);
                         await CompleteIncomingSessionAsync(connection, crypto, cancellationToken);
-                        status?.Invoke("Quick Share transfer received. Files are saved in Downloads/LiveDrop.");
+                        status?.Invoke("Quick Share transfer received. Files are saved in Pictures/LiveDrop.");
                     }
                     finally
                     {
@@ -215,7 +215,7 @@ namespace LiveDrop.Protocols.QuickShare
                     file.Completed = true;
                     completed++;
                     progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Offset, file.Metadata.Size));
-                    status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + "). Saved in Downloads/LiveDrop.");
+                    status?.Invoke("Received " + file.Metadata.Name + " (" + completed + "/" + metadata.Count + "). Saved in Pictures/LiveDrop.");
                 }
             }
             catch

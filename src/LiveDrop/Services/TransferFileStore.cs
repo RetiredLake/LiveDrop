@@ -16,14 +16,14 @@ namespace LiveDrop.Services
         {
             // Received files intentionally share one user-facing destination.
             // The MIME type is kept in the signature for protocol callers that
-            // already pass it, but it must never choose Pictures/Videos/Documents.
+            // already pass it, but every received file uses Pictures/LiveDrop.
             try
             {
                 // This is the same direct KnownFolder creation pattern used by
                 // the last known-good 0.1.4 build. OpenIfExists also makes the
-                // first receive create Documents/LiveDrop before any temp file
+                // first receive create Pictures/LiveDrop before any temp file
                 // is opened.
-                return await KnownFolders.DocumentsLibrary.CreateFolderAsync(
+                return await KnownFolders.PicturesLibrary.CreateFolderAsync(
                     "LiveDrop", CreationCollisionOption.OpenIfExists);
             }
             catch
@@ -33,16 +33,16 @@ namespace LiveDrop.Services
             try
             {
                 // Some Windows 10 Mobile sideloaded packages cannot write the
-                // user Documents library. Keep the same visible folder layout
+                // user Pictures library. Keep the same visible folder layout
                 // in app storage so a completed receive is still retained.
-                var documents = await ApplicationData.Current.LocalFolder.CreateFolderAsync(
-                    "Documents", CreationCollisionOption.OpenIfExists);
-                return await documents.CreateFolderAsync(
+                var pictures = await ApplicationData.Current.LocalFolder.CreateFolderAsync(
+                    "Pictures", CreationCollisionOption.OpenIfExists);
+                return await pictures.CreateFolderAsync(
                     "LiveDrop", CreationCollisionOption.OpenIfExists);
             }
             catch (Exception ex)
             {
-                throw new IOException("Could not create Documents/LiveDrop for received files.", ex);
+                throw new IOException("Could not create Pictures/LiveDrop for received files.", ex);
             }
         }
 

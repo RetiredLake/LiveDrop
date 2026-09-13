@@ -190,7 +190,7 @@ namespace LiveDrop.Protocols.Nearby
                     file.Completed = true;
                 }
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 2), cancellationToken);
-                status?.Invoke("Microsoft Nearby transfer received. Files are saved in Downloads/LiveDrop.");
+                status?.Invoke("Microsoft Nearby transfer received. Files are saved in Pictures/LiveDrop.");
             }
             catch
             {

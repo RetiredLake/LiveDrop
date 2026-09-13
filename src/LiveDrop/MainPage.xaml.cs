@@ -681,11 +681,11 @@ namespace LiveDrop
                     TransferProgressPanel.Visibility = Visibility.Visible;
                     TransferProgressText.Text = "Accepting";
                     TransferNotification.Show("Incoming share", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
-                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in Downloads/LiveDrop.";
+                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in Pictures/LiveDrop.";
                 });
                 // LiveDrop sessions accept automatically so two LiveDrop
                 // clients cannot wait forever for a consent UI. The protocol
-                // layer writes each completed file to Downloads/LiveDrop.
+                // layer writes each completed file to Pictures/LiveDrop.
                 if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed);
             }
             catch
