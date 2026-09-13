@@ -3,6 +3,7 @@
 bin/
 obj/
 AppPackages/
+builds/
 TestResults/
 *.user
 *.suo

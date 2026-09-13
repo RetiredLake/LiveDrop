@@ -54,7 +54,10 @@ namespace LiveDrop.Protocols.QuickShare
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _listener = new StreamSocketListener();
             _listener.ConnectionReceived += OnConnectionReceived;
-            await _listener.BindServiceNameAsync("0");
+            // An empty service name asks WinRT for an ephemeral TCP port. The
+            // string "0" is treated as a service-name lookup on Windows 10
+            // Mobile and can fail with "No such host is known".
+            await _listener.BindServiceNameAsync(string.Empty);
             _port = int.Parse(_listener.Information.LocalPort);
             _address = FindLocalIpv4();
             _mdns = new MdnsMulticastService(MdnsCodec.QuickShareService);
