@@ -19,12 +19,12 @@ namespace LiveDrop.Services
             // already pass it, but it must never choose Pictures/Videos/Documents.
             try
             {
-                // The parent of DocumentsLibrary is the user's profile on
-                // desktop Windows and the user storage root on Windows 10
-                // Mobile. Create the visible Downloads/LiveDrop path there.
-                var documentsParent = await KnownFolders.DocumentsLibrary.GetParentAsync();
-                var folder = await TryCreateReceiveFolderAsync(documentsParent);
-                if (folder != null) return folder;
+                // This is the same direct KnownFolder creation pattern used by
+                // the last known-good 0.1.4 build. OpenIfExists also makes the
+                // first receive create Documents/LiveDrop before any temp file
+                // is opened.
+                return await KnownFolders.DocumentsLibrary.CreateFolderAsync(
+                    "LiveDrop", CreationCollisionOption.OpenIfExists);
             }
             catch
             {
@@ -32,50 +32,17 @@ namespace LiveDrop.Services
 
             try
             {
-                // Keep a path-based fallback for older Windows 10 builds where
-                // GetParentAsync may not resolve a KnownFolder parent.
-                var documentsPath = KnownFolders.DocumentsLibrary.Path;
-                var documentsParentPath = Path.GetDirectoryName(documentsPath);
-                var folder = await TryCreateReceiveFolderAsync(documentsParentPath);
-                if (folder != null) return folder;
+                // Some Windows 10 Mobile sideloaded packages cannot write the
+                // user Documents library. Keep the same visible folder layout
+                // in app storage so a completed receive is still retained.
+                var documents = await ApplicationData.Current.LocalFolder.CreateFolderAsync(
+                    "Documents", CreationCollisionOption.OpenIfExists);
+                return await documents.CreateFolderAsync(
+                    "LiveDrop", CreationCollisionOption.OpenIfExists);
             }
-            catch
+            catch (Exception ex)
             {
-            }
-
-            // Some Windows 10 Mobile builds do not expose the user storage root
-            // to a sideloaded package. Preserve the same folder layout inside
-            // app storage so the completed file is still retained.
-            var localDownloads = await ApplicationData.Current.LocalFolder.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
-            return await localDownloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
-        }
-
-        private static async Task<StorageFolder> TryCreateReceiveFolderAsync(StorageFolder parent)
-        {
-            if (parent == null) return null;
-            try
-            {
-                var downloads = await parent.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
-                return await downloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
-            }
-            catch
-            {
-                return null;
-            }
-        }
-
-        private static async Task<StorageFolder> TryCreateReceiveFolderAsync(string parentPath)
-        {
-            if (string.IsNullOrWhiteSpace(parentPath)) return null;
-            try
-            {
-                var parent = await StorageFolder.GetFolderFromPathAsync(parentPath);
-                var downloads = await parent.CreateFolderAsync("Downloads", CreationCollisionOption.OpenIfExists);
-                return await downloads.CreateFolderAsync("LiveDrop", CreationCollisionOption.OpenIfExists);
-            }
-            catch
-            {
-                return null;
+                throw new IOException("Could not create Documents/LiveDrop for received files.", ex);
             }
         }
 
