@@ -28,6 +28,7 @@ namespace LiveDrop.Protocols.QuickShare
 
     internal sealed class QuickSharePayloadChunk
     {
+        internal int PacketType { get; set; }
         internal long PayloadId { get; set; }
         internal int PayloadType { get; set; }
         internal long TotalSize { get; set; }
@@ -58,6 +59,10 @@ namespace LiveDrop.Protocols.QuickShare
         internal const int NearbyKeepAlive = 5;
         internal const int SharingIntroduction = 1;
         internal const int SharingResponse = 2;
+        internal const int SharingPairedKeyEncryption = 3;
+        internal const int SharingPairedKeyResult = 4;
+        internal const int SharingCancel = 6;
+        internal const int SharingProgressUpdate = 7;
 
         internal static byte[] WrapUkey(int type, byte[] data)
         {
@@ -295,6 +300,17 @@ namespace LiveDrop.Protocols.QuickShare
             return false;
         }
 
+        internal static bool IsCancelSharingFrame(byte[] data)
+        {
+            try { return ReadOfflineFrameType(data) == SharingCancel; }
+            catch { return false; }
+        }
+
+        internal static byte[] BuildCancelSharingFrame()
+        {
+            return BuildOfflineFrame(SharingCancel, 0, null);
+        }
+
         internal static byte[] ReadSharingPayload(byte[] data)
         {
             var chunk = ParsePayloadChunk(data);
@@ -309,15 +325,17 @@ namespace LiveDrop.Protocols.QuickShare
                 var tag = v1.ReadTag();
                 if ((tag >> 3) != 4 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
                 var transfer = new ProtoReader(v1.ReadBytes());
+                var packetType = 0;
                 var header = new byte[0]; var chunk = new byte[0];
                 while (!transfer.End)
                 {
                     var field = transfer.ReadTag();
-                    if ((field >> 3) == 2 && (field & 7) == 2) header = transfer.ReadBytes();
+                    if ((field >> 3) == 1 && (field & 7) == 0) packetType = (int)transfer.ReadVarint();
+                    else if ((field >> 3) == 2 && (field & 7) == 2) header = transfer.ReadBytes();
                     else if ((field >> 3) == 3 && (field & 7) == 2) chunk = transfer.ReadBytes();
                     else transfer.Skip(field & 7);
                 }
-                var result = new QuickSharePayloadChunk { Body = new byte[0] };
+                var result = new QuickSharePayloadChunk { PacketType = packetType, Body = new byte[0] };
                 var headerReader = new ProtoReader(header);
                 while (!headerReader.End)
                 {
@@ -538,7 +556,7 @@ namespace LiveDrop.Protocols.QuickShare
         {
             var v1 = new ProtoWriter();
             v1.WriteEnum(1, type);
-            v1.WriteMessage(nestedField, nested);
+            if (nestedField > 0) v1.WriteMessage(nestedField, nested);
             var frame = new ProtoWriter();
             frame.WriteEnum(1, 1);
             frame.WriteMessage(2, v1.ToArray());

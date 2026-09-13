@@ -32,6 +32,9 @@ internal static class P256Smoke
         var frame = QuickShareFrames.BuildBytesPayload(new byte[] { 9, 8, 7 }, 42, false);
         var decrypted = server.DecryptOffline(client.EncryptOffline(frame));
         if (!frame.SequenceEqual(decrypted)) throw new InvalidOperationException("Quick Share encrypted frame mismatch.");
+        var parsedBytes = QuickShareFrames.ParsePayloadChunk(frame);
+        if (parsedBytes == null || parsedBytes.PacketType != 1 || parsedBytes.PayloadType != 1 || parsedBytes.PayloadId != 42)
+            throw new InvalidOperationException("Quick Share BYTES payload vector mismatch.");
         var endpointInfo = QuickShareFrames.BuildEndpointInfo("LiveDrop", 3);
         if (endpointInfo[0] != 6 || endpointInfo[17] != 8 || Encoding.UTF8.GetString(endpointInfo, 18, 8) != "LiveDrop")
             throw new InvalidOperationException("Quick Share endpoint-info vector mismatch.");
@@ -78,6 +81,8 @@ internal static class P256Smoke
         var disconnection = QuickShareFrames.BuildDisconnection(true, false);
         if (!QuickShareFrames.IsDisconnection(disconnection) || !QuickShareFrames.IsSafeDisconnectRequest(disconnection))
             throw new InvalidOperationException("Quick Share safe-disconnect vector mismatch.");
+        if (!QuickShareFrames.IsCancelSharingFrame(QuickShareFrames.BuildCancelSharingFrame()))
+            throw new InvalidOperationException("Quick Share cancellation payload vector mismatch.");
         var signed = alice.SignSha256(new byte[] { 5, 4, 3 });
         var coordinates = alice.ExportPublicCoordinates();
         if (!P256KeyAgreement.VerifySha256(new byte[] { 5, 4, 3 }, signed, coordinates[0], coordinates[1])) throw new InvalidOperationException("P-256 signature vector mismatch.");

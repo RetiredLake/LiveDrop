@@ -17,6 +17,7 @@ namespace LiveDrop.Protocols.QuickShare
 {
     internal static class QuickShareSession
     {
+        private const int MaxControlPayloadSize = 64 * 1024 * 1024;
         private static long _payloadSequence = DateTime.UtcNow.Ticks;
 
         internal static async Task SendAsync(SocketConnection connection, string displayName, string endpointId, byte[] endpointInfo, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
@@ -48,13 +49,13 @@ namespace LiveDrop.Protocols.QuickShare
                     if (!peerConnectionResponse.Accepted) throw new ShareProtocolException("Quick Share rejected the connection.");
                     keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
 
-                    await ReadSharingFrameAsync(connection, crypto, cancellationToken);
+                    await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingPairedKeyEncryption, cancellationToken);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyEncryption(), cancellationToken);
-                    await ReadSharingFrameAsync(connection, crypto, cancellationToken);
+                    await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingPairedKeyResult, cancellationToken);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyResult(), cancellationToken);
                     var payloadIds = CreatePayloadIds(offer.Files.Count);
                     await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildIntroduction(offer.Files, payloadIds), cancellationToken);
-                    if (!QuickShareFrames.IsAcceptedSharingResponse(await ReadSharingFrameAsync(connection, crypto, cancellationToken))) throw new ShareProtocolException("Quick Share recipient rejected the transfer.");
+                    if (!QuickShareFrames.IsAcceptedSharingResponse(await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingResponse, cancellationToken))) throw new ShareProtocolException("Quick Share recipient rejected the transfer.");
 
                     for (var fileIndex = 0; fileIndex < offer.Files.Count; fileIndex++)
                     {
@@ -105,10 +106,10 @@ namespace LiveDrop.Protocols.QuickShare
                         if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share client rejected the connection.");
                         keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
                         await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyEncryption(), cancellationToken);
-                        await ReadSharingFrameAsync(connection, crypto, cancellationToken);
+                        await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingPairedKeyEncryption, cancellationToken);
                         await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyResult(), cancellationToken);
-                        await ReadSharingFrameAsync(connection, crypto, cancellationToken);
-                        var introduction = await ReadSharingFrameAsync(connection, crypto, cancellationToken);
+                        await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingPairedKeyResult, cancellationToken);
+                        var introduction = await ReadSharingFrameAsync(connection, crypto, QuickShareFrames.SharingIntroduction, cancellationToken);
                         var metadata = QuickShareFrames.ParseIntroduction(introduction);
                         ValidateMetadata(metadata);
                         var files = new List<ShareFileDescriptor>();
@@ -156,6 +157,8 @@ namespace LiveDrop.Protocols.QuickShare
         private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
         {
             var writers = new Dictionary<long, IncomingFile>();
+            var bytePayloads = new Dictionary<long, MemoryStream>();
+            var bytePayloadSizes = new Dictionary<long, long>();
             try
             {
                 foreach (var item in metadata)
@@ -170,6 +173,17 @@ namespace LiveDrop.Protocols.QuickShare
                 while (completed < metadata.Count)
                 {
                     var chunk = await ReadPayloadChunkAsync(connection, crypto, cancellationToken);
+                    if (chunk.PacketType != 1) continue;
+                    if (chunk.PayloadType == 1)
+                    {
+                        var controlBody = AppendBytePayloadChunk(bytePayloads, bytePayloadSizes, chunk);
+                        if (controlBody != null && QuickShareFrames.IsCancelSharingFrame(controlBody))
+                            throw new ShareProtocolException("Quick Share sender cancelled the transfer.");
+                        // Quick Share uses BYTES for progress and other
+                        // sharing-layer control frames. They may be sent
+                        // before or between FILE chunks and are not files.
+                        continue;
+                    }
                     var file = ResolveIncomingFile(writers, chunk);
                     if (chunk.Offset != file.Offset) throw new ShareProtocolException("Quick Share sent a file chunk at the wrong offset.");
                     if (chunk.Body != null && chunk.Body.Length > 0) { file.Writer.WriteBytes(chunk.Body); await file.Writer.StoreAsync(); file.Offset += chunk.Body.Length; progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Offset, file.Metadata.Size)); }
@@ -193,6 +207,54 @@ namespace LiveDrop.Protocols.QuickShare
                 }
                 throw;
             }
+            finally
+            {
+                foreach (var payload in bytePayloads.Values) payload.Dispose();
+            }
+        }
+
+        private static byte[] AppendBytePayloadChunk(Dictionary<long, MemoryStream> bytePayloads, Dictionary<long, long> bytePayloadSizes, QuickSharePayloadChunk chunk)
+        {
+            if (chunk == null) throw new ShareProtocolException("Quick Share sent an empty control payload.");
+            if (chunk.TotalSize < 0 || chunk.TotalSize > MaxControlPayloadSize)
+                throw new ShareProtocolException("Quick Share sent an oversized control payload.");
+            if (chunk.Offset < 0 || chunk.Offset > MaxControlPayloadSize)
+                throw new ShareProtocolException("Quick Share sent a control payload with an invalid offset.");
+
+            MemoryStream buffer;
+            if (!bytePayloads.TryGetValue(chunk.PayloadId, out buffer))
+            {
+                buffer = new MemoryStream();
+                bytePayloads[chunk.PayloadId] = buffer;
+                bytePayloadSizes[chunk.PayloadId] = chunk.TotalSize;
+            }
+
+            var expectedSize = bytePayloadSizes[chunk.PayloadId];
+            if (expectedSize > 0 && chunk.TotalSize > 0 && chunk.TotalSize != expectedSize)
+                throw new ShareProtocolException("Quick Share changed a control payload size mid-transfer.");
+            if (expectedSize == 0 && chunk.TotalSize > 0)
+            {
+                expectedSize = chunk.TotalSize;
+                bytePayloadSizes[chunk.PayloadId] = expectedSize;
+            }
+            if (chunk.Offset != buffer.Length)
+                throw new ShareProtocolException("Quick Share sent a control payload at the wrong offset.");
+
+            var body = chunk.Body ?? new byte[0];
+            if (body.Length > MaxControlPayloadSize - buffer.Length)
+                throw new ShareProtocolException("Quick Share sent an oversized control payload.");
+            if (expectedSize > 0 && body.Length > expectedSize - buffer.Length)
+                throw new ShareProtocolException("Quick Share control payload exceeded its declared size.");
+            if (body.Length > 0) buffer.Write(body, 0, body.Length);
+            if (!chunk.Last) return null;
+            if (expectedSize > 0 && buffer.Length != expectedSize)
+                throw new ShareProtocolException("Quick Share control payload size did not match its header.");
+
+            var result = buffer.ToArray();
+            bytePayloads.Remove(chunk.PayloadId);
+            bytePayloadSizes.Remove(chunk.PayloadId);
+            buffer.Dispose();
+            return result;
         }
 
         private static void CloseIncomingFile(IncomingFile file)
@@ -264,7 +326,7 @@ namespace LiveDrop.Protocols.QuickShare
             await crypto.SendOfflineAsync(connection, QuickShareFrames.BuildPayloadChunk(id, 1, body.Length, body.Length, new byte[0], true), cancellationToken);
         }
 
-        private static async Task<byte[]> ReadSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, CancellationToken cancellationToken)
+        private static async Task<byte[]> ReadSharingFrameAsync(SocketConnection connection, QuickShareCrypto crypto, int expectedType, CancellationToken cancellationToken)
         {
             using (var buffer = new MemoryStream())
             {
@@ -272,9 +334,20 @@ namespace LiveDrop.Protocols.QuickShare
                 {
                     var chunk = await ReadPayloadChunkAsync(connection, crypto, cancellationToken);
                     if (chunk.PayloadType != 1) continue;
+                    if (chunk.PacketType != 1) continue;
                     if (chunk.Offset != buffer.Length) throw new ShareProtocolException("Quick Share setup payload offset was invalid.");
                     if (chunk.Body != null) buffer.Write(chunk.Body, 0, chunk.Body.Length);
-                    if (chunk.Last) return buffer.ToArray();
+                    if (!chunk.Last) continue;
+
+                    var body = buffer.ToArray();
+                    buffer.SetLength(0);
+                    int type;
+                    try { type = QuickShareFrames.ReadOfflineFrameType(body); }
+                    catch (Exception ex) { throw new ShareProtocolException("Quick Share sent an invalid sharing control frame.", ex); }
+                    if (type == expectedType) return body;
+                    if (type == QuickShareFrames.SharingProgressUpdate) continue;
+                    if (type == QuickShareFrames.SharingCancel) throw new ShareProtocolException("Quick Share sender cancelled the transfer.");
+                    throw new ShareProtocolException("Quick Share sent sharing frame type " + type + "; expected " + expectedType + ".");
                 }
             }
         }
@@ -343,7 +416,8 @@ namespace LiveDrop.Protocols.QuickShare
             {
                 var frame = crypto.DecryptOffline(await connection.ReadFrameAsync(cancellationToken));
                 var chunk = QuickShareFrames.ParsePayloadChunk(frame);
-                if (chunk != null) return chunk;
+                if (chunk != null && chunk.PacketType == 1) return chunk;
+                if (chunk != null) continue;
                 if (QuickShareFrames.ReadOfflineFrameType(frame) == QuickShareFrames.NearbyKeepAlive) continue;
                 throw new ShareProtocolException("Quick Share sent an unexpected encrypted control frame.");
             }
