@@ -115,10 +115,25 @@ namespace LiveDrop.Protocols.QuickShare
             if (offer == null || offer.Files.Count == 0) throw new ShareProtocolException("Quick Share currently requires at least one file.");
             if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
                 throw new ShareProtocolException("Loopback transfers are disabled.");
-            using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
+            var stage = "validating the selected endpoint";
+            try
             {
-                await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken,
-                    message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)));
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share connecting to " + peer.Address + ":" + peer.Port + "."));
+                stage = "opening the TCP connection";
+                using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
+                {
+                    StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share TCP connection established."));
+                    stage = "completing UKEY2 security handshake";
+                    await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken,
+                        message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)));
+                }
+            }
+            catch (Exception ex)
+            {
+                var detail = "Quick Share outbound failed while " + stage + " to " + peer.Address + ":" + peer.Port +
+                    ": " + ex.Message + " (0x" + ex.HResult.ToString("X8") + ").";
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs(detail));
+                throw new ShareProtocolException(detail, ex);
             }
         }
 

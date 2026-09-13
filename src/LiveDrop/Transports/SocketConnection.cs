@@ -27,8 +27,11 @@ namespace LiveDrop.Transports
             if (Protocols.ProtocolUtilities.IsLoopbackAddress(address))
                 throw new InvalidOperationException("Loopback transfers are disabled.");
             var socket = new StreamSocket();
-            await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket);
+            // StreamSocketControl properties must be configured before the
+            // socket enters the connected state. Setting NoDelay after
+            // ConnectAsync raises E_ILLEGAL_METHOD_CALL on UWP.
             socket.Control.NoDelay = true;
+            await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket);
             return new SocketConnection(socket);
         }
 
