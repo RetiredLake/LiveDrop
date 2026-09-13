@@ -41,8 +41,12 @@ namespace LiveDrop.Protocols.QuickShare
         internal byte[] ExportGenericPublicKey()
         {
             var coordinates = new ProtoWriter();
-            coordinates.WriteBytes(1, ToBigEndian(_public.X, 32));
-            coordinates.WriteBytes(2, ToBigEndian(_public.Y, 32));
+            // Quick Share's EcP256PublicKey fields are positive
+            // big-endian two's-complement integers. A coordinate with the
+            // high bit set needs a leading zero or Android interprets it as
+            // negative and rejects the UKEY2 initiation.
+            coordinates.WriteBytes(1, ToSignedBigEndian(_public.X));
+            coordinates.WriteBytes(2, ToSignedBigEndian(_public.Y));
             var key = new ProtoWriter();
             key.WriteEnum(1, 1);
             key.WriteMessage(2, coordinates.ToArray());
@@ -299,6 +303,15 @@ namespace LiveDrop.Protocols.QuickShare
             var little = value.ToByteArray();
             for (var i = 0; i < length && i < little.Length; i++) result[length - i - 1] = little[i];
             return result;
+        }
+
+        private static byte[] ToSignedBigEndian(BigInteger value)
+        {
+            var unsigned = ToBigEndian(value, 32);
+            if ((unsigned[0] & 0x80) == 0) return unsigned;
+            var signed = new byte[33];
+            Buffer.BlockCopy(unsigned, 0, signed, 1, unsigned.Length);
+            return signed;
         }
 
         private struct Point

@@ -34,6 +34,30 @@ internal static class P256Smoke
         var endpointInfo = QuickShareFrames.BuildEndpointInfo("LiveDrop", 3);
         if (endpointInfo[0] != 6 || endpointInfo[17] != 8 || Encoding.UTF8.GetString(endpointInfo, 18, 8) != "LiveDrop")
             throw new InvalidOperationException("Quick Share endpoint-info vector mismatch.");
+        var publicKey = alice.ExportGenericPublicKey();
+        var publicKeyReader = new ProtoReader(publicKey);
+        var coordinateData = new byte[0];
+        while (!publicKeyReader.End)
+        {
+            var tag = publicKeyReader.ReadTag();
+            if ((tag >> 3) == 2 && (tag & 7) == 2) coordinateData = publicKeyReader.ReadBytes();
+            else publicKeyReader.Skip(tag & 7);
+        }
+        var coordinatesReader = new ProtoReader(coordinateData);
+        var coordinatesChecked = 0;
+        while (!coordinatesReader.End)
+        {
+            var tag = coordinatesReader.ReadTag();
+            if ((tag >> 3) == 1 || (tag >> 3) == 2)
+            {
+                var coordinate = coordinatesReader.ReadBytes();
+                if (coordinate.Length != 32 && coordinate.Length != 33) throw new InvalidOperationException("Quick Share public-key coordinate length mismatch.");
+                if ((coordinate[0] & 0x80) != 0) throw new InvalidOperationException("Quick Share public-key coordinate sign mismatch.");
+                coordinatesChecked++;
+            }
+            else coordinatesReader.Skip(tag & 7);
+        }
+        if (coordinatesChecked != 2) throw new InvalidOperationException("Quick Share public-key coordinate vector mismatch.");
         var controlBody = new byte[] { 1, 2, 3 };
         var controlStart = QuickShareFrames.ParsePayloadChunk(QuickShareFrames.BuildPayloadChunk(43, 1, controlBody.Length, 0, controlBody, false));
         var controlEnd = QuickShareFrames.ParsePayloadChunk(QuickShareFrames.BuildPayloadChunk(43, 1, controlBody.Length, controlBody.Length, new byte[0], true));
