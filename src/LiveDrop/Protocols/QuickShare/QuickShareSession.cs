@@ -38,13 +38,12 @@ namespace LiveDrop.Protocols.QuickShare
                 try
                 {
                     await connection.WriteFrameAsync(clientFinish, cancellationToken);
-                    // The server sends the connection response and paired-key
-                    // frame first. Official Quick Share clients wait for these
-                    // frames before replying; sending them in the opposite
-                    // order leaves the receiver and sender waiting on each
-                    // other before the introduction is sent.
-                    if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share rejected the connection.");
                     await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionAccept(), cancellationToken);
+                    // Both peers send the plaintext connection response before
+                    // reading the response from the other side. Waiting to read
+                    // first deadlocks two LiveDrop instances and can make either
+                    // peer close the socket before the introduction is sent.
+                    if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share rejected the connection.");
                     keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
 
                     await ReadSharingFrameAsync(connection, crypto, cancellationToken);
@@ -95,8 +94,8 @@ namespace LiveDrop.Protocols.QuickShare
                     Task keepAlive = null;
                     try
                     {
-                        if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share client rejected the connection.");
                         await connection.WriteFrameAsync(QuickShareFrames.BuildConnectionAccept(), cancellationToken);
+                        if (!QuickShareFrames.IsAcceptedConnection(await connection.ReadFrameAsync(cancellationToken))) throw new ShareProtocolException("Quick Share client rejected the connection.");
                         keepAlive = KeepAliveLoopAsync(connection, crypto, keepAliveSource.Token);
                         await SendSharingFrameAsync(connection, crypto, QuickShareFrames.BuildPairedKeyEncryption(), cancellationToken);
                         await ReadSharingFrameAsync(connection, crypto, cancellationToken);
