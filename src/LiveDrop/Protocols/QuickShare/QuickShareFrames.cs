@@ -20,11 +20,18 @@ namespace LiveDrop.Protocols.QuickShare
         internal byte[] EndpointInfo { get; set; }
     }
 
+    internal sealed class QuickShareConnectionResponse
+    {
+        internal bool Accepted { get; set; }
+        internal int SafeToDisconnectVersion { get; set; }
+    }
+
     internal sealed class QuickSharePayloadChunk
     {
         internal long PayloadId { get; set; }
         internal int PayloadType { get; set; }
         internal long TotalSize { get; set; }
+        internal string FileName { get; set; }
         internal long Offset { get; set; }
         internal bool Last { get; set; }
         internal byte[] Body { get; set; }
@@ -35,6 +42,7 @@ namespace LiveDrop.Protocols.QuickShare
         internal string Name { get; set; }
         internal string MimeType { get; set; }
         internal long PayloadId { get; set; }
+        internal long AttachmentId { get; set; }
         internal long Size { get; set; }
     }
 
@@ -176,6 +184,10 @@ namespace LiveDrop.Protocols.QuickShare
             request.WriteBytes(6, endpointInfo);
             request.WriteInt32(4, Environment.TickCount);
             request.WriteEnum(5, NearbyWifiLan);
+            // Android 14+ uses these advertised timers when deciding whether
+            // to keep the LAN connection alive after the UKEY2 exchange.
+            request.WriteInt32(8, 10000);
+            request.WriteInt32(9, 600000);
             return BuildOfflineFrame(NearbyConnectionRequest, 2, request.ToArray());
         }
 
@@ -187,6 +199,12 @@ namespace LiveDrop.Protocols.QuickShare
             var osInfo = new ProtoWriter();
             osInfo.WriteEnum(1, 3);
             response.WriteMessage(4, osInfo.ToArray());
+            // This implementation stays on its single LAN socket. Declare
+            // that explicitly and advertise the safe teardown mode that the
+            // receiver implements for current Android clients.
+            response.WriteInt32(5, 0);
+            response.WriteInt32(7, 1);
+            response.WriteInt32(9, 600000);
             return BuildOfflineFrame(NearbyConnectionResponse, 3, response.ToArray());
         }
 
@@ -235,6 +253,12 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static bool IsAcceptedConnection(byte[] data)
         {
+            return ParseConnectionResponse(data).Accepted;
+        }
+
+        internal static QuickShareConnectionResponse ParseConnectionResponse(byte[] data)
+        {
+            var result = new QuickShareConnectionResponse();
             var v1 = ReadV1(data);
             while (!v1.End)
             {
@@ -244,11 +268,13 @@ namespace LiveDrop.Protocols.QuickShare
                 while (!response.End)
                 {
                     var field = response.ReadTag();
-                    if ((field >> 3) == 3 && (field & 7) == 0) return response.ReadVarint() == 1;
-                    response.Skip(field & 7);
+                    if ((field >> 3) == 3 && (field & 7) == 0) result.Accepted = response.ReadVarint() == 1;
+                    else if ((field >> 3) == 7 && (field & 7) == 0) result.SafeToDisconnectVersion = (int)response.ReadVarint();
+                    else response.Skip(field & 7);
                 }
+                return result;
             }
-            return false;
+            return result;
         }
 
         internal static bool IsAcceptedSharingResponse(byte[] data)
@@ -299,6 +325,7 @@ namespace LiveDrop.Protocols.QuickShare
                     if ((field >> 3) == 1 && (field & 7) == 0) result.PayloadId = (long)headerReader.ReadVarint();
                     else if ((field >> 3) == 2 && (field & 7) == 0) result.PayloadType = (int)headerReader.ReadVarint();
                     else if ((field >> 3) == 3 && (field & 7) == 0) result.TotalSize = (long)headerReader.ReadVarint();
+                    else if ((field >> 3) == 5 && (field & 7) == 2) result.FileName = headerReader.ReadString();
                     else headerReader.Skip(field & 7);
                 }
                 var chunkReader = new ProtoReader(chunk);
@@ -337,6 +364,7 @@ namespace LiveDrop.Protocols.QuickShare
                         else if ((metaField >> 3) == 3 && (metaField & 7) == 0) file.PayloadId = (long)meta.ReadVarint();
                         else if ((metaField >> 3) == 4 && (metaField & 7) == 0) file.Size = (long)meta.ReadVarint();
                         else if ((metaField >> 3) == 5 && (metaField & 7) == 2) file.MimeType = meta.ReadString();
+                        else if ((metaField >> 3) == 6 && (metaField & 7) == 0) file.AttachmentId = (long)meta.ReadVarint();
                         else meta.Skip(metaField & 7);
                     }
                     result.Add(file);
@@ -353,17 +381,29 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildIntroduction(IReadOnlyList<ShareFileDescriptor> files)
         {
+            var payloadIds = new List<long>();
+            for (var i = 0; i < files.Count; i++) payloadIds.Add(1000 + i);
+            return BuildIntroduction(files, payloadIds);
+        }
+
+        internal static byte[] BuildIntroduction(IReadOnlyList<ShareFileDescriptor> files, IReadOnlyList<long> payloadIds)
+        {
+            if (files == null || payloadIds == null || files.Count != payloadIds.Count) throw new ArgumentException("Quick Share file metadata and payload IDs must have the same count.");
             var intro = new ProtoWriter();
-            long payloadId = 1000;
-            foreach (var file in files)
+            for (var index = 0; index < files.Count; index++)
             {
+                var file = files[index];
+                var payloadId = payloadIds[index];
+                if (payloadId <= 0) throw new ArgumentException("Quick Share payload IDs must be positive.");
                 var metadata = new ProtoWriter();
                 metadata.WriteString(1, file.Name);
                 metadata.WriteEnum(2, FileType(file.MimeType));
-                metadata.WriteInt64(3, payloadId++);
+                metadata.WriteInt64(3, payloadId);
                 metadata.WriteInt64(4, file.Size);
                 metadata.WriteString(5, file.MimeType);
-                metadata.WriteInt64(6, DateTime.UtcNow.Ticks);
+                // Quick Share clients use FileMetadata.id as the attachment
+                // identity and expect it to equal payload_id.
+                metadata.WriteInt64(6, payloadId);
                 metadata.WriteInt64(8, StableAttachmentHash(file.Name, file.Size));
                 intro.WriteMessage(1, metadata.ToArray());
             }
@@ -387,7 +427,30 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildDisconnection()
         {
-            return BuildOfflineFrame(6, 7, new byte[0]);
+            return BuildDisconnection(false, false);
+        }
+
+        internal static byte[] BuildDisconnection(bool requestSafeToDisconnect, bool acknowledgeSafeToDisconnect)
+        {
+            var disconnection = new ProtoWriter();
+            if (requestSafeToDisconnect) disconnection.WriteBool(1, true);
+            if (acknowledgeSafeToDisconnect) disconnection.WriteBool(2, true);
+            return BuildOfflineFrame(6, 7, disconnection.ToArray());
+        }
+
+        internal static bool IsDisconnection(byte[] data)
+        {
+            return ReadOfflineFrameType(data) == 6;
+        }
+
+        internal static bool IsSafeDisconnectRequest(byte[] data)
+        {
+            return ReadDisconnectionFlag(data, 1);
+        }
+
+        internal static bool IsSafeDisconnectAcknowledgement(byte[] data)
+        {
+            return ReadDisconnectionFlag(data, 2);
         }
 
         internal static byte[] BuildKeepAlive()
@@ -397,7 +460,12 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildFileChunk(long payloadId, long totalSize, long offset, byte[] body, bool last)
         {
-            return BuildPayloadChunk(payloadId, 2, totalSize, offset, body, last);
+            return BuildFileChunk(payloadId, totalSize, offset, body, last, null);
+        }
+
+        internal static byte[] BuildFileChunk(long payloadId, long totalSize, long offset, byte[] body, bool last, string fileName)
+        {
+            return BuildPayloadChunk(payloadId, 2, totalSize, offset, body, last, fileName);
         }
 
         internal static byte[] BuildPayloadChunk(long payloadId, long offset, byte[] body, bool last)
@@ -407,10 +475,16 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildPayloadChunk(long payloadId, int payloadType, long totalSize, long offset, byte[] body, bool last)
         {
+            return BuildPayloadChunk(payloadId, payloadType, totalSize, offset, body, last, null);
+        }
+
+        private static byte[] BuildPayloadChunk(long payloadId, int payloadType, long totalSize, long offset, byte[] body, bool last, string fileName)
+        {
             var header = new ProtoWriter();
             header.WriteInt64(1, payloadId);
             header.WriteEnum(2, payloadType);
             header.WriteInt64(3, totalSize);
+            if (payloadType == 2 && !string.IsNullOrEmpty(fileName)) header.WriteString(5, fileName);
             var chunk = new ProtoWriter();
             chunk.WriteInt32(1, last ? 1 : 0);
             chunk.WriteInt64(2, offset);
@@ -432,6 +506,25 @@ namespace LiveDrop.Protocols.QuickShare
                 outer.Skip(tag & 7);
             }
             return new ProtoReader(new byte[0]);
+        }
+
+        private static bool ReadDisconnectionFlag(byte[] data, int flagField)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 7 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var disconnection = new ProtoReader(v1.ReadBytes());
+                while (!disconnection.End)
+                {
+                    var field = disconnection.ReadTag();
+                    if ((field >> 3) == flagField && (field & 7) == 0) return disconnection.ReadVarint() != 0;
+                    disconnection.Skip(field & 7);
+                }
+                return false;
+            }
+            return false;
         }
 
         private static byte[] RandomBytes(int count)

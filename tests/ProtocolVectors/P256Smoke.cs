@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LiveDrop.Models;
 using LiveDrop.Protocols.Nearby;
 using LiveDrop.Protocols.QuickShare;
 
@@ -64,6 +65,19 @@ internal static class P256Smoke
         if (controlStart == null || controlEnd == null || controlStart.Offset != 0 || controlEnd.Offset != controlBody.Length ||
             controlEnd.TotalSize != controlBody.Length || !controlEnd.Last)
             throw new InvalidOperationException("Quick Share control-payload marker vector mismatch.");
+        var descriptor = new ShareFileDescriptor { Name = "photo.jpg", MimeType = "image/jpeg", Size = 123 };
+        var introduction = QuickShareFrames.ParseIntroduction(QuickShareFrames.BuildIntroduction(new[] { descriptor }, new[] { 12345L }));
+        if (introduction.Count != 1 || introduction[0].PayloadId != 12345L || introduction[0].AttachmentId != 12345L)
+            throw new InvalidOperationException("Quick Share file identity vector mismatch.");
+        var fileChunk = QuickShareFrames.ParsePayloadChunk(QuickShareFrames.BuildFileChunk(12345L, 123L, 0, new byte[] { 1, 2 }, false, "photo.jpg"));
+        if (fileChunk == null || fileChunk.PayloadType != 2 || fileChunk.PayloadId != 12345L || fileChunk.FileName != "photo.jpg")
+            throw new InvalidOperationException("Quick Share file-header vector mismatch.");
+        var connectionResponse = QuickShareFrames.ParseConnectionResponse(QuickShareFrames.BuildConnectionAccept());
+        if (!connectionResponse.Accepted || connectionResponse.SafeToDisconnectVersion != 1)
+            throw new InvalidOperationException("Quick Share connection-response vector mismatch.");
+        var disconnection = QuickShareFrames.BuildDisconnection(true, false);
+        if (!QuickShareFrames.IsDisconnection(disconnection) || !QuickShareFrames.IsSafeDisconnectRequest(disconnection))
+            throw new InvalidOperationException("Quick Share safe-disconnect vector mismatch.");
         var signed = alice.SignSha256(new byte[] { 5, 4, 3 });
         var coordinates = alice.ExportPublicCoordinates();
         if (!P256KeyAgreement.VerifySha256(new byte[] { 5, 4, 3 }, signed, coordinates[0], coordinates[1])) throw new InvalidOperationException("P-256 signature vector mismatch.");
