@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Windows.Storage;
@@ -43,6 +44,18 @@ namespace LiveDrop.Protocols
         {
             return Convert.ToBase64String(value).TrimEnd('=').Replace('+', '-').Replace('/', '_');
         }
+
+        internal static bool IsLoopbackAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address)) return false;
+            var value = address.Trim();
+            if (string.Equals(value, "localhost", StringComparison.OrdinalIgnoreCase)) return true;
+            if (value.Length > 2 && value[0] == '[' && value[value.Length - 1] == ']')
+                value = value.Substring(1, value.Length - 2);
+            IPAddress parsed;
+            if (!IPAddress.TryParse(value, out parsed)) return false;
+            if (IPAddress.IsLoopback(parsed)) return true;
+            return parsed.IsIPv4MappedToIPv6 && IPAddress.IsLoopback(parsed.MapToIPv4());
+        }
     }
 }
-

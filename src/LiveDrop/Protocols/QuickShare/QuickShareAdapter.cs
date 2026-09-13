@@ -110,6 +110,8 @@ namespace LiveDrop.Protocols.QuickShare
         {
             if (peer == null || peer.Transport != ShareTransport.GoogleQuickShare) throw new ShareProtocolException("The selected peer is not a Quick Share peer.");
             if (offer == null || offer.Files.Count == 0) throw new ShareProtocolException("Quick Share currently requires at least one file.");
+            if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
+                throw new ShareProtocolException("Loopback transfers are disabled.");
             using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
             {
                 await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken);
@@ -165,6 +167,12 @@ namespace LiveDrop.Protocols.QuickShare
 
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
         {
+            var remoteAddress = socket.Information.RemoteAddress == null ? string.Empty : socket.Information.RemoteAddress.RawName;
+            if (ProtocolUtilities.IsLoopbackAddress(remoteAddress) || IsLocalAddress(remoteAddress))
+            {
+                socket.Dispose();
+                return;
+            }
             try
             {
                 // QuickShareSession owns the socket and its single reader/writer pair.

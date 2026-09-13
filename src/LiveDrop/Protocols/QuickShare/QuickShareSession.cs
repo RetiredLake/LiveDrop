@@ -77,6 +77,14 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
         {
+            await ReceiveAsync(socket, displayName, consent, status, progress, cancellationToken, null);
+        }
+
+        // The receive-folder overload is used only by the protocol loopback
+        // fixture. The app's adapters use the normal library-backed overload
+        // above, so a local test socket cannot become a user-facing route.
+        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, StorageFolder receiveFolder)
+        {
             using (var connection = new SocketConnection(socket))
             {
                 var requestFrame = await connection.ReadFrameAsync(cancellationToken);
@@ -118,7 +126,7 @@ namespace LiveDrop.Protocols.QuickShare
                         var accepted = consent == null || await consent(peer, offer);
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
-                        await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken);
+                        await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken, receiveFolder);
                         await CompleteIncomingSessionAsync(connection, crypto, cancellationToken);
                         status?.Invoke("Quick Share transfer received. Files are saved in the LiveDrop folder.");
                     }
@@ -154,7 +162,7 @@ namespace LiveDrop.Protocols.QuickShare
             }
         }
 
-        private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
+        private static async Task ReceiveFilesAsync(SocketConnection connection, QuickShareCrypto crypto, IList<QuickShareFileMetadata> metadata, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, StorageFolder receiveFolder)
         {
             var writers = new Dictionary<long, IncomingFile>();
             var bytePayloads = new Dictionary<long, MemoryStream>();
@@ -163,7 +171,7 @@ namespace LiveDrop.Protocols.QuickShare
             {
                 foreach (var item in metadata)
                 {
-                    var folder = await TransferFileStore.GetReceiveFolderAsync(item.MimeType);
+                    var folder = receiveFolder ?? await TransferFileStore.GetReceiveFolderAsync(item.MimeType);
                     var temp = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(item.Name) + ".part", CreationCollisionOption.GenerateUniqueName);
                     var stream = await temp.OpenAsync(FileAccessMode.ReadWrite);
                     writers[item.PayloadId] = new IncomingFile { Metadata = item, Temporary = temp, Stream = stream, Writer = new DataWriter(stream) };

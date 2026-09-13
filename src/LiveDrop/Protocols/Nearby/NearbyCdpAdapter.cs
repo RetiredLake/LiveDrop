@@ -97,6 +97,8 @@ namespace LiveDrop.Protocols.Nearby
                 throw new ShareProtocolException("The selected peer is not a Microsoft Nearby peer.");
             if (offer == null || offer.Files == null || offer.Files.Count == 0)
                 throw new ShareProtocolException("Microsoft Nearby requires at least one file.");
+            if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
+                throw new ShareProtocolException("Loopback transfers are disabled.");
 
             using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
             {
@@ -180,6 +182,11 @@ namespace LiveDrop.Protocols.Nearby
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
         {
             var address = socket.Information.RemoteAddress == null ? string.Empty : socket.Information.RemoteAddress.RawName;
+            if (ProtocolUtilities.IsLoopbackAddress(address) || IsLocalAddress(address))
+            {
+                socket.Dispose();
+                return;
+            }
             var peer = new PeerDescriptor("nearby:" + address, "Nearby device", Transport, address, TcpPort, "CDP v3/TCP");
             try
             {
@@ -306,6 +313,18 @@ namespace LiveDrop.Protocols.Nearby
         {
             return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
                 ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
+        }
+
+        private static bool IsLocalAddress(string address)
+        {
+            if (string.IsNullOrWhiteSpace(address)) return false;
+            try
+            {
+                return NetworkInformation.GetHostNames().Any(host =>
+                    host.Type == HostNameType.Ipv4 &&
+                    string.Equals(host.RawName, address, StringComparison.OrdinalIgnoreCase));
+            }
+            catch { return false; }
         }
     }
 }

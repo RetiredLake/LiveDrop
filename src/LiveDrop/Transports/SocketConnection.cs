@@ -24,6 +24,8 @@ namespace LiveDrop.Transports
 
         internal static async Task<SocketConnection> ConnectAsync(string address, int port)
         {
+            if (Protocols.ProtocolUtilities.IsLoopbackAddress(address))
+                throw new InvalidOperationException("Loopback transfers are disabled.");
             var socket = new StreamSocket();
             await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket);
             socket.Control.NoDelay = true;
