@@ -22,7 +22,7 @@
     <ScrollViewer Grid.Row="2" Margin="0,16,0,0">
       <StackPanel>
         <TextBlock Text="Supported peers" FontSize="20" Margin="0,0,0,8" />
-        <CheckBox x:Name="NearbyCheckBox" Content="Microsoft Nearby Share" IsChecked="True" />
+        <CheckBox x:Name="NearbyCheckBox" Content="Microsoft Nearby Share" IsChecked="False" />
         <CheckBox x:Name="QuickShareCheckBox" Content="Google Quick Share" IsChecked="True" />
         <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
         <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged" />

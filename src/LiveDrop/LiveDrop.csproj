@@ -90,5 +90,32 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.14" />
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets" />
+  <PropertyGroup Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')">
+    <!-- Properties normally supplied by the classic UWP CSharp wrapper. -->
+    <TargetFrameworkIdentifier>.NETCore</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v5.0</TargetFrameworkVersion>
+    <TargetFrameworkMoniker>.NETCore,Version=v5.0</TargetFrameworkMoniker>
+    <NuGetTargetMoniker>UAP,Version=v10.0.10586</NuGetTargetMoniker>
+    <ImportFrameworkWinFXTargets>false</ImportFrameworkWinFXTargets>
+    <ImplicitlyExpandTargetPlatform>true</ImplicitlyExpandTargetPlatform>
+    <SDKIdentifier>Windows</SDKIdentifier>
+    <SDKVersion>10.0</SDKVersion>
+    <WindowsSdkPath Condition="'$(WindowsSdkPath)' == ''">$(WindowsKitsPath)</WindowsSdkPath>
+    <TargetPlatformSdkPath Condition="'$(TargetPlatformSdkPath)' == ''">$(WindowsSdkPath)</TargetPlatformSdkPath>
+    <VCInstallDir Condition="'$(VCInstallDir)' == '' and Exists('$(MSBuildExtensionsPath)\..\VC')">$(MSBuildExtensionsPath)\..\VC\</VCInstallDir>
+  </PropertyGroup>
+  <Import Project="$(WindowsSdkPath)DesignTime\CommonConfiguration\Neutral\UAP\$(TargetPlatformVersion)\UAP.props"
+          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
+  <ItemGroup Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets') and Exists('$(WindowsSdkPath)UnionMetadata\$(TargetPlatformVersion)\Facade\Windows.winmd')">
+    <Reference Include="$(WindowsSdkPath)UnionMetadata\$(TargetPlatformVersion)\Facade\Windows.winmd">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets"
+          Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
+  <!-- BuildTools may have the Windows SDK XAML compiler but not the classic VS UWP wrapper. -->
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"
+          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets')" />
+  <Import Project="$(WindowsKitsPath)bin\$(TargetPlatformVersion)\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets"
+          Condition="!Exists('$(MSBuildExtensionsPath)\Microsoft\WindowsXaml\v$(VisualStudioVersion)\Microsoft.Windows.UI.Xaml.CSharp.targets') and Exists('$(WindowsKitsPath)bin\$(TargetPlatformVersion)\XamlCompiler\Microsoft.Windows.UI.Xaml.Common.targets')" />
 </Project>

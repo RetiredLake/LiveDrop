@@ -43,7 +43,7 @@ namespace LiveDrop
             InitializeComponent();
             _viewDispatcher = Dispatcher;
             var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            NearbyCheckBox.IsChecked = !(settings["NearbyEnabled"] is bool) || (bool)settings["NearbyEnabled"];
+            NearbyCheckBox.IsChecked = settings["NearbyEnabled"] is bool && (bool)settings["NearbyEnabled"];
             QuickShareCheckBox.IsChecked = !(settings["QuickShareEnabled"] is bool) || (bool)settings["QuickShareEnabled"];
             NearbyCheckBox.Checked += OnProtocolsChanged;
             NearbyCheckBox.Unchecked += OnProtocolsChanged;
@@ -274,6 +274,14 @@ namespace LiveDrop
             await ApplyProtocolsAsync();
         }
 
+        private async void OnProtocolsChanged(object sender, RoutedEventArgs e)
+        {
+            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
+            settings["NearbyEnabled"] = NearbyCheckBox.IsChecked == true;
+            settings["QuickShareEnabled"] = QuickShareCheckBox.IsChecked == true;
+            if (_loaded) await ApplyProtocolsAsync();
+        }
+
         private async void OnWindowClosed(object sender, CoreWindowEventArgs e)
         {
             _viewClosed = true;
@@ -281,14 +289,6 @@ namespace LiveDrop
             TryReportShareError("Share canceled.");
             if (_sendCancellation != null) _sendCancellation.Cancel();
             await ApplyProtocolsAsync();
-        }
-
-        private async void OnProtocolsChanged(object sender, RoutedEventArgs e)
-        {
-            var settings = Windows.Storage.ApplicationData.Current.LocalSettings.Values;
-            settings["NearbyEnabled"] = NearbyCheckBox.IsChecked == true;
-            settings["QuickShareEnabled"] = QuickShareCheckBox.IsChecked == true;
-            if (_loaded) await ApplyProtocolsAsync();
         }
 
         private async void OnShareClicked(object sender, RoutedEventArgs e)
@@ -639,11 +639,11 @@ namespace LiveDrop
                     TransferProgressPanel.Visibility = Visibility.Visible;
                     TransferProgressText.Text = "Accepting";
                     TransferNotification.Show("Incoming share", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
-                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in the LiveDrop folder.";
+                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in Downloads/LiveDrop.";
                 });
                 // LiveDrop sessions accept automatically so two LiveDrop
                 // clients cannot wait forever for a consent UI. The protocol
-                // layer writes each completed file to a visible library folder.
+                // layer writes each completed file to Downloads/LiveDrop.
                 if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed);
             }
             catch
@@ -656,8 +656,8 @@ namespace LiveDrop
 
     internal sealed class PeerListItem
     {
-        internal PeerDescriptor Peer { get; private set; }
         private readonly bool _showProtocol;
+        internal PeerDescriptor Peer { get; private set; }
         internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }
         internal bool Matches(PeerDescriptor peer)
         {

@@ -114,7 +114,8 @@ namespace LiveDrop.Protocols.QuickShare
                 throw new ShareProtocolException("Loopback transfers are disabled.");
             using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
             {
-                await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken);
+                await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken,
+                    message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)));
             }
         }
 

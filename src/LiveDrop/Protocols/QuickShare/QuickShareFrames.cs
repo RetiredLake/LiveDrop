@@ -56,7 +56,9 @@ namespace LiveDrop.Protocols.QuickShare
         internal const int NearbyConnectionRequest = 1;
         internal const int NearbyConnectionResponse = 2;
         internal const int NearbyPayloadTransfer = 3;
+        internal const int NearbyBandwidthUpgradeNegotiation = 4;
         internal const int NearbyKeepAlive = 5;
+        internal const int NearbyDisconnection = 6;
         internal const int SharingIntroduction = 1;
         internal const int SharingResponse = 2;
         internal const int SharingPairedKeyEncryption = 3;
@@ -453,12 +455,12 @@ namespace LiveDrop.Protocols.QuickShare
             var disconnection = new ProtoWriter();
             if (requestSafeToDisconnect) disconnection.WriteBool(1, true);
             if (acknowledgeSafeToDisconnect) disconnection.WriteBool(2, true);
-            return BuildOfflineFrame(6, 7, disconnection.ToArray());
+            return BuildOfflineFrame(NearbyDisconnection, 7, disconnection.ToArray());
         }
 
         internal static bool IsDisconnection(byte[] data)
         {
-            return ReadOfflineFrameType(data) == 6;
+            return ReadOfflineFrameType(data) == NearbyDisconnection;
         }
 
         internal static bool IsSafeDisconnectRequest(byte[] data)
@@ -473,7 +475,58 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildKeepAlive()
         {
-            return BuildOfflineFrame(NearbyKeepAlive, 6, new byte[0]);
+            return BuildKeepAlive(false, NextKeepAliveSequence());
+        }
+
+        internal static byte[] BuildKeepAlive(bool acknowledgement)
+        {
+            return BuildKeepAlive(acknowledgement, NextKeepAliveSequence());
+        }
+
+        internal static byte[] BuildKeepAlive(bool acknowledgement, uint sequence)
+        {
+            var keepAlive = new ProtoWriter();
+            if (acknowledgement) keepAlive.WriteBool(1, true);
+            keepAlive.WriteInt32(2, unchecked((int)sequence));
+            return BuildOfflineFrame(NearbyKeepAlive, 6, keepAlive.ToArray());
+        }
+
+        internal static bool IsKeepAliveAcknowledgement(byte[] data)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 6 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var keepAlive = new ProtoReader(v1.ReadBytes());
+                while (!keepAlive.End)
+                {
+                    var field = keepAlive.ReadTag();
+                    if ((field >> 3) == 1 && (field & 7) == 0) return keepAlive.ReadVarint() != 0;
+                    keepAlive.Skip(field & 7);
+                }
+                return false;
+            }
+            return false;
+        }
+
+        internal static uint ReadKeepAliveSequence(byte[] data)
+        {
+            var v1 = ReadV1(data);
+            while (!v1.End)
+            {
+                var tag = v1.ReadTag();
+                if ((tag >> 3) != 6 || (tag & 7) != 2) { v1.Skip(tag & 7); continue; }
+                var keepAlive = new ProtoReader(v1.ReadBytes());
+                while (!keepAlive.End)
+                {
+                    var field = keepAlive.ReadTag();
+                    if ((field >> 3) == 2 && (field & 7) == 0) return (uint)keepAlive.ReadVarint();
+                    keepAlive.Skip(field & 7);
+                }
+                return 0;
+            }
+            return 0;
         }
 
         internal static byte[] BuildFileChunk(long payloadId, long totalSize, long offset, byte[] body, bool last)
@@ -550,6 +603,13 @@ namespace LiveDrop.Protocols.QuickShare
             var value = new byte[count];
             using (var random = System.Security.Cryptography.RandomNumberGenerator.Create()) random.GetBytes(value);
             return value;
+        }
+
+        private static int _keepAliveSequence;
+
+        private static uint NextKeepAliveSequence()
+        {
+            return unchecked((uint)System.Threading.Interlocked.Increment(ref _keepAliveSequence));
         }
 
         private static byte[] BuildOfflineFrame(int type, int nestedField, byte[] nested)

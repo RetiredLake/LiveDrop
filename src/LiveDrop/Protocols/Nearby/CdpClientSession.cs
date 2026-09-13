@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LiveDrop.Models;
 using LiveDrop.Protocols.QuickShare;
+using LiveDrop.Services;
 using LiveDrop.Transports;
 using Windows.Storage;
 using Windows.Storage.Streams;
@@ -186,13 +187,7 @@ namespace LiveDrop.Protocols.Nearby
 
         private static async Task<IList<byte>> ReadFileRangeAsync(StorageFile file, ulong position, uint length, CancellationToken cancellationToken)
         {
-            if (file == null) throw new ShareProtocolException("The selected file is unavailable.");
-            using (var input = await file.OpenReadAsync())
-            using (var reader = new DataReader(input))
-            {
-                input.Seek(position); var result = new List<byte>((int)length); while (result.Count < length) { cancellationToken.ThrowIfCancellationRequested(); var loaded = await reader.LoadAsync(length - (uint)result.Count); if (loaded == 0) break; var buffer = new byte[loaded]; reader.ReadBytes(buffer); result.AddRange(buffer); }
-                if (result.Count != length) throw new EndOfStreamException("The selected file ended before the requested range."); return result;
-            }
+            return await TransferFileStore.ReadChunkAsync(file, position, length, cancellationToken);
         }
 
         private async Task SendAuthenticationAsync(byte messageType, byte[] certificate, byte[] signature, CancellationToken cancellationToken)
