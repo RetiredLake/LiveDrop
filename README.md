@@ -1,17 +1,26 @@
 # LiveDrop
 
-LiveDrop is a Windows 10 Mobile first nearby sharing client. Its target is Windows 10 Mobile RTM era UWP (`10.0.10586.0`) with desktop Windows builds used as the reference test peer.
+<img width="256" height="256" alt="LiveDrop_white_transparent_2048" src="https://github.com/user-attachments/assets/b2a17170-5510-46a3-890b-482048eb8518" />
 
-The first milestone has two independent protocol adapters:
+LiveDrop is the first Windows 10/Mobile Google Quick Share client. It runs on Windows 10/Mobile RTM and newer (`10.0.10586.0+`).
 
-- Microsoft Nearby Share compatibility for Windows PCs, based on the Connected Devices Platform discovery and session specifications.
-- Google Quick Share compatibility for Android, beginning with the documented LAN mDNS path and the UKEY2/ Nearby Connections session.
+LiveDrop does not support Apple Airdrop. Microsoft Nearby Share is supported but not recommended.
 
-AirDrop is outside this project milestone. No AirDrop code or compatibility promise belongs in LiveDrop.
+## Install
 
-## Current execution state
+#### App Stores
+<p>
+  <a href="https://apps.microsoft.com/detail/9PNQST6DJV6P">
+    <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" height="48">
+  </a>
+  <a href="https://store.live.net.co/app/842">
+    <img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get LiveBubbles from Live Store" height="48">
+  </a>
+</p>
 
-The repository currently contains the RTM-floor UWP shell, Windows Share Target activation, peer and offer models, safe file-storage primitives, Microsoft CDP v3 discovery plus authenticated NearShare send/receive sessions, and Quick Share mDNS discovery plus UKEY2/encrypted send/receive sessions. Real Windows 10 Mobile, Windows PC, and Android peers still need to validate the wire paths before an RTM build can be called interoperable.
+#### Sideloading
+Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/tag/v0.1.5.6), install the .cer certificate (to local machine > trusted people on pc), and install the .appxbundle
+LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](https://github.com/RetiredLake/LiveBubbles)
 
 ## Build
 
@@ -43,10 +52,8 @@ The practical behavior from GPL-3.0 protocol projects is being ported behind Liv
 
 The checked-in protocol smoke test covers P-256, Quick Share encryption, CDP certificate authentication, CDP NearShare ValueSets, and CDP packet encryption. The local source-level UWP compile uses the cached WpBlueBubbles UWP reference assemblies when the machine lacks the classic XAML build targets.
 
-## Testing boundary
+## Disclaimer
 
-Testing artifacts may be produced for Windows PC and real Windows 10 Mobile hardware. The acceptance matrix begins with same-LAN foreground transfer, then adds BLE-triggered discovery, Wi-Fi Direct, suspension, network loss, duplicate names, cancellation, malformed messages, and large files. Real Lumia hardware is required for the RTM claim; an emulator is not treated as evidence.
+Licensed under the GPL 3.0.
 
-Version 0.1.5.4 is the file-storage follow-up to the sending and receiving interoperability hotfix. It retains the Windows Phone picker and share-target registration from 0.1.4.7, saves every received file type under `Pictures/LiveDrop`, creates that destination before writing, stages picker and share-target files into app-owned storage before sending, and fixes outgoing file streaming for both Quick Share and Microsoft Nearby. Quick Share configures its TCP socket before connecting, accepts valid encrypted bandwidth-upgrade and bandwidth-upgrade-retry control frames, answers keep-alives, keeps control payloads separated while they are reassembled, and reports the derived security PIN for comparison with the other device. Loopback and local-interface transfers are rejected by the production adapters and connector; a standalone test performs the only permitted LiveDrop-to-LiveDrop loopback transfer. Peer entries refresh their endpoint information and expire after 10 seconds without discovery traffic. The regular-launch action remains `Select file`; Windows 10 Mobile uses the WpBlueBubbles asynchronous multiple-file picker broker, while desktop Windows uses the asynchronous single-file picker API. Microsoft Nearby Share is skipped on Windows 10 Mobile because that Windows release never shipped the PC-only Nearby Sharing feature.
-
-The second-pass local review build makes the supported protocols selectable, including an all-off state, and saves the selection. Peer rows show friendly protocol labels only while both protocols are selected. Share-target views own their share operations, and discovery callbacks tolerate a closed view. See [second-pass validation](docs/second-pass-validation.md).
+AirDrop, Google Quick Share and Microsoft Nearby Sharing are names belonging to their respective owners. This project is unofficial and is not affiliated with Apple, Google, or Microsoft
