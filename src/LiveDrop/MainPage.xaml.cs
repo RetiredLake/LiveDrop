@@ -33,6 +33,9 @@ namespace LiveDrop
         private bool _shareTargetSession;
         private bool _filePickerPending;
         private bool _shareOperationStarted;
+        private bool _incomingTelemetryPending;
+        private ShareTransport _incomingTelemetryTransport;
+        private ShareOffer _incomingTelemetryOffer;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
         private readonly System.Collections.Generic.Dictionary<string, DateTime> _peerLastSeen = new System.Collections.Generic.Dictionary<string, DateTime>();
         private readonly DispatcherTimer _peerExpiryTimer;
@@ -55,6 +58,7 @@ namespace LiveDrop
             QuickShareCheckBox.Checked += OnProtocolsChanged;
             QuickShareCheckBox.Unchecked += OnProtocolsChanged;
             Window.Current.Closed += OnWindowClosed;
+            TelemetryService.Instance.TrackApplicationStarted();
             _moreMenu = new MenuFlyout();
             var hostnameItem = new MenuFlyoutItem { Text = "Change Hostname" };
             hostnameItem.Click += OnChangeHostnameClicked;
@@ -130,6 +134,11 @@ namespace LiveDrop
             var link = new Windows.UI.Xaml.Documents.Hyperlink { NavigateUri = new Uri(GitHubUpdateService.RepositoryUrl) };
             link.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "retiredlake" });
             text.Inlines.Add(link);
+            text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
+            text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
+            var privacyLink = new Windows.UI.Xaml.Documents.Hyperlink { NavigateUri = new Uri("https://retiredlake.com/privacy.html") };
+            privacyLink.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "Privacy Policy" });
+            text.Inlines.Add(privacyLink);
             await new ContentDialog { Title = "About", Content = text, PrimaryButtonText = "Close" }.ShowAsync();
         }
 
@@ -229,6 +238,7 @@ namespace LiveDrop
         {
             if (_updateCheckInProgress) return;
             _updateCheckInProgress = true;
+            TelemetryService.Instance.TrackUpdateCheck("started");
             try
             {
                 StatusText.Text = "Checking GitHub for updates...";
@@ -236,6 +246,7 @@ namespace LiveDrop
                 var release = await service.GetLatestReleaseAsync();
                 if (release == null)
                 {
+                    TelemetryService.Instance.TrackUpdateCheck("no_release");
                     StatusText.Text = "No published update is available.";
                     await new MessageDialog("No published update is available yet.", "Check for Update").ShowAsync();
                     return;
@@ -244,12 +255,16 @@ namespace LiveDrop
                 var current = new Version(currentId.Major, currentId.Minor, currentId.Build, currentId.Revision);
                 if (release.Version <= current)
                 {
+                    TelemetryService.Instance.TrackUpdateCheck("up_to_date");
                     StatusText.Text = "LiveDrop is up to date.";
                     await new MessageDialog("You already have the latest release.", "No update available").ShowAsync();
                     return;
                 }
 
+                TelemetryService.Instance.TrackUpdateCheck("update_available");
+                TelemetryService.Instance.TrackUpdateAvailable(release.Version);
                 StatusText.Text = "Downloading v" + release.Version.ToString(4) + "...";
+                TelemetryService.Instance.TrackUpdateDownloadStarted(release.Version);
                 var progress = new Progress<double>(value =>
                     StatusText.Text = "Downloading v" + release.Version.ToString(4) + " - " + (int)(value * 100) + "%");
                 var file = await service.DownloadAsync(release, progress);
@@ -259,17 +274,24 @@ namespace LiveDrop
                     StatusText.Text = "Windows could not open the installer.";
                     await Launcher.LaunchUriAsync(new Uri(release.ReleaseUrl));
                 }
+                else
+                {
+                    TelemetryService.Instance.TrackUpdateInstallHandoff(release.Version);
+                }
             }
             catch (System.Net.Http.HttpRequestException)
             {
+                TelemetryService.Instance.TrackUpdateFailed("network");
                 StatusText.Text = "Could not reach GitHub. Check your connection and try again.";
             }
             catch (TaskCanceledException)
             {
+                TelemetryService.Instance.TrackUpdateFailed("timeout");
                 StatusText.Text = "The update check timed out. Please try again.";
             }
             catch (Exception ex)
             {
+                TelemetryService.Instance.TrackUpdateFailed(TelemetryService.ClassifyFailure(ex));
                 StatusText.Text = "Update check failed: " + ex.Message;
             }
             finally
@@ -305,6 +327,11 @@ namespace LiveDrop
             _viewClosed = true;
             _loaded = false;
             _peerExpiryTimer.Stop();
+            if (_incomingTelemetryPending)
+            {
+                TelemetryService.Instance.TrackShareCanceled(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer);
+                _incomingTelemetryPending = false;
+            }
             TryReportShareError("Share canceled.");
             if (_sendCancellation != null) _sendCancellation.Cancel();
             await ApplyProtocolsAsync();
@@ -557,10 +584,20 @@ namespace LiveDrop
                 {
                     if (e.Message.IndexOf("transfer received", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
+                        if (_incomingTelemetryPending)
+                        {
+                            TelemetryService.Instance.TrackShareSucceeded(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer);
+                            _incomingTelemetryPending = false;
+                        }
                         TransferNotification.Show("Share complete", e.Message);
                     }
                     else if (e.Message.IndexOf("transfer failed", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
+                        if (_incomingTelemetryPending)
+                        {
+                            TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer, "transfer_failed");
+                            _incomingTelemetryPending = false;
+                        }
                         TransferNotification.Show("Share failed", e.Message);
                     }
                 }
@@ -589,6 +626,8 @@ namespace LiveDrop
             try
             {
                 var outgoingName = _pendingOffer.Files.Count == 0 ? "file" : _pendingOffer.Files[0].Name;
+                var outgoingOffer = _pendingOffer;
+                TelemetryService.Instance.TrackShareStarted(selected.Peer.Transport, "send", outgoingOffer);
                 TransferNotification.Show("Sending", "Sending " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 StatusText.Text = "Sending " + outgoingName + " to " + selected.Peer.DisplayName + "...";
                 var progress = new Progress<ShareProgress>(value =>
@@ -596,6 +635,7 @@ namespace LiveDrop
                     if (!_viewClosed) ShowTransferProgress(value);
                 });
                 await _coordinator.SendAsync(selected.Peer, _pendingOffer, progress, _sendCancellation.Token);
+                TelemetryService.Instance.TrackShareSucceeded(selected.Peer.Transport, "send", outgoingOffer);
                 if (_viewClosed) return;
                 TryReportShareCompleted();
                 var completedSize = _pendingOffer.Files.Count == 0 ? 0 : _pendingOffer.Files[0].Size;
@@ -612,6 +652,7 @@ namespace LiveDrop
             }
             catch (OperationCanceledException)
             {
+                TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", _pendingOffer);
                 if (!_viewClosed)
                 {
                     StatusText.Text = "Share canceled.";
@@ -620,6 +661,7 @@ namespace LiveDrop
             }
             catch (Exception ex)
             {
+                TelemetryService.Instance.TrackShareFailed(selected.Peer.Transport, "send", _pendingOffer, TelemetryService.ClassifyFailure(ex));
                 if (!_viewClosed)
                 {
                     StatusText.Text = "Share failed: " + ex.Message;
@@ -666,6 +708,10 @@ namespace LiveDrop
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
             var fileName = e.Offer == null || e.Offer.Files.Count == 0 ? "file" : e.Offer.Files[0].Name;
+            _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
+            _incomingTelemetryOffer = e.Offer;
+            _incomingTelemetryPending = true;
+            TelemetryService.Instance.TrackShareStarted(_incomingTelemetryTransport, "receive", e.Offer);
             e.ProgressChanged += progress =>
             {
                 _ = RunOnViewAsync(() => ShowTransferProgress(progress));
@@ -690,6 +736,11 @@ namespace LiveDrop
             }
             catch
             {
+                if (_incomingTelemetryPending)
+                {
+                    TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer, "receive_handler");
+                    _incomingTelemetryPending = false;
+                }
                 try { if (e.CompleteAsync != null) await e.CompleteAsync(false); } catch { }
                 await RunOnViewAsync(() => ResetTransferProgress());
             }
