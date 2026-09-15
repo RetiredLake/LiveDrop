@@ -333,7 +333,7 @@ namespace LiveDrop.Services
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.5.6");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.7.0");
             return client;
         }
 

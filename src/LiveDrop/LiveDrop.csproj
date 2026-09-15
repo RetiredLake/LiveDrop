@@ -43,6 +43,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
     <OutputPath>bin\ARM\Release\</OutputPath><DefineConstants>TRACE;NETFX_CORE;WINDOWS_UWP</DefineConstants><Optimize>true</Optimize><DebugType>pdbonly</DebugType><PlatformTarget>ARM</PlatformTarget><UseVSHostingProcess>false</UseVSHostingProcess><ErrorReport>prompt</ErrorReport><Prefer32Bit>true</Prefer32Bit><UseDotNetNativeToolchain>true</UseDotNetNativeToolchain>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(StoreBuild)'=='true'">
+    <DefineConstants>$(DefineConstants);MICROSOFT_STORE</DefineConstants>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Include="App.xaml.cs"><DependentUpon>App.xaml</DependentUpon></Compile>
     <Compile Include="MainPage.xaml.cs"><DependentUpon>MainPage.xaml</DependentUpon></Compile>
@@ -79,7 +82,8 @@
     <Page Include="MainPage.xaml"><Generator>MSBuild:Compile</Generator><SubType>Designer</SubType></Page>
   </ItemGroup>
   <ItemGroup>
-    <AppxManifest Include="Package.appxmanifest"><SubType>Designer</SubType></AppxManifest>
+    <AppxManifest Include="Package.appxmanifest" Condition="'$(StoreBuild)' != 'true'"><SubType>Designer</SubType></AppxManifest>
+    <AppxManifest Include="Package.Store.appxmanifest" Condition="'$(StoreBuild)' == 'true'"><SubType>Designer</SubType></AppxManifest>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Properties\Default.rd.xml" />

@@ -64,11 +64,15 @@ namespace LiveDrop
             hostnameItem.Click += OnChangeHostnameClicked;
             var githubItem = new MenuFlyoutItem { Text = "About" };
             githubItem.Click += OnAboutClicked;
+#if !MICROSOFT_STORE
             var updateItem = new MenuFlyoutItem { Text = "Check for Update" };
             updateItem.Click += OnCheckForUpdateClicked;
+#endif
             _moreMenu.Items.Add(hostnameItem);
             _moreMenu.Items.Add(githubItem);
+#if !MICROSOFT_STORE
             _moreMenu.Items.Add(updateItem);
+#endif
             _peerExpiryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
             _peerExpiryTimer.Tick += OnPeerExpiryTimerTick;
             Loaded += OnLoaded;
@@ -346,17 +350,10 @@ namespace LiveDrop
                 var phonePicker = IsWindowsPhonePicker();
                 var picker = CreateFilePicker(phonePicker);
                 StatusText.Text = "Select a file from Photos or File Explorer.";
-                if (phonePicker)
-                {
-                    // WpBlueBubbles uses the multiple-file broker on Windows 10 Mobile.
-                    // Pick the first item here because LiveDrop sends one selected file.
-                    var files = await picker.PickMultipleFilesAsync();
-                    await CompletePickedFileAsync(files == null ? null : files.FirstOrDefault());
-                }
-                else
-                {
-                    await CompletePickedFileAsync(await picker.PickSingleFileAsync());
-                }
+                // Use the multiple-file broker on every UWP target. This keeps
+                // regular launches consistent with the Windows share target and
+                // preserves every item selected by Quick Share-compatible sources.
+                await CompletePickedFilesAsync(await picker.PickMultipleFilesAsync());
             }
             catch (Exception ex)
             {
@@ -372,20 +369,7 @@ namespace LiveDrop
         {
             var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
             if (!phonePicker) picker.ViewMode = PickerViewMode.Thumbnail;
-            var extensions = phonePicker ? new[]
-            {
-                // Keep the Windows 10 Mobile broker filter aligned with WpBlueBubbles.
-                ".jpg", ".jpeg", ".png", ".heic", ".gif",
-                ".mp4", ".m4v", ".mov", ".wmv", ".pdf"
-            } : new[]
-            {
-                ".jpg", ".jpeg", ".png", ".heic", ".gif", ".bmp", ".webp",
-                ".mp4", ".m4v", ".mov", ".wmv", ".avi", ".mkv",
-                ".mp3", ".m4a", ".wav", ".flac", ".pdf", ".txt",
-                ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
-                ".csv", ".json", ".xml", ".zip", ".7z", ".rar"
-            };
-            foreach (var extension in extensions) picker.FileTypeFilter.Add(extension);
+            picker.FileTypeFilter.Add("*");
             return picker;
         }
 
@@ -395,16 +379,21 @@ namespace LiveDrop
                 ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
         }
 
-        private async Task CompletePickedFileAsync(StorageFile file)
+        private async Task CompletePickedFilesAsync(System.Collections.Generic.IReadOnlyList<StorageFile> files)
         {
-            if (file == null)
+            if (files == null || files.Count == 0)
             {
                 StatusText.Text = "No file selected.";
                 return;
             }
 
-            _pendingOffer = await ShareOfferFactory.FromPickedFileAsync(file);
-            SelectedFileText.Text = file.Name;
+            _pendingOffer = await ShareOfferFactory.FromPickedFilesAsync(files);
+            if (_pendingOffer.Files.Count == 0)
+            {
+                StatusText.Text = "No file selected.";
+                return;
+            }
+            SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
             SelectedFileText.Visibility = Visibility.Visible;
             ResetTransferProgress();
             ShareButton.Visibility = Visibility.Collapsed;
@@ -413,6 +402,13 @@ namespace LiveDrop
             SendButton.IsEnabled = true;
             CancelButton.Visibility = Visibility.Visible;
             StatusText.Text = "Select a peer, then send the file.";
+        }
+
+        private static string GetOfferDisplayName(ShareOffer offer)
+        {
+            if (offer == null || offer.Files == null || offer.Files.Count == 0) return "file";
+            if (offer.Files.Count == 1) return offer.Files[0].Name;
+            return offer.Files.Count + " files";
         }
 
         private void OnCancelClicked(object sender, RoutedEventArgs e)
@@ -625,7 +621,7 @@ namespace LiveDrop
             _sendCancellation = new CancellationTokenSource();
             try
             {
-                var outgoingName = _pendingOffer.Files.Count == 0 ? "file" : _pendingOffer.Files[0].Name;
+                var outgoingName = GetOfferDisplayName(_pendingOffer);
                 var outgoingOffer = _pendingOffer;
                 TelemetryService.Instance.TrackShareStarted(selected.Peer.Transport, "send", outgoingOffer);
                 TransferNotification.Show("Sending", "Sending " + outgoingName + " to " + selected.Peer.DisplayName + ".");
@@ -634,12 +630,15 @@ namespace LiveDrop
                 {
                     if (!_viewClosed) ShowTransferProgress(value);
                 });
-                await _coordinator.SendAsync(selected.Peer, _pendingOffer, progress, _sendCancellation.Token);
+                await _coordinator.SendAsync(selected.Peer, outgoingOffer, progress, _sendCancellation.Token);
                 TelemetryService.Instance.TrackShareSucceeded(selected.Peer.Transport, "send", outgoingOffer);
                 if (_viewClosed) return;
                 TryReportShareCompleted();
-                var completedSize = _pendingOffer.Files.Count == 0 ? 0 : _pendingOffer.Files[0].Size;
-                ShowTransferProgress(new ShareProgress(outgoingName, completedSize, completedSize));
+                if (outgoingOffer.Files.Count == 1)
+                {
+                    var completedSize = outgoingOffer.Files[0].Size;
+                    ShowTransferProgress(new ShareProgress(outgoingName, completedSize, completedSize));
+                }
                 TransferNotification.Show("Share complete", "Sent " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 _pendingOffer = null;
                 if (!_shareTargetSession)
@@ -707,7 +706,7 @@ namespace LiveDrop
 
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
-            var fileName = e.Offer == null || e.Offer.Files.Count == 0 ? "file" : e.Offer.Files[0].Name;
+            var fileName = GetOfferDisplayName(e.Offer);
             _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
             _incomingTelemetryOffer = e.Offer;
             _incomingTelemetryPending = true;

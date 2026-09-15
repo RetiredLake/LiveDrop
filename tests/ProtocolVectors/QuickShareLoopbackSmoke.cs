@@ -47,13 +47,21 @@ internal static class QuickShareLoopbackSmoke
             var expected = new byte[700000];
             for (var i = 0; i < expected.Length; i++) expected[i] = (byte)((i * 31 + 7) & 0xFF);
             await FileIO.WriteBytesAsync(source, expected);
+            var secondSource = await root.CreateFileAsync("loopback-second.txt", CreationCollisionOption.ReplaceExisting);
+            var secondExpected = new byte[131073];
+            for (var i = 0; i < secondExpected.Length; i++) secondExpected[i] = (byte)((i * 17 + 3) & 0xFF);
+            await FileIO.WriteBytesAsync(secondSource, secondExpected);
 
             var offer = new ShareOffer(
-                new List<ShareFileDescriptor> { new ShareFileDescriptor(source, "application/octet-stream", expected.Length) },
+                new List<ShareFileDescriptor>
+                {
+                    new ShareFileDescriptor(source, "application/octet-stream", expected.Length),
+                    new ShareFileDescriptor(secondSource, "text/plain", secondExpected.Length)
+                },
                 string.Empty);
             var listener = new StreamSocketListener();
             var receiverTaskSource = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
-            listener.ConnectionReceived += (sender, args) =>
+            listener.add_ConnectionReceived((sender, args) =>
             {
                 var task = QuickShareSession.ReceiveAsync(
                     args.Socket,
@@ -64,7 +72,7 @@ internal static class QuickShareLoopbackSmoke
                     CancellationToken.None,
                     receivedFolder);
                 if (!receiverTaskSource.TrySetResult(task)) args.Socket.Dispose();
-            };
+            });
 
             await listener.BindServiceNameAsync("0");
             var outboundSocket = new StreamSocket();
@@ -97,20 +105,26 @@ internal static class QuickShareLoopbackSmoke
             await (await receiverTaskSource.Task);
 
             var files = await receivedFolder.GetFilesAsync();
-            var target = files.FirstOrDefault(file => file.Name == "loopback.bin");
-            if (target == null) throw new InvalidOperationException("Loopback receiver did not save the file.");
-            var buffer = await FileIO.ReadBufferAsync(target);
-            var reader = DataReader.FromBuffer(buffer);
-            var actual = new byte[checked((int)reader.UnconsumedBufferLength)];
-            reader.ReadBytes(actual);
-            reader.Dispose();
-            if (!expected.SequenceEqual(actual)) throw new InvalidOperationException("Loopback file contents did not round-trip.");
+            await AssertFileContentsAsync(files, "loopback.bin", expected);
+            await AssertFileContentsAsync(files, "loopback-second.txt", secondExpected);
         }
         finally
         {
             try { Directory.Delete(rootPath, true); } catch { }
         }
-        Console.WriteLine("PASS: Quick Share loopback handshake and file receive; production loopback guard");
+        Console.WriteLine("PASS: Quick Share loopback handshake and multi-file receive; production loopback guard");
+    }
+
+    private static async Task AssertFileContentsAsync(IReadOnlyList<StorageFile> files, string name, byte[] expected)
+    {
+        var target = files.FirstOrDefault(file => file.Name == name);
+        if (target == null) throw new InvalidOperationException("Loopback receiver did not save " + name + ".");
+        var buffer = await FileIO.ReadBufferAsync(target);
+        var reader = DataReader.FromBuffer(buffer);
+        var actual = new byte[checked((int)reader.UnconsumedBufferLength)];
+        reader.ReadBytes(actual);
+        reader.Dispose();
+        if (!expected.SequenceEqual(actual)) throw new InvalidOperationException("Loopback file contents did not round-trip: " + name + ".");
     }
 
     private static async Task AssertProductionConnectRejectsLoopbackAsync(string address)

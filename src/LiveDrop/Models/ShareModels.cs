@@ -125,15 +125,12 @@ namespace LiveDrop.Models
     {
         public static async Task<ShareOffer> FromPickedFileAsync(StorageFile file)
         {
-            if (file == null) return new ShareOffer(new List<ShareFileDescriptor>(), string.Empty);
-            // Picker and share-target files can be broker-backed. Keep a local
-            // app-owned copy so the protocol can open it after discovery and
-            // authentication have completed.
-            var stagedFile = await StageOutgoingFileAsync(file);
-            var properties = await stagedFile.GetBasicPropertiesAsync();
-            return new ShareOffer(
-                new List<ShareFileDescriptor> { new ShareFileDescriptor(stagedFile, GuessMimeType(stagedFile.FileType), checked((long)properties.Size)) },
-                string.Empty);
+            return await FromPickedFilesAsync(file == null ? null : new[] { file });
+        }
+
+        public static async Task<ShareOffer> FromPickedFilesAsync(IReadOnlyList<StorageFile> sourceFiles)
+        {
+            return new ShareOffer(await StageFilesAsync(sourceFiles), string.Empty);
         }
 
         public static async Task<ShareOffer> FromShareOperationAsync(ShareOperation operation)
@@ -144,16 +141,13 @@ namespace LiveDrop.Models
             if (data != null && data.Contains(StandardDataFormats.StorageItems))
             {
                 var items = await data.GetStorageItemsAsync();
-                var outgoingFolder = await GetOutgoingFolderAsync();
+                var sourceFiles = new List<StorageFile>();
                 foreach (var item in items)
                 {
                     var sourceFile = item as StorageFile;
-                    if (sourceFile == null) continue;
-                    var file = await sourceFile.CopyAsync(outgoingFolder, sourceFile.Name, NameCollisionOption.GenerateUniqueName);
-                    var properties = await file.GetBasicPropertiesAsync();
-                    var size = checked((long)properties.Size);
-                    files.Add(new ShareFileDescriptor(file, GuessMimeType(file.FileType), size));
+                    if (sourceFile != null) sourceFiles.Add(sourceFile);
                 }
+                files.AddRange(await StageFilesAsync(sourceFiles));
             }
             if (data != null && data.Contains(StandardDataFormats.Text)) text = await data.GetTextAsync();
             if (files.Count == 0 && !string.IsNullOrWhiteSpace(text))
@@ -165,10 +159,23 @@ namespace LiveDrop.Models
             return new ShareOffer(files, text);
         }
 
-        private static async Task<StorageFile> StageOutgoingFileAsync(StorageFile source)
+        private static async Task<List<ShareFileDescriptor>> StageFilesAsync(IEnumerable<StorageFile> sources)
         {
-            if (source == null) return null;
-            return await source.CopyAsync(await GetOutgoingFolderAsync(), source.Name, NameCollisionOption.GenerateUniqueName);
+            var result = new List<ShareFileDescriptor>();
+            if (sources == null) return result;
+            StorageFolder outgoingFolder = null;
+            foreach (var source in sources)
+            {
+                if (source == null) continue;
+                if (outgoingFolder == null) outgoingFolder = await GetOutgoingFolderAsync();
+                // Picker and share-target files can be broker-backed. Keep a
+                // local app-owned copy so the protocol can open every file
+                // after discovery and authentication have completed.
+                var stagedFile = await source.CopyAsync(outgoingFolder, source.Name, NameCollisionOption.GenerateUniqueName);
+                var properties = await stagedFile.GetBasicPropertiesAsync();
+                result.Add(new ShareFileDescriptor(stagedFile, GuessMimeType(stagedFile.FileType), checked((long)properties.Size)));
+            }
+            return result;
         }
 
         private static async Task<StorageFolder> GetOutgoingFolderAsync()

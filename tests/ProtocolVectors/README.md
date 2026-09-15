@@ -4,7 +4,7 @@
 
 `MdnsSmoke.cs` compiles with the production `Transports/MdnsCodec.cs` and checks DNS announcement counts, endpoint fields, records arriving in separate responses, and unrelated-service filtering. Its Base64 helper replaces only the UWP-dependent utility class for this standalone test.
 
-`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives a 700,000-byte file, compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
+`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives two files (including a 700,000-byte payload), compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
 
 Run from the repository root in a developer PowerShell:
 
