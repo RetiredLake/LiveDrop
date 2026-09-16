@@ -2,7 +2,7 @@
 
 <img width="256" height="256" alt="LiveDrop_white_transparent_2048" src="https://github.com/user-attachments/assets/b2a17170-5510-46a3-890b-482048eb8518" />
 
-LiveDrop is the first Windows 10/Mobile Google Quick Share client. It runs on Windows 10/Mobile RTM and newer (`10.0.10586.0+`).
+LiveDrop is an unofficial Windows 10/Mobile Google Quick Share client. It runs on Windows 10/Mobile RTM and newer (`10.0.10586.0+`).
 
 LiveDrop does not support Apple Airdrop. Microsoft Nearby Share is supported but not recommended.
 
