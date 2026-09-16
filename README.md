@@ -4,7 +4,15 @@
 
 LiveDrop is an unofficial Windows 10/Mobile Google Quick Share client. It runs on Windows 10/Mobile RTM and newer (`10.0.10586.0+`).
 
-LiveDrop does not support Apple Airdrop. Microsoft Nearby Share is supported but not recommended.
+## Usage
+
+LiveDrop connects to most Quick Share clients, including unofficial ones. This means you can connect to Windows, Android, Chrome OS, macOS (NearDrop), and linux (unofficial clients)
+
+Quick Share devices must be on the same network and should be set to "Everyone" mode for maximum reliability. Files can be shared in batches from inside the app or the share sheet. 
+
+All incoming file types are supported and files are always saved to Pictures\LiveDrop\
+
+LiveDrop does not support Apple Airdrop and does not support Microsoft Nearby Sharing on mobile.
 
 ## Install
 
@@ -24,14 +32,14 @@ LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](ht
 
 ## Build
 
-Use the WpBlueBubbles toolchain:
+LiveDrop uses the same LiveBubbles toolchain:
 
 1. Visual Studio 2019 with Universal Windows Platform development.
 2. Windows 10 SDK 10.0.19041.
 3. The classic UWP C#/XAML targets and the pinned NuGet package source in `NuGet.config`.
 4. `LiveDrop.sln`, building `Debug` or `Release` for `ARM`, `x86`, or `x64`.
 
-The package manifest keeps `TargetDeviceFamily` at `10.0.10586.0`. ARM is the Windows 10 Mobile target. x86 and x64 provide PC validation builds.
+`TargetDeviceFamily` is set to `10.0.10586.0`. ARM is the Windows 10 Mobile target. x86 and x64 provide PC validation builds.
 
 ## Protocol references
 
@@ -47,10 +55,6 @@ The adapter design and wire comments are based on these public projects and spec
 - [pyquickshare](https://github.com/teaishealthy/pyquickshare)
 - [Google UKEY2](https://chromium.googlesource.com/external/github.com/google/ukey2/)
 - [Microsoft UWP networking samples](https://github.com/microsoft/Windows-universal-samples/tree/main/Samples/StreamSocket)
-
-The practical behavior from GPL-3.0 protocol projects is being ported behind LiveDrop interfaces rather than copying modern .NET or platform-specific application code into the RTM UWP project. Any future ported source must retain its upstream notices and GPL obligations.
-
-The checked-in protocol smoke test covers P-256, Quick Share encryption, CDP certificate authentication, CDP NearShare ValueSets, and CDP packet encryption. The local source-level UWP compile uses the cached WpBlueBubbles UWP reference assemblies when the machine lacks the classic XAML build targets.
 
 ## Disclaimer
 
