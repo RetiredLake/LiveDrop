@@ -1,8 +1,10 @@
 # LiveDrop
 
-<img width="256" height="256" alt="LiveDrop_white_transparent_2048" src="https://github.com/user-attachments/assets/b2a17170-5510-46a3-890b-482048eb8518" />
+<img width="300" height="300" alt="livedrop-300" src="https://github.com/user-attachments/assets/91001e2d-262a-407c-822b-ec63a1849bad" />
 
 LiveDrop is an unofficial Windows 10/Mobile Google Quick Share client. It runs on Windows 10/Mobile RTM and newer (`10.0.10586.0+`).
+
+🗞️ Featured on [Android Authority](https://www.androidauthority.com/windows-phone-quick-share-3711823/), [ITHome](https://www.ithome.com/1/003/240.htm), [INTERNET Watch (Impress)](https://internet.watch.impress.co.jp/docs/yajiuma/2141657.html), and [SmartWorld](https://www.smartworld.it/news/quick-share-google-windows-10-mobile-livedrop.html)
 
 ## Usage
 
