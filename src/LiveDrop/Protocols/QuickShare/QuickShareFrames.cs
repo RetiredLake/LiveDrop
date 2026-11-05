@@ -40,6 +40,8 @@ namespace LiveDrop.Protocols.QuickShare
 
     internal sealed class QuickShareFileMetadata
     {
+        internal bool IsText { get; set; }
+        internal int TextType { get; set; }
         internal string Name { get; set; }
         internal string MimeType { get; set; }
         internal long PayloadId { get; set; }
@@ -256,6 +258,9 @@ namespace LiveDrop.Protocols.QuickShare
                 }
                 break;
             }
+            var info = request.EndpointInfo;
+            if (info != null && info.Length >= 18 && (info[0] & 0x10) == 0 && info[17] > 0 && info[17] <= info.Length - 18)
+                request.EndpointName = Encoding.UTF8.GetString(info, 18, info[17]);
             return request;
         }
 
@@ -375,12 +380,22 @@ namespace LiveDrop.Protocols.QuickShare
                 while (!intro.End)
                 {
                     var field = intro.ReadTag();
-                    if ((field >> 3) != 1 || (field & 7) != 2) { intro.Skip(field & 7); continue; }
+                    if (((field >> 3) != 1 && (field >> 3) != 2) || (field & 7) != 2) { intro.Skip(field & 7); continue; }
                     var meta = new ProtoReader(intro.ReadBytes());
-                    var file = new QuickShareFileMetadata { MimeType = "application/octet-stream" };
+                    var file = new QuickShareFileMetadata { IsText = (field >> 3) == 2, MimeType = "application/octet-stream" };
                     while (!meta.End)
                     {
                         var metaField = meta.ReadTag();
+                        if (file.IsText)
+                        {
+                            if ((metaField >> 3) == 2 && (metaField & 7) == 2) file.Name = meta.ReadString();
+                            else if ((metaField >> 3) == 3 && (metaField & 7) == 0) file.TextType = (int)meta.ReadVarint();
+                            else if ((metaField >> 3) == 4 && (metaField & 7) == 0) file.PayloadId = (long)meta.ReadVarint();
+                            else if ((metaField >> 3) == 5 && (metaField & 7) == 0) file.Size = (long)meta.ReadVarint();
+                            else if ((metaField >> 3) == 6 && (metaField & 7) == 0) file.AttachmentId = (long)meta.ReadVarint();
+                            else meta.Skip(metaField & 7);
+                            continue;
+                        }
                         if ((metaField >> 3) == 1 && (metaField & 7) == 2) file.Name = meta.ReadString();
                         else if ((metaField >> 3) == 3 && (metaField & 7) == 0) file.PayloadId = (long)meta.ReadVarint();
                         else if ((metaField >> 3) == 4 && (metaField & 7) == 0) file.Size = (long)meta.ReadVarint();
@@ -407,15 +422,30 @@ namespace LiveDrop.Protocols.QuickShare
             return BuildIntroduction(files, payloadIds);
         }
 
+        internal static byte[] BuildLinkIntroduction(Uri link, long payloadId)
+        {
+            if (link == null || !link.IsAbsoluteUri || (link.Scheme != "https" && link.Scheme != "http"))
+                throw new ArgumentException(AppText.Get("OnlyHTTPAndHTTPSWebLinksAreSupported"));
+            var metadata = new ProtoWriter();
+            metadata.WriteString(2, link.Host);
+            metadata.WriteEnum(3, 2); // TextMetadata.Type.URL (NearDrop wire_format.proto).
+            metadata.WriteInt64(4, payloadId);
+            metadata.WriteInt64(5, Encoding.UTF8.GetByteCount(link.AbsoluteUri));
+            metadata.WriteInt64(6, payloadId);
+            var intro = new ProtoWriter();
+            intro.WriteMessage(2, metadata.ToArray());
+            return BuildSharingFrame(SharingIntroduction, 2, intro.ToArray());
+        }
+
         internal static byte[] BuildIntroduction(IReadOnlyList<ShareFileDescriptor> files, IReadOnlyList<long> payloadIds)
         {
-            if (files == null || payloadIds == null || files.Count != payloadIds.Count) throw new ArgumentException("Quick Share file metadata and payload IDs must have the same count.");
+            if (files == null || payloadIds == null || files.Count != payloadIds.Count) throw new ArgumentException(AppText.Get("QuickShareFileMetadataAndPayloadIDsMust"));
             var intro = new ProtoWriter();
             for (var index = 0; index < files.Count; index++)
             {
                 var file = files[index];
                 var payloadId = payloadIds[index];
-                if (payloadId <= 0) throw new ArgumentException("Quick Share payload IDs must be positive.");
+                if (payloadId <= 0) throw new ArgumentException(AppText.Get("QuickSharePayloadIDsMustBePositive"));
                 var metadata = new ProtoWriter();
                 metadata.WriteString(1, file.Name);
                 metadata.WriteEnum(2, FileType(file.MimeType));

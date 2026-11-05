@@ -41,7 +41,7 @@ namespace LiveDrop.Protocols.QuickShare
             _endpointInfo = QuickShareFrames.BuildEndpointInfo(_displayName, IsWindowsMobile() ? 1 : 3);
         }
 
-        public string Name { get { return "Google Quick Share"; } }
+        public string Name { get { return AppText.Get("GoogleQuickShare"); } }
         public ShareTransport Transport { get { return ShareTransport.GoogleQuickShare; } }
         public event EventHandler<PeerDiscoveredEventArgs> PeerDiscovered;
         public event EventHandler<ShareOfferReceivedEventArgs> OfferReceived;
@@ -56,7 +56,7 @@ namespace LiveDrop.Protocols.QuickShare
             _listener.ConnectionReceived += OnConnectionReceived;
             // An empty service name asks WinRT for an ephemeral TCP port. The
             // string "0" is treated as a service-name lookup on Windows 10
-            // Mobile and can fail with "No such host is known".
+            // Mobile and can fail with "No such host is known!".
             await _listener.BindServiceNameAsync(string.Empty);
             _port = int.Parse(_listener.Information.LocalPort);
             _address = FindLocalIpv4();
@@ -69,7 +69,7 @@ namespace LiveDrop.Protocols.QuickShare
             }
             catch (Exception ex)
             {
-                StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share mDNS socket unavailable: " + ex.Message));
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareMdnsUnavailable", ex.Message)));
             }
             _dnssd = new QuickShareDnssdPublisher(_serviceInstanceName, _endpointInfo);
             var dnssdStarted = !_mdnsStarted && await _dnssd.RegisterAsync(_listener, _address);
@@ -79,14 +79,14 @@ namespace LiveDrop.Protocols.QuickShare
             if (!_mdnsStarted && !dnssdStarted)
             {
                 await StopAsync();
-                throw new InvalidOperationException("Windows could not register the Quick Share DNS-SD service.");
+                throw new InvalidOperationException(AppText.Get("WindowsCouldNotRegisterTheQuickShareDNS"));
             }
             var discoveryToken = _stopSource.Token;
             _queryLoop = Task.Run(() => QueryLoopAsync(discoveryToken));
             StatusChanged?.Invoke(this, new StatusChangedEventArgs(
                 bleStarted
-                    ? "Quick Share Bluetooth and LAN discovery is active."
-                    : "Quick Share LAN discovery is active; Bluetooth discovery is unavailable."));
+                    ? AppText.Get("QuickShareBluetoothAndLANDiscoveryIsActive")
+                    : AppText.Get("QuickShareLanDiscoveryActive")));
         }
 
         public async Task StopAsync()
@@ -103,7 +103,20 @@ namespace LiveDrop.Protocols.QuickShare
             }
             if (_bleBeacon != null) { _bleBeacon.Dispose(); _bleBeacon = null; }
             if (_dnssd != null) { _dnssd.Dispose(); _dnssd = null; }
-            if (_mdns != null) { _mdns.ServicesReceived -= OnServicesReceived; _mdns.Dispose(); _mdns = null; }
+            if (_mdns != null)
+            {
+                if (_mdnsStarted)
+                {
+                    using (var goodbyeSource = new CancellationTokenSource(TimeSpan.FromSeconds(2)))
+                    {
+                        try { await _mdns.AnnounceAsync(_instanceName, "livedrop-" + _endpointId + ".local.", _address, _port, _endpointInfo, goodbyeSource.Token, true).ConfigureAwait(false); }
+                        catch { }
+                    }
+                }
+                _mdns.ServicesReceived -= OnServicesReceived;
+                _mdns.Dispose();
+                _mdns = null;
+            }
             _mdnsStarted = false;
             if (_listener != null) { _listener.ConnectionReceived -= OnConnectionReceived; _listener.Dispose(); _listener = null; }
             source.Dispose();
@@ -111,27 +124,30 @@ namespace LiveDrop.Protocols.QuickShare
 
         public async Task SendAsync(PeerDescriptor peer, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
         {
-            if (peer == null || peer.Transport != ShareTransport.GoogleQuickShare) throw new ShareProtocolException("The selected peer is not a Quick Share peer.");
-            if (offer == null || offer.Files.Count == 0) throw new ShareProtocolException("Quick Share currently requires at least one file.");
+            if (peer == null || peer.Transport != ShareTransport.GoogleQuickShare) throw new ShareProtocolException(AppText.Get("TheSelectedPeerIsNotAQuickShare"));
+            if (offer == null || !offer.HasContent) throw new ShareProtocolException(AppText.Get("SelectAFileOrWebLinkToShare"));
             if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
-                throw new ShareProtocolException("Loopback transfers are disabled.");
-            var stage = "validating the selected endpoint";
+                throw new ShareProtocolException(AppText.Get("LoopbackTransfersAreDisabled"));
+            var stage = AppText.Get("ValidatingTheSelectedEndpoint");
             try
             {
-                StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share connecting to " + peer.Address + ":" + peer.Port + "."));
-                stage = "opening the TCP connection";
-                using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
+                StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareConnecting", peer.Address, peer.Port)));
+                stage = AppText.Get("OpeningTheTCPConnection");
+                using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port, cancellationToken))
                 {
-                    StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share TCP connection established."));
-                    stage = "completing UKEY2 security handshake";
+                    StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Get("QuickShareTCPConnectionEstablished")));
+                    stage = AppText.Get("CompletingUKEY2SecurityHandshake");
                     await QuickShareSession.SendAsync(connection, _displayName, _endpointId, _endpointInfo, offer, progress, cancellationToken,
                         message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)));
                 }
             }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
             catch (Exception ex)
             {
-                var detail = "Quick Share outbound failed while " + stage + " to " + peer.Address + ":" + peer.Port +
-                    ": " + ex.Message + " (0x" + ex.HResult.ToString("X8") + ").";
+                var detail = AppText.Format("QuickShareOutboundFailed", stage, peer.Address, peer.Port, ex.Message, ex.HResult.ToString("X8"));
                 StatusChanged?.Invoke(this, new StatusChangedEventArgs(detail));
                 throw new ShareProtocolException(detail, ex);
             }
@@ -150,7 +166,7 @@ namespace LiveDrop.Protocols.QuickShare
                     }
                 }
                 catch (OperationCanceledException) { return; }
-                catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share discovery: " + ex.Message)); }
+                catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareDiscoveryError", ex.Message))); }
                 try { await Task.Delay(TimeSpan.FromSeconds(5), cancellationToken); }
                 catch (OperationCanceledException) { return; }
             }
@@ -169,16 +185,20 @@ namespace LiveDrop.Protocols.QuickShare
                 if (service == null ||
                     string.Equals(service.InstanceName, _serviceInstanceName, StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(service.InstanceName, _instanceName + ".", StringComparison.OrdinalIgnoreCase) ||
+                    ProtocolUtilities.IsLoopbackAddress(service.Address) ||
+                    string.IsNullOrWhiteSpace(service.Address) || service.Port < 1 || service.Port > 65535 ||
                     IsLocalAddress(service.Address)) continue;
                 var id = ExtractEndpointId(service.InstanceName);
                 if (string.IsNullOrWhiteSpace(id) || LocalEndpoints.ContainsKey(id)) continue;
-                var peer = new PeerDescriptor(id, service.DisplayName ?? "Android device", Transport, service.Address, service.Port, "mDNS/TCP,UKEY2");
+                var peer = new PeerDescriptor(id, service.DisplayName ?? AppText.Get("AndroidDevice"), Transport, service.Address, service.Port, "mDNS/TCP,UKEY2");
                 PeerDiscovered?.Invoke(this, new PeerDiscoveredEventArgs(peer));
             }
         }
 
         private void OnConnectionReceived(StreamSocketListener sender, StreamSocketListenerConnectionReceivedEventArgs args)
         {
+            var remote = args.Socket.Information.RemoteAddress;
+            StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareConnectionReceived", (remote == null ? AppText.Get("UnknownPeer") : remote.RawName))));
             try { args.Socket.Control.NoDelay = true; } catch { }
             var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
             _ = HandleIncomingAsync(args.Socket, token);
@@ -186,28 +206,47 @@ namespace LiveDrop.Protocols.QuickShare
 
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
         {
+            ShareOfferReceivedEventArgs received = null;
+            string securityPin = null;
+            var transferAccepted = false;
             var remoteAddress = socket.Information.RemoteAddress == null ? string.Empty : socket.Information.RemoteAddress.RawName;
             if (ProtocolUtilities.IsLoopbackAddress(remoteAddress) || IsLocalAddress(remoteAddress))
             {
                 socket.Dispose();
                 return;
             }
-            try
+            using (var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                // QuickShareSession owns the socket and its single reader/writer pair.
-                ShareOfferReceivedEventArgs received = null;
-                await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
+                cancellationToken = receiveCancellation.Token;
+                try
                 {
-                    var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
-                    if (OfferReceived == null) return true;
-                    received = new ShareOfferReceivedEventArgs(peer, offer, complete);
-                    OfferReceived(this, received);
-                    return await decision.Task;
-                }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken);
+                    // QuickShareSession owns the socket and its single reader/writer pair.
+                    await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
+                    {
+                        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                        if (OfferReceived == null) return true;
+                        using (cancellationToken.Register(() => decision.TrySetResult(false)))
+                        {
+                            received = new ShareOfferReceivedEventArgs(peer, offer, complete, receiveCancellation.Cancel, securityPin);
+                            OfferReceived(this, received);
+                            transferAccepted = await decision.Task;
+                        }
+                        return transferAccepted;
+                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken, value => securityPin = value);
+                    received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
+                }
+                catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
+                catch (Exception) when (cancellationToken.IsCancellationRequested)
+                {
+                    received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage"));
+                }
+                catch (Exception ex)
+                {
+                    received?.ReportCompletion(false, ex.Message);
+                    StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareTransferFailed", ex.Message)));
+                }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Quick Share transfer failed: " + ex.Message)); }
         }
 
         private static string CreateEndpointId()
@@ -246,36 +285,10 @@ namespace LiveDrop.Protocols.QuickShare
 
         private static string FindLocalIpv4()
         {
-            try
-            {
-                var names = NetworkInformation.GetHostNames();
-                var profiles = NetworkInformation.GetConnectionProfiles()
-                    .Where(profile => profile.NetworkAdapter != null && profile.GetNetworkConnectivityLevel() != NetworkConnectivityLevel.None)
-                    .OrderBy(profile => profile.ProfileName != null && profile.ProfileName.IndexOf("vEthernet", StringComparison.OrdinalIgnoreCase) >= 0 ? 1 : 0)
-                    .ToList();
-                foreach (var profile in profiles)
-                {
-                    var adapterId = profile.NetworkAdapter.NetworkAdapterId;
-                    var host = names.FirstOrDefault(x =>
-                        x.Type == HostNameType.Ipv4 &&
-                        x.IPInformation != null &&
-                        x.IPInformation.NetworkAdapter != null &&
-                        x.IPInformation.NetworkAdapter.NetworkAdapterId == adapterId &&
-                        x.RawName != "127.0.0.1" &&
-                        !x.RawName.StartsWith("127.") &&
-                        !x.RawName.StartsWith("169.254."));
-                    if (host != null) return host.RawName;
-                }
-                var fallbackHost = names.FirstOrDefault(x =>
-                    x.Type == HostNameType.Ipv4 &&
-                    x.RawName != "127.0.0.1" &&
-                    !x.RawName.StartsWith("127.") &&
-                    !x.RawName.StartsWith("169.254."));
-                return fallbackHost == null ? "127.0.0.1" : fallbackHost.RawName;
-            }
-            catch { return "127.0.0.1"; }
+            var host = MdnsMulticastService.GetLanHosts().FirstOrDefault();
+            if (host == null) throw new InvalidOperationException(AppText.Get("NoConnectedLANIPv4AddressIsAvailableFor"));
+            return host.RawName;
         }
-
         private bool IsLocalAddress(string address)
         {
             if (string.IsNullOrWhiteSpace(address)) return false;

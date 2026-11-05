@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Data.Json;
 using Windows.Storage;
@@ -31,14 +32,14 @@ namespace LiveDrop.Services
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
                 if ((int)response.StatusCode == 403 || (int)response.StatusCode == 429)
-                    throw new InvalidOperationException("GitHub is limiting requests. Please try again later.");
+                    throw new InvalidOperationException(AppText.Get("GitHubIsLimitingRequestsPleaseTryAgainLater"));
                 if (!response.IsSuccessStatusCode)
-                    throw new InvalidOperationException("GitHub returned HTTP " + (int)response.StatusCode + ". Please try again later.");
+                    throw new InvalidOperationException(AppText.Format("UpdateHttpError", (int)response.StatusCode));
                 var root = JsonObject.Parse(await response.Content.ReadAsStringAsync());
                 var tag = root.GetNamedString("tag_name", "");
                 Version version;
                 if (!TryParseVersion(tag, out version))
-                    throw new InvalidDataException("The latest release has an invalid version number.");
+                    throw new InvalidDataException(AppText.Get("TheLatestReleaseHasAnInvalidVersionNumber"));
 
                 var assets = new List<JsonObject>();
                 foreach (var value in root.GetNamedArray("assets", new JsonArray()))
@@ -53,7 +54,7 @@ namespace LiveDrop.Services
                 var asset = assets.FirstOrDefault(item => item.GetNamedString("name", "").Contains(expected));
                 if (asset == null && assets.Count == 1) asset = assets[0];
                 if (asset == null)
-                    throw new InvalidDataException("The latest release does not contain a unique LiveDrop app bundle.");
+                    throw new InvalidDataException(AppText.Get("TheLatestReleaseDoesNotContainAUnique"));
 
                 return new GitHubReleaseInfo
                 {
@@ -69,37 +70,51 @@ namespace LiveDrop.Services
 
         public async Task<StorageFile> DownloadAsync(GitHubReleaseInfo release, IProgress<double> progress)
         {
-            if (release == null || string.IsNullOrWhiteSpace(release.BundleUrl) || string.IsNullOrWhiteSpace(release.BundleName))
-                throw new ArgumentException("The GitHub release does not contain a downloadable bundle.", "release");
+            return await DownloadAsync(release, progress, CancellationToken.None);
+        }
 
+        public async Task<StorageFile> DownloadAsync(GitHubReleaseInfo release, IProgress<double> progress, CancellationToken cancellationToken)
+        {
+            if (release == null || string.IsNullOrWhiteSpace(release.BundleUrl) || string.IsNullOrWhiteSpace(release.BundleName))
+                throw new ArgumentException(AppText.Get("TheGitHubReleaseDoesNotContainADownloadable"), "release");
+
+            cancellationToken.ThrowIfCancellationRequested();
             var folder = await ApplicationData.Current.TemporaryFolder.CreateFolderAsync("Updates", CreationCollisionOption.OpenIfExists);
             var file = await folder.CreateFileAsync(release.BundleName, CreationCollisionOption.ReplaceExisting);
-            using (var client = CreateClient())
-            using (var response = await client.GetAsync(release.BundleUrl, HttpCompletionOption.ResponseHeadersRead))
+            try
             {
-                response.EnsureSuccessStatusCode();
-                var total = response.Content.Headers.ContentLength ?? release.BundleSize;
-                using (var input = await response.Content.ReadAsStreamAsync())
-                using (var output = await file.OpenStreamForWriteAsync())
+                using (var client = CreateClient())
+                using (var response = await client.GetAsync(release.BundleUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    var buffer = new byte[81920];
-                    long copied = 0;
-                    int read;
-                    while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    response.EnsureSuccessStatusCode();
+                    var total = response.Content.Headers.ContentLength ?? release.BundleSize;
+                    using (var input = await response.Content.ReadAsStreamAsync())
+                    using (var output = await file.OpenStreamForWriteAsync())
                     {
-                        await output.WriteAsync(buffer, 0, read);
-                        copied += read;
-                        if (total > 0 && progress != null) progress.Report((double)copied / total);
+                        var buffer = new byte[81920];
+                        long copied = 0;
+                        int read;
+                        while ((read = await input.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                        {
+                            await output.WriteAsync(buffer, 0, read, cancellationToken);
+                            copied += read;
+                            if (total > 0 && progress != null) progress.Report((double)copied / total);
+                        }
                     }
                 }
+                return file;
             }
-            return file;
+            catch
+            {
+                try { await file.DeleteAsync(); } catch { }
+                throw;
+            }
         }
 
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.7.0");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.12");
             return client;
         }
 

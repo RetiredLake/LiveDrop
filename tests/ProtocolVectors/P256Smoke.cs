@@ -20,6 +20,7 @@ internal static class P256Smoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         var alice = P256KeyAgreement.Create();
         var bob = P256KeyAgreement.Create();
         var aliceSecret = alice.ComputeSharedSecretHash(bob.ExportGenericPublicKey());

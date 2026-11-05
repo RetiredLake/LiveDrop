@@ -42,19 +42,19 @@ namespace LiveDrop.Services
             }
             catch (Exception ex)
             {
-                throw new IOException("Could not create Pictures/LiveDrop for received files.", ex);
+                throw new IOException(AppText.Get("CouldNotCreatePicturesLiveDropForReceivedFiles"), ex);
             }
         }
 
         internal static async Task<byte[]> ReadChunkAsync(StorageFile file, ulong position, uint length, CancellationToken cancellationToken)
         {
-            if (file == null) throw new ShareProtocolException("The selected file is unavailable.");
+            if (file == null) throw new ShareProtocolException(AppText.Get("TheSelectedFileIsUnavailable"));
             if (length == 0) return new byte[0];
 
             using (var fileStream = await file.OpenReadAsync())
             {
                 if (position > fileStream.Size || (ulong)length > fileStream.Size - position)
-                    throw new EndOfStreamException("The selected file ended before the requested range.");
+                    throw new EndOfStreamException(AppText.Get("TheSelectedFileEndedBeforeTheRequestedRange"));
 
                 using (var input = fileStream.GetInputStreamAt(position))
                 using (var reader = new DataReader(input))
@@ -73,7 +73,7 @@ namespace LiveDrop.Services
                         offset += buffer.Length;
                     }
                     if (offset != result.Length)
-                        throw new EndOfStreamException("The selected file ended before the requested range.");
+                        throw new EndOfStreamException(AppText.Get("TheSelectedFileEndedBeforeTheRequestedRange"));
                     return result;
                 }
             }

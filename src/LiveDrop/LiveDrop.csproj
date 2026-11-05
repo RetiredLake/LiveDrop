@@ -50,6 +50,7 @@
     <Compile Include="App.xaml.cs"><DependentUpon>App.xaml</DependentUpon></Compile>
     <Compile Include="MainPage.xaml.cs"><DependentUpon>MainPage.xaml</DependentUpon></Compile>
     <Compile Include="Models\ShareModels.cs" />
+    <Compile Include="Localization\AppText.cs" />
     <Compile Include="Protocols\ShareProtocol.cs" />
     <Compile Include="Protocols\ProtocolUtilities.cs" />
     <Compile Include="Protocols\QuickShare\ProtoWriter.cs" />
@@ -92,6 +93,9 @@
     <Content Include="Assets\Square44x44Logo.png" />
     <Content Include="Assets\Wide310x150Logo.png" />
     <Content Include="Assets\SplashScreen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <PRIResource Include="Strings\**\*.resw" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NETCore.UniversalWindowsPlatform" Version="6.2.14" />

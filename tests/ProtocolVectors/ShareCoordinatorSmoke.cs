@@ -11,7 +11,7 @@ namespace LiveDrop.Models
 {
     public enum ShareTransport { MicrosoftNearby, GoogleQuickShare }
     public class PeerDescriptor { public ShareTransport Transport; }
-    public class ShareOffer { }
+    public class ShareOffer { public Uri WebLink; }
     public class ShareProgress { }
     public class PeerDiscoveredEventArgs : EventArgs { }
     public class ShareOfferReceivedEventArgs : EventArgs { }
@@ -57,6 +57,7 @@ internal static class ShareCoordinatorSmoke
     }
     private static void Main()
     {
+        TestResources.Initialize();
         for (var mask = 0; mask < 4; mask++)
         {
             FakeAdapter.Created = FakeAdapter.Started = FakeAdapter.Stopped = 0;

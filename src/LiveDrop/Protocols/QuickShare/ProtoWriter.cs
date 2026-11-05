@@ -61,13 +61,13 @@ namespace LiveDrop.Protocols.QuickShare
                 if ((b & 0x80) == 0) return result;
                 shift += 7;
             }
-            throw new InvalidDataException("Invalid protobuf varint.");
+            throw new InvalidDataException(AppText.Get("InvalidProtobufVarint"));
         }
 
         internal byte[] ReadBytes()
         {
             var length = checked((int)ReadVarint());
-            if (length < 0 || length > _data.Length - _offset) throw new InvalidDataException("Invalid protobuf length.");
+            if (length < 0 || length > _data.Length - _offset) throw new InvalidDataException(AppText.Get("InvalidProtobufLength"));
             var value = new byte[length];
             Buffer.BlockCopy(_data, _offset, value, 0, length);
             _offset += length;
@@ -84,13 +84,13 @@ namespace LiveDrop.Protocols.QuickShare
                 case 1: Advance(8); return;
                 case 2: Advance(checked((int)ReadVarint())); return;
                 case 5: Advance(4); return;
-                default: throw new InvalidDataException("Unsupported protobuf wire type " + wireType + ".");
+                default: throw new InvalidDataException(AppText.Format("UnsupportedProtobufWireType", wireType));
             }
         }
 
         private void Advance(int count)
         {
-            if (count < 0 || count > _data.Length - _offset) throw new InvalidDataException("Invalid protobuf field length.");
+            if (count < 0 || count > _data.Length - _offset) throw new InvalidDataException(AppText.Get("InvalidProtobufFieldLength"));
             _offset += count;
         }
     }

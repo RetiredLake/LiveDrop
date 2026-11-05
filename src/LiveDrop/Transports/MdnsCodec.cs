@@ -16,6 +16,7 @@ namespace LiveDrop.Transports
         internal int Port { get; set; }
         internal string DisplayName { get; set; }
         internal byte[] EndpointInfo { get; set; }
+        internal DateTime EndpointSeenUtc { get; set; }
     }
 
     internal static class MdnsCodec
@@ -35,7 +36,25 @@ namespace LiveDrop.Transports
             return stream.ToArray();
         }
 
-        internal static byte[] BuildAnnouncement(string serviceType, string instanceName, string hostName, string address, int port, byte[] endpointInfo)
+        internal static bool IsQueryFor(byte[] data, string serviceType, string instanceName, string hostName)
+        {
+            if (data == null || data.Length < 12 || (data[2] & 0x80) != 0) return false;
+            var offset = 4;
+            var questions = ReadUInt16(data, ref offset);
+            offset = 12;
+            for (var i = 0; i < questions; i++)
+            {
+                var name = ReadName(data, ref offset);
+                ReadUInt16(data, ref offset);
+                ReadUInt16(data, ref offset);
+                if (string.Equals(name, serviceType, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, BuildServiceInstanceName(instanceName, serviceType), StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(name, hostName, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
+        internal static byte[] BuildAnnouncement(string serviceType, string instanceName, string hostName, string address, int port, byte[] endpointInfo, bool goodbye = false)
         {
             var stream = new MemoryStream();
             WriteUInt16(stream, 0);
@@ -45,11 +64,11 @@ namespace LiveDrop.Transports
             WriteUInt16(stream, 0); WriteUInt16(stream, 0);
 
             var service = BuildServiceInstanceName(instanceName, serviceType);
-            WriteRecord(stream, serviceType, 12, 4500, BuildNameRdata(service));
+            WriteRecord(stream, serviceType, 12, goodbye ? 0u : 4500u, BuildNameRdata(service));
             var host = string.IsNullOrWhiteSpace(hostName) ? "livedrop.local." : hostName;
-            WriteRecord(stream, service, 33, 120, BuildSrvRdata(port, host));
-            WriteRecord(stream, service, 16, 120, BuildTxtRdata(endpointInfo));
-            WriteRecord(stream, host, 1, 120, BuildAddressRdata(address));
+            WriteRecord(stream, service, 33, goodbye ? 0u : 120u, BuildSrvRdata(port, host));
+            WriteRecord(stream, service, 16, goodbye ? 0u : 120u, BuildTxtRdata(endpointInfo));
+            WriteRecord(stream, host, 1, goodbye ? 0u : 120u, BuildAddressRdata(address));
             return stream.ToArray();
         }
 
@@ -64,7 +83,10 @@ namespace LiveDrop.Transports
         internal static IList<MdnsServiceRecord> Parse(byte[] data, string serviceType,
             Dictionary<string, MdnsServiceRecord> results, Dictionary<string, string> addresses)
         {
-            if (data == null || data.Length < 12) return results.Values.ToList();
+            // Query answer sections contain the querier's cached known answers,
+            // not evidence that those services are currently advertising.
+            if (data == null || data.Length < 12 || (data[2] & 0x80) == 0) return new List<MdnsServiceRecord>();
+            var refreshed = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var offset = 0;
             ReadUInt16(data, ref offset); ReadUInt16(data, ref offset);
             var questions = ReadUInt16(data, ref offset);
@@ -74,7 +96,7 @@ namespace LiveDrop.Transports
             for (var i = 0; i < questions; i++)
             {
                 ReadName(data, ref offset); offset += 4;
-                if (offset > data.Length) return results.Values.ToList();
+                if (offset > data.Length) return new List<MdnsServiceRecord>();
             }
             for (var i = 0; i < answers + authority + additional; i++)
             {
@@ -84,10 +106,25 @@ namespace LiveDrop.Transports
                 if (offset + 10 > data.Length) break;
                 var type = ReadUInt16(data, ref offset);
                 ReadUInt16(data, ref offset);
-                ReadUInt32(data, ref offset);
+                var ttl = ReadUInt32(data, ref offset);
                 var length = ReadUInt16(data, ref offset);
                 if (offset + length > data.Length) break;
                 var rdataOffset = offset;
+                if (ttl == 0)
+                {
+                    if (type == 12 && string.Equals(name, serviceType, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var pointerOffset = offset;
+                        results.Remove(ReadName(data, ref pointerOffset));
+                    }
+                    results.Remove(name);
+                    addresses.Remove(name);
+                    offset += length;
+                    continue;
+                }
+                // Cached records complete split responses, but unrelated traffic
+                // must not renew every peer's presence in the UI.
+                if (type == 33 || type == 16 || type == 1) refreshed.Add(name);
                 if (type == 12)
                 {
                     var ptrOffset = offset;
@@ -100,6 +137,7 @@ namespace LiveDrop.Transports
                 {
                     offset += 4;
                     var record = Get(results, name);
+                    record.EndpointSeenUtc = DateTime.UtcNow;
                     record.Port = ReadUInt16(data, ref offset);
                     record.HostName = ReadName(data, ref offset);
                 }
@@ -122,8 +160,26 @@ namespace LiveDrop.Transports
                 string address;
                 if (record != null && !string.IsNullOrWhiteSpace(record.HostName) && addresses.TryGetValue(record.HostName, out address))
                     record.Address = address;
+                else if (record != null) record.Address = null;
             }
-            return results.Values.Where(x => x.InstanceName.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase) && x.Port > 0 && !string.IsNullOrWhiteSpace(x.Address)).ToList();
+            return results.Values.Where(x => x.InstanceName.EndsWith("." + serviceType, StringComparison.OrdinalIgnoreCase) && x.Port > 0 && !string.IsNullOrWhiteSpace(x.Address) && x.EndpointInfo != null && x.EndpointInfo.Length >= 17 &&
+                (string.IsNullOrEmpty(x.HostName) || !x.HostName.StartsWith("livedrop-", StringComparison.OrdinalIgnoreCase) || !string.IsNullOrWhiteSpace(x.DisplayName)) &&
+                x.EndpointSeenUtc > DateTime.UtcNow - TimeSpan.FromSeconds(10))
+                .GroupBy(x => x.Address, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.OrderByDescending(x => x.EndpointSeenUtc).First())
+                .Where(x => refreshed.Contains(x.InstanceName) || (!string.IsNullOrEmpty(x.HostName) && refreshed.Contains(x.HostName))).ToList();
+        }
+
+        internal static bool IsUsablePeerAnnouncement(MdnsServiceRecord record, string sourceAddress)
+        {
+            if (record == null || string.IsNullOrWhiteSpace(record.Address)) return false;
+            // Our raw publisher advertises its own interface address. A
+            // LiveDrop record announcing another address is stale or from
+            // another interface, even if the device name still looks right.
+            // Generic DNS-SD clients can legitimately use responder proxies.
+            return string.IsNullOrEmpty(record.HostName) ||
+                !record.HostName.StartsWith("livedrop-", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(record.Address, sourceAddress, StringComparison.OrdinalIgnoreCase);
         }
 
         private static MdnsServiceRecord Get(Dictionary<string, MdnsServiceRecord> records, string name)
@@ -153,8 +209,10 @@ namespace LiveDrop.Transports
                     try
                     {
                         var endpointInfo = Convert.FromBase64String(item.Substring(split + 1).Replace('-', '+').Replace('_', '/').PadRight(((item.Length - split - 1 + 3) / 4) * 4, '='));
+                        if (endpointInfo.Length < 17) continue;
                         record.EndpointInfo = endpointInfo;
-                        record.DisplayName = ReadEndpointName(endpointInfo);
+                        var displayName = ReadEndpointName(endpointInfo);
+                        if (!string.IsNullOrWhiteSpace(displayName)) record.DisplayName = displayName;
                     }
                     catch (FormatException) { }
                 }
@@ -163,9 +221,9 @@ namespace LiveDrop.Transports
 
         private static string ReadEndpointName(byte[] endpointInfo)
         {
-            if (endpointInfo == null || endpointInfo.Length < 18) return "Quick Share device";
+            if (endpointInfo == null || endpointInfo.Length < 18 || (endpointInfo[0] & 0x10) != 0) return null;
             var length = endpointInfo[17];
-            if (18 + length > endpointInfo.Length) return "Quick Share device";
+            if (18 + length > endpointInfo.Length) return null;
             return Encoding.UTF8.GetString(endpointInfo, 18, length);
         }
 
@@ -228,12 +286,12 @@ namespace LiveDrop.Transports
                 if (length == 0) { if (!jumped) offset = cursor; break; }
                 if ((length & 0xC0) == 0xC0)
                 {
-                    if (cursor >= data.Length) throw new InvalidDataException("Invalid DNS pointer.");
+                    if (cursor >= data.Length) throw new InvalidDataException(AppText.Get("InvalidDNSPointer"));
                     var pointer = ((length & 0x3F) << 8) | data[cursor++];
                     if (!jumped) offset = cursor;
                     cursor = pointer; jumped = true; continue;
                 }
-                if (length > 63 || cursor + length > data.Length) throw new InvalidDataException("Invalid DNS label.");
+                if (length > 63 || cursor + length > data.Length) throw new InvalidDataException(AppText.Get("InvalidDNSLabel"));
                 output.Add(Encoding.UTF8.GetString(data, cursor, length)); cursor += length;
             }
             return string.Join(".", output) + ".";

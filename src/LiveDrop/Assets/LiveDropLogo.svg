@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" viewBox="0 0 300 300">
+  <path d="M116.5 230.1 A84 84 0 1 1 187.5 230.1" fill="none" stroke="white" stroke-width="14"/>
+  <defs><mask id="panes"><rect width="300" height="300" fill="white"/><path d="M150 119h3v66h-3z M118 151h69v3h-69z" fill="black"/></mask></defs>
+  <rect x="118" y="119" width="69" height="66" rx="11" fill="white" mask="url(#panes)"/>
+</svg>

@@ -1,15 +1,17 @@
 # Protocol smoke tests
 
+`QuickShareCancellationSmoke.cs` uses isolated loopback sockets to verify cancellation of a blocked read and partial transfers from both the sending and receiving side, including the receive Cancel callback and receiver cleanup. Production loopback guards remain enabled. `TransferNotificationSmoke.cs` checks the native filename/bar/status layout, legacy text fallback, XML escaping, and completion activation payloads. `PeerIdentitySmoke.cs` checks identity replacement and device-label change notifications.
+
 `P256Smoke.cs` validates the shared P-256, Quick Share encryption, CDP identity, and NearShare ValueSet paths. `CdpWireSmoke.cs` validates CDP header serialization, AES-CBC packet encryption, and HMAC rejection.
 
 `MdnsSmoke.cs` compiles with the production `Transports/MdnsCodec.cs` and checks DNS announcement counts, endpoint fields, records arriving in separate responses, and unrelated-service filtering. Its Base64 helper replaces only the UWP-dependent utility class for this standalone test.
 
-`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives two files (including a 700,000-byte payload), compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
+`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives multiple files (including two 700,000-byte payloads and a URL-looking .txt file), compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. An explicit web-link attachment produces a browser activation target without a text file; ordinary .txt files never produce a browser target. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
 
 Run from the repository root in a developer PowerShell:
 
 ```powershell
-csc /nologo /out:tests\ProtocolVectors\MdnsSmoke.exe tests\ProtocolVectors\MdnsSmoke.cs src\LiveDrop\Transports\MdnsCodec.cs
+csc /nologo /out:tests\ProtocolVectors\MdnsSmoke.exe src\LiveDrop\Localization\AppText.cs tests\ProtocolVectors\TestResources.cs tests\ProtocolVectors\MdnsSmoke.cs src\LiveDrop\Transports\MdnsCodec.cs
 & .\tests\ProtocolVectors\MdnsSmoke.exe
 ```
 
@@ -18,8 +20,10 @@ The UWP source check also compiles every `src/LiveDrop/*.cs` file against the ca
 `ShareCoordinatorSmoke.cs` compiles with the production coordinator and protocol interface. Fake network adapters verify all four selections and asynchronous shutdown with a synchronization context that no longer pumps messages:
 
 ```powershell
-csc /nologo /out:tests\ProtocolVectors\ShareCoordinatorSmoke.exe tests\ProtocolVectors\ShareCoordinatorSmoke.cs src\LiveDrop\Services\ShareCoordinator.cs src\LiveDrop\Protocols\ShareProtocol.cs
+csc /nologo /out:tests\ProtocolVectors\ShareCoordinatorSmoke.exe src\LiveDrop\Localization\AppText.cs tests\ProtocolVectors\TestResources.cs tests\ProtocolVectors\ShareCoordinatorSmoke.cs src\LiveDrop\Services\ShareCoordinator.cs src\LiveDrop\Protocols\ShareProtocol.cs
 & .\tests\ProtocolVectors\ShareCoordinatorSmoke.exe
 ```
 
 Use the VS 2019 Roslyn `csc.exe` for these lifecycle tests. `ShareSourceSmoke.cs` is a desktop integration fixture that opens the actual Windows share sheet with either valid Unicode text or a deferred text provider that supplies no data. Compile it as a WinForms executable against `System.Windows.Forms`, `System.Drawing`, `System.Runtime.WindowsRuntime`, SDK `Windows.winmd`, and .NET Framework 4.7.2 facade assemblies `System.Runtime` and `System.Runtime.InteropServices.WindowsRuntime`. Choose **LiveDrop** in the share sheet; no content is transmitted unless Send is explicitly clicked. Close the target while discovery continues, then close/reopen the main app. The unavailable-data case should display a read error without terminating the main app.
+
+All protocol fixtures now initialize the English resource catalog through `TestResources.Initialize()`. Include `src/LiveDrop/Localization/AppText.cs` and `tests/ProtocolVectors/TestResources.cs` when compiling a fixture; the UWP application supplies the PRI resource provider instead. Run from the repository root. Run `python tests/Localization/validate_resources.py` to check resource references and translator placeholders.

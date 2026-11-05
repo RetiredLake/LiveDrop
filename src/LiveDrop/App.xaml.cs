@@ -12,22 +12,29 @@ namespace LiveDrop
 
         public App()
         {
+            AppText.Lookup = Windows.ApplicationModel.Resources.ResourceLoader.GetForViewIndependentUse().GetString;
             InitializeComponent();
             Suspending += OnSuspending;
             UnhandledException += OnUnhandledException;
         }
 
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
             NavigateToMainPage();
             var page = (Window.Current.Content as Frame)?.Content as MainPage;
-            page?.BeginRegularSession();
+            if (!Services.TransferNotification.IsTransferActivation(e.Arguments)) page?.BeginRegularSession();
             Window.Current.Activate();
+            await Services.TransferNotification.HandleActivationAsync(e.Arguments);
         }
 
-        protected override void OnActivated(IActivatedEventArgs args)
+        protected override async void OnActivated(IActivatedEventArgs args)
         {
             base.OnActivated(args);
+            var toast = args as ToastNotificationActivatedEventArgs;
+            if (toast == null) return;
+            NavigateToMainPage();
+            Window.Current.Activate();
+            await Services.TransferNotification.HandleActivationAsync(toast.Argument);
         }
 
         protected override async void OnShareTargetActivated(ShareTargetActivatedEventArgs args)
@@ -45,7 +52,7 @@ namespace LiveDrop
             }
             catch (Exception ex)
             {
-                try { args.ShareOperation.ReportError("LiveDrop could not open this share: " + ex.Message); } catch { }
+                try { args.ShareOperation.ReportError(AppText.Format("OpenShareFailed", ex.Message)); } catch { }
             }
         }
 

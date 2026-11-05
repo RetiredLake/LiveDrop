@@ -28,7 +28,7 @@ namespace LiveDrop.Models
         public PeerDescriptor(string stableId, string displayName, ShareTransport transport, string address, int port, string capabilities)
         {
             StableId = stableId ?? string.Empty;
-            DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Nearby device" : displayName;
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? AppText.Get("NearbyDevice") : displayName;
             Transport = transport;
             Address = address ?? string.Empty;
             Port = port;
@@ -66,25 +66,34 @@ namespace LiveDrop.Models
     {
         public IReadOnlyList<ShareFileDescriptor> Files { get; private set; }
         public string Text { get; private set; }
+        public Uri WebLink { get; private set; }
+        public bool HasContent { get { return Files.Count > 0 || WebLink != null; } }
 
-        public ShareOffer(IReadOnlyList<ShareFileDescriptor> files, string text)
+        public ShareOffer(IReadOnlyList<ShareFileDescriptor> files, string text, Uri webLink = null)
         {
             Files = files ?? new List<ShareFileDescriptor>();
             Text = text ?? string.Empty;
+            if (webLink != null && (Files.Count != 0 || !webLink.IsAbsoluteUri || (webLink.Scheme != "http" && webLink.Scheme != "https")))
+                throw new ArgumentException(AppText.Get("AWebLinkOfferMustContainOneHTTP"));
+            WebLink = webLink;
         }
     }
 
     public sealed class ShareProgress
     {
+        public string SavedFilePath { get; private set; }
+        public Uri ReceivedWebLink { get; private set; }
         public long BytesTransferred { get; private set; }
         public long TotalBytes { get; private set; }
         public string FileName { get; private set; }
 
-        public ShareProgress(string fileName, long bytesTransferred, long totalBytes)
+        public ShareProgress(string fileName, long bytesTransferred, long totalBytes, string savedFilePath = null, Uri receivedWebLink = null)
         {
             FileName = fileName ?? string.Empty;
             BytesTransferred = bytesTransferred;
             TotalBytes = totalBytes;
+            SavedFilePath = savedFilePath;
+            ReceivedWebLink = receivedWebLink;
         }
     }
 
@@ -98,20 +107,41 @@ namespace LiveDrop.Models
     {
         public PeerDescriptor Peer { get; private set; }
         public ShareOffer Offer { get; private set; }
+        public string SecurityPin { get; private set; }
         public Func<bool, Task> CompleteAsync { get; private set; }
+        private readonly Action _cancelTransfer;
+        private int _cancelRequested;
+        private int _completed;
+        public bool IsCancellationRequested { get { return System.Threading.Volatile.Read(ref _cancelRequested) != 0; } }
         public event System.Action<ShareProgress> ProgressChanged;
+        public event System.Action<bool, string> TransferCompleted;
 
-        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync)
+        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync, Action cancelTransfer = null, string securityPin = null)
         {
             Peer = peer;
             Offer = offer;
             CompleteAsync = completeAsync;
+            _cancelTransfer = cancelTransfer;
+            SecurityPin = securityPin ?? string.Empty;
+        }
+
+        public void CancelTransfer()
+        {
+            if (System.Threading.Volatile.Read(ref _completed) != 0 ||
+                System.Threading.Interlocked.Exchange(ref _cancelRequested, 1) != 0) return;
+            try { _cancelTransfer?.Invoke(); } catch (ObjectDisposedException) { }
         }
 
         internal void ReportProgress(ShareProgress progress)
         {
             var handler = ProgressChanged;
             if (handler != null) handler(progress);
+        }
+
+        internal void ReportCompletion(bool succeeded, string message)
+        {
+            if (System.Threading.Interlocked.Exchange(ref _completed, 1) == 0)
+                TransferCompleted?.Invoke(succeeded, message);
         }
     }
 
@@ -133,11 +163,22 @@ namespace LiveDrop.Models
             return new ShareOffer(await StageFilesAsync(sourceFiles), string.Empty);
         }
 
-        public static async Task<ShareOffer> FromShareOperationAsync(ShareOperation operation)
+        public static Task<ShareOffer> FromShareOperationAsync(ShareOperation operation)
+        {
+            return FromDataPackageViewAsync(operation == null ? null : operation.Data);
+        }
+
+        public static async Task<ShareOffer> FromDataPackageViewAsync(DataPackageView data)
         {
             var files = new List<ShareFileDescriptor>();
             var text = string.Empty;
-            var data = operation == null ? null : operation.Data;
+            Uri webLink = null;
+            if (data != null && data.Contains(StandardDataFormats.WebLink)) webLink = await data.GetWebLinkAsync();
+#pragma warning disable 618
+            else if (data != null && data.Contains(StandardDataFormats.Uri)) webLink = await data.GetUriAsync();
+#pragma warning restore 618
+            if (webLink != null && webLink.IsAbsoluteUri && (webLink.Scheme == "http" || webLink.Scheme == "https"))
+                return new ShareOffer(files, webLink.AbsoluteUri, webLink);
             if (data != null && data.Contains(StandardDataFormats.StorageItems))
             {
                 var items = await data.GetStorageItemsAsync();
@@ -150,6 +191,9 @@ namespace LiveDrop.Models
                 files.AddRange(await StageFilesAsync(sourceFiles));
             }
             if (data != null && data.Contains(StandardDataFormats.Text)) text = await data.GetTextAsync();
+            if (webLink == null && !string.IsNullOrWhiteSpace(text)) Uri.TryCreate(text.Trim(), UriKind.Absolute, out webLink);
+            if (webLink != null && webLink.Scheme != "http" && webLink.Scheme != "https") webLink = null;
+            if (files.Count == 0 && webLink != null) return new ShareOffer(files, webLink.AbsoluteUri, webLink);
             if (files.Count == 0 && !string.IsNullOrWhiteSpace(text))
             {
                 var textFile = await ApplicationData.Current.LocalFolder.CreateFileAsync("SharedText.txt", CreationCollisionOption.GenerateUniqueName);

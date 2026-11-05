@@ -29,9 +29,12 @@ namespace LiveDrop.Protocols.Nearby
         private const byte AuthDoneResponse = 7;
         private const uint MessageFragmentSize = 16384;
         private const uint BlobSize = 102400;
+        private const int MaximumBufferedPacketsWhileAwaitingConsent = 16;
 
         private readonly SocketConnection _connection;
         private readonly CdpIdentity _identity;
+        private readonly Queue<CdpPacket> _bufferedPackets = new Queue<CdpPacket>();
+        private Task<CdpPacket> _pendingPacketRead;
         private readonly P256KeyAgreement _key = P256KeyAgreement.Create();
         private ulong _hostNonce;
         private ulong _clientNonce;
@@ -46,16 +49,16 @@ namespace LiveDrop.Protocols.Nearby
             _identity = identity;
         }
 
-        internal static async Task ReceiveAsync(SocketConnection connection, CdpIdentity identity, PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken)
+        internal static async Task ReceiveAsync(SocketConnection connection, CdpIdentity identity, PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken, Action<ShareProgress> progress = null)
         {
             var session = new CdpServerSession(connection, identity);
             await session.AuthenticateAsync(cancellationToken);
-            await session.ReceiveFilesAsync(peer, consent, status, cancellationToken);
+            await session.ReceiveFilesAsync(peer, consent, status, cancellationToken, progress);
         }
 
         private async Task AuthenticateAsync(CancellationToken cancellationToken)
         {
-            var requestPacket = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var requestPacket = await ReadPacketAsync(cancellationToken);
             var requestPayload = new MemoryStream(ReadConnectionPayload(requestPacket, ConnectRequest));
             var curve = requestPayload.ReadByte();
             var hmacSize = ReadUInt16(requestPayload);
@@ -64,7 +67,7 @@ namespace LiveDrop.Protocols.Nearby
             var clientX = ReadBytesWithLength(requestPayload);
             var clientY = ReadBytesWithLength(requestPayload);
             if (curve != 0 || hmacSize != 32 || fragmentSize == 0 || clientX.Length != 32 || clientY.Length != 32)
-                throw new ShareProtocolException("Microsoft Nearby sent invalid CDP connection parameters.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentInvalidCDPConnectionParameters"));
 
             _hostNonce = RandomUInt64();
             _sessionId = ((ulong)(RandomUInt32() & 0x7FFFFFFF) << 32) | (requestPacket.Header.SessionId & 0xFFFFFFFFUL) | 0x80000000UL;
@@ -93,56 +96,63 @@ namespace LiveDrop.Protocols.Nearby
             await ReceiveAuthenticationAsync(DeviceAuthRequest, DeviceAuthResponse, cancellationToken);
             await ReceiveAuthenticationAsync(UserDeviceAuthRequest, UserDeviceAuthResponse, cancellationToken);
 
-            var donePacket = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var donePacket = await ReadPacketAsync(cancellationToken);
             var done = ReadConnectionPayload(donePacket, AuthDoneRequest);
-            if (done.Length != 1 || done[0] != 0) throw new ShareProtocolException("Microsoft Nearby sent an invalid CDP authentication completion.");
+            if (done.Length != 1 || done[0] != 0) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidCDPAuthenticationCompletion"));
             await SendPlainConnectAsync(donePacket.Header, AuthDoneResponse, new byte[] { 0 }, cancellationToken);
         }
 
         private async Task ReceiveAuthenticationAsync(byte expectedRequest, byte responseType, CancellationToken cancellationToken)
         {
-            var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var packet = await ReadPacketAsync(cancellationToken);
             var payload = new MemoryStream(ReadConnectionPayload(packet, expectedRequest));
             var certificate = ReadBytesWithLength(payload);
             var signature = ReadBytesWithLength(payload);
             if (!CdpIdentity.VerifyAuthentication(certificate, signature, _hostNonce, _clientNonce))
-                throw new ShareProtocolException("Microsoft Nearby sent an invalid CDP certificate signature.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidCDPCertificateSignature"));
             var responsePayload = new MemoryStream();
             WriteBytesWithLength(responsePayload, _identity.Certificate);
             WriteBytesWithLength(responsePayload, _identity.SignAuthentication(_hostNonce, _clientNonce));
             await SendPlainConnectAsync(packet.Header, responseType, responsePayload.ToArray(), cancellationToken);
         }
 
-        private async Task ReceiveFilesAsync(PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken)
+        private async Task ReceiveFilesAsync(PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken, Action<ShareProgress> progress)
         {
             var handshakeChannel = await AcceptChannelAsync(cancellationToken);
             var handshake = await ReadValueSetAsync(handshakeChannel, cancellationToken);
             if (!handshake.Values.Values.ContainsKey("ControlMessage") || handshake.Values.GetUInt32("ControlMessage") != 6)
-                throw new ShareProtocolException("Microsoft Nearby sent an invalid platform handshake.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidPlatformHandshake"));
             await SendValueSetAsync(handshakeChannel, handshake.MessageId, new CdpValueSet().AddUInt32("SelectedPlatformVersion", 1).AddUInt32("VersionHandShakeResult", 1), cancellationToken);
 
             var transferChannel = await AcceptChannelAsync(cancellationToken);
             var transfer = await ReadValueSetAsync(transferChannel, cancellationToken);
             if (!transfer.Values.Values.ContainsKey("ControlMessage") || transfer.Values.GetUInt32("ControlMessage") != 1)
-                throw new ShareProtocolException("Microsoft Nearby sent an invalid transfer request.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidTransferRequest"));
             var fileNames = transfer.Values.GetStringArray("FileNames");
             var contentIds = transfer.Values.GetUInt32Array("ContentIds");
             var contentSizes = transfer.Values.GetUInt64Array("ContentSizes");
             var fileCount = transfer.Values.GetUInt32("FileCount");
             if (fileCount == 0 || fileCount > 128 || fileNames.Count != fileCount || contentIds.Count != fileCount || contentSizes.Count != fileCount)
-                throw new ShareProtocolException("Microsoft Nearby sent invalid file metadata.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentInvalidFileMetadata"));
 
             var descriptors = new List<ShareFileDescriptor>();
             for (var i = 0; i < (int)fileCount; i++)
             {
-                if (contentIds[i] != (uint)i) throw new ShareProtocolException("Microsoft Nearby sent invalid content identifiers.");
+                if (contentIds[i] != (uint)i) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentInvalidContentIdentifiers"));
                 descriptors.Add(new ShareFileDescriptor(ProtocolUtilities.NormalizeFileName(fileNames[i]), "application/octet-stream", checked((long)contentSizes[i])));
             }
             var offer = new ShareOffer(descriptors, string.Empty);
-            var accepted = consent != null && await consent(peer, offer);
+            var consentTask = consent == null ? Task.FromResult(false) : consent(peer, offer);
+            var accepted = await WaitForConsentOrDisconnectAsync(consentTask, cancellationToken);
             if (!accepted)
             {
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 5), cancellationToken);
+                if (_pendingPacketRead != null)
+                {
+                    _connection.Dispose();
+                    try { await _pendingPacketRead; } catch { }
+                    _pendingPacketRead = null;
+                }
                 return;
             }
 
@@ -167,19 +177,20 @@ namespace LiveDrop.Protocols.Nearby
                         await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 3).AddUInt64("BlobPosition", position).AddUInt32("BlobSize", requested).AddUInt32("ContentId", (uint)i), cancellationToken);
                         var response = await ReadValueSetAsync(transferChannel, cancellationToken);
                         if (!response.Values.Values.ContainsKey("ControlMessage") || response.Values.GetUInt32("ControlMessage") != 4)
-                            throw new ShareProtocolException("Microsoft Nearby sent an unexpected file response.");
+                            throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnUnexpectedFileResponse"));
                         if (response.Values.GetUInt32("ContentId") != (uint)i || response.Values.GetUInt64("BlobPosition") != position)
-                            throw new ShareProtocolException("Microsoft Nearby sent a file response for the wrong range.");
+                            throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAFileResponseForThe"));
                         var body = response.Values.GetBytes("DataBlob");
                         if (body.Count != requested || position + (ulong)body.Count > (ulong)file.Metadata.Size)
-                            throw new ShareProtocolException("Microsoft Nearby sent an invalid file range.");
+                            throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidFileRange"));
                         if (body.Count > 0)
                         {
                             file.Writer.WriteBytes(body.ToArray());
                             await file.Writer.StoreAsync();
                         }
                         position += (ulong)body.Count;
-                        status?.Invoke("Received " + file.Metadata.Name + " (" + position + "/" + file.Metadata.Size + " bytes).");
+                        progress?.Invoke(new ShareProgress(file.Metadata.Name, (long)position, file.Metadata.Size));
+                        status?.Invoke(AppText.Format("NearbyReceivedBytes", file.Metadata.Name, position, file.Metadata.Size));
                         if (file.Metadata.Size == 0) break;
                     }
                     await file.Writer.FlushAsync();
@@ -188,9 +199,10 @@ namespace LiveDrop.Protocols.Nearby
                     file.Stream.Dispose();
                     await file.Temporary.RenameAsync(ProtocolUtilities.NormalizeFileName(file.Metadata.Name), NameCollisionOption.GenerateUniqueName);
                     file.Completed = true;
+                    progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Metadata.Size, file.Metadata.Size, file.Temporary.Path));
                 }
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 2), cancellationToken);
-                status?.Invoke("Microsoft Nearby transfer received. Files are saved in Pictures/LiveDrop.");
+                status?.Invoke(AppText.Get("MicrosoftNearbyTransferReceivedFilesAreSavedIn"));
             }
             catch
             {
@@ -208,7 +220,7 @@ namespace LiveDrop.Protocols.Nearby
         {
             while (true)
             {
-                var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+                var packet = await ReadPacketAsync(cancellationToken);
                 if (packet.Header.Type != CdpHeader.Control) continue;
                 var plain = _crypto.Decrypt(packet);
                 if (plain.Length < 1 || plain[0] != 0) continue;
@@ -222,7 +234,7 @@ namespace LiveDrop.Protocols.Nearby
                 responseHeader.AdditionalHeaders.Add(new CdpAdditionalHeader(1, UInt64Little(packet.Header.RequestId)));
                 responseHeader.AdditionalHeaders.Add(new CdpAdditionalHeader(0x81, new byte[] { 0x30, 0, 0, 1 }));
                 await WriteEncryptedAsync(responseHeader, new byte[] { 1, 0 }.Concat(UInt64Bytes(channelId)).ToArray(), cancellationToken);
-                if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appName)) throw new ShareProtocolException("Microsoft Nearby sent an invalid channel request.");
+                if (string.IsNullOrWhiteSpace(appId) || string.IsNullOrWhiteSpace(appName)) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidChannelRequest"));
                 return channelId;
             }
         }
@@ -248,18 +260,18 @@ namespace LiveDrop.Protocols.Nearby
         private async Task<CdpSessionValueSet> ReadValueSetAsync(ulong channelId, CancellationToken cancellationToken)
         {
             var first = await ReadSessionPacketAsync(channelId, cancellationToken);
-            if (first.Header.FragmentIndex != 0) throw new ShareProtocolException("Microsoft Nearby sent an invalid NearShare session fragment.");
+            if (first.Header.FragmentIndex != 0) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidNearShareSessionFragment"));
             var all = new MemoryStream();
             all.Write(first.Payload, 0, first.Payload.Length);
             for (var index = 1; index < first.Header.FragmentCount; index++)
             {
                 var next = await ReadSessionPacketAsync(channelId, cancellationToken);
                 if (next.Header.SequenceNumber != first.Header.SequenceNumber || next.Header.FragmentIndex != index)
-                    throw new ShareProtocolException("Microsoft Nearby sent out-of-order CDP fragments.");
+                    throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentOutOfOrderCDPFragments"));
                 all.Write(next.Payload, 0, next.Payload.Length);
             }
             var data = all.ToArray();
-            if (data.Length < 12) throw new ShareProtocolException("Microsoft Nearby sent a truncated NearShare message.");
+            if (data.Length < 12) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentATruncatedNearShareMessage"));
             var valueSet = new byte[data.Length - 12];
             System.Buffer.BlockCopy(data, 12, valueSet, 0, valueSet.Length);
             return new CdpSessionValueSet(ReadUInt32(data, 8), CdpValueSet.Parse(valueSet));
@@ -269,10 +281,42 @@ namespace LiveDrop.Protocols.Nearby
         {
             while (true)
             {
-                var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+                var packet = await ReadPacketAsync(cancellationToken);
                 if (packet.Header.Type != CdpHeader.Session || packet.Header.ChannelId != channelId) continue;
                 return new CdpPacket(packet.Header, _crypto.Decrypt(packet));
             }
+        }
+
+        private async Task<bool> WaitForConsentOrDisconnectAsync(Task<bool> consentTask, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (consentTask.IsCompleted) return await consentTask;
+
+                var readTask = _pendingPacketRead ?? (_pendingPacketRead = CdpConnection.ReadAsync(_connection, cancellationToken));
+                await Task.WhenAny(consentTask, readTask);
+                if (readTask.IsCompleted)
+                {
+                    var packet = await readTask;
+                    _pendingPacketRead = null;
+                    if (_bufferedPackets.Count >= MaximumBufferedPacketsWhileAwaitingConsent)
+                        throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentTooManyPacketsBeforeConsent"));
+                    _bufferedPackets.Enqueue(packet);
+                    if (consentTask.IsCompleted) return await consentTask;
+                    continue;
+                }
+
+                return await consentTask;
+            }
+        }
+
+        private async Task<CdpPacket> ReadPacketAsync(CancellationToken cancellationToken)
+        {
+            if (_bufferedPackets.Count > 0) return _bufferedPackets.Dequeue();
+            var pending = _pendingPacketRead;
+            if (pending == null) return await CdpConnection.ReadAsync(_connection, cancellationToken);
+            _pendingPacketRead = null;
+            return await pending;
         }
 
         private async Task WriteEncryptedAsync(CdpHeader header, byte[] payload, CancellationToken cancellationToken)
@@ -312,11 +356,11 @@ namespace LiveDrop.Protocols.Nearby
 
         private static byte[] ReadConnectionPayload(CdpPacket packet, byte expectedType)
         {
-            if (packet.Header.Type != CdpHeader.Connect) throw new ShareProtocolException("Microsoft Nearby sent a non-connection CDP message.");
-            if ((packet.Header.Flags & CdpHeader.SessionEncrypted) != 0) throw new ShareProtocolException("Microsoft Nearby encrypted a CDP authentication message too early.");
-            if (packet.Payload.Length < 3) throw new ShareProtocolException("Microsoft Nearby sent a truncated CDP connection message.");
+            if (packet.Header.Type != CdpHeader.Connect) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentANonConnectionCDPMessage"));
+            if ((packet.Header.Flags & CdpHeader.SessionEncrypted) != 0) throw new ShareProtocolException(AppText.Get("MicrosoftNearbyEncryptedACDPAuthenticationMessageToo"));
+            if (packet.Payload.Length < 3) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentATruncatedCDPConnectionMessage"));
             var mode = (ushort)((packet.Payload[0] << 8) | packet.Payload[1]);
-            if (mode != ConnectionModeProximal || packet.Payload[2] != expectedType) throw new ShareProtocolException("Microsoft Nearby sent an unexpected CDP connection message.");
+            if (mode != ConnectionModeProximal || packet.Payload[2] != expectedType) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnUnexpectedCDPConnectionMessage"));
             var result = new byte[packet.Payload.Length - 3];
             System.Buffer.BlockCopy(packet.Payload, 3, result, 0, result.Length);
             return result;
