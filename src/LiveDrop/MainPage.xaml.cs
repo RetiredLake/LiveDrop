@@ -649,7 +649,7 @@ namespace LiveDrop
             SendButton.IsEnabled = false;
             NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
             _sendCancellation = new CancellationTokenSource();
-            var notification = TransferNotification.Begin("Sending...", "Sending " + GetOfferDisplayName(_pendingOffer) + " to " + selected.Peer.DisplayName + ".", GetOfferDisplayName(_pendingOffer));
+            var notification = TransferNotification.Begin("Sending...", "Sending " + GetOfferDisplayName(_pendingOffer) + " to " + selected.Peer.DisplayName + ".", GetOfferDisplayName(_pendingOffer), "Sending to " + selected.Peer.DisplayName);
             try
             {
                 var outgoingName = GetOfferDisplayName(_pendingOffer);
@@ -740,7 +740,7 @@ namespace LiveDrop
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
             var fileName = GetOfferDisplayName(e.Offer);
-            var notification = TransferNotification.Begin("Receiving...", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".", fileName);
+            var notification = TransferNotification.Begin("Receiving...", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".", fileName, "Receiving from " + e.Peer.DisplayName);
             e.TransferCompleted += (succeeded, message) => notification.Complete(succeeded, message);
             _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
             _incomingTelemetryOffer = e.Offer;

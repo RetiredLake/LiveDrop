@@ -23,26 +23,30 @@ namespace LiveDrop.Services
             try { ShowToast(title, body, null, "transfer", false); } catch { }
         }
 
-        internal static Session Begin(string title, string body, string fileName = null) { return new Session(title, body, fileName); }
+        internal static Session Begin(string title, string body, string fileName = null, string heading = null) { return new Session(title, body, fileName, heading); }
 
         internal static bool IsTransferActivation(string argument)
         {
             return argument == "transfer" || (argument ?? "").StartsWith(OpenPrefix, StringComparison.Ordinal);
         }
 
-        private static void ShowToast(string title, string body, string tag, string launch, bool progress, string fileName = null)
+        private static void ShowToast(string title, string body, string tag, string launch, bool progress, string fileName = null, string heading = null)
         {
-            var xml = BuildXml(title, body, launch, progress);
+            var xml = BuildXml(title, body, launch, progress, heading);
             var toast = new ToastNotification(xml) { Group = Group };
             if (tag != null) toast.Tag = tag;
             if (progress) InitializeNativeProgress(toast, fileName ?? body);
             ToastNotificationManager.CreateToastNotifier().Show(toast);
         }
 
-        internal static XmlDocument BuildXml(string title, string body, string launch, bool progress)
+        internal static XmlDocument BuildXml(string title, string body, string launch, bool progress, string heading = null)
         {
             var xml = progress ? new XmlDocument() : ToastNotificationManager.GetTemplateContent(ToastTemplateType.ToastText02);
-            if (progress) xml.LoadXml("<toast><visual><binding template='ToastGeneric'/></visual></toast>");
+            if (progress)
+            {
+                xml.LoadXml("<toast><visual><binding template='ToastGeneric'><text/></binding></visual></toast>");
+                xml.GetElementsByTagName("text")[0].InnerText = string.IsNullOrWhiteSpace(heading) ? title ?? "LiveDrop" : heading;
+            }
             xml.DocumentElement.SetAttribute("launch", launch);
             if (!progress)
             {
@@ -125,13 +129,13 @@ namespace LiveDrop.Services
             private bool _finished;
             private uint _sequence;
 
-            internal Session(string title, string body, string fileName)
+            internal Session(string title, string body, string fileName, string heading)
             {
                 try
                 {
                     _nativeProgress = ApiInformation.IsTypePresent("Windows.UI.Notifications.NotificationData") &&
                         ApiInformation.IsPropertyPresent("Windows.UI.Notifications.ToastNotification", "Data");
-                    ShowToast(title, body, _tag, "transfer", _nativeProgress, fileName);
+                    ShowToast(title, body, _tag, "transfer", _nativeProgress, fileName, heading);
                 }
                 catch
                 {
