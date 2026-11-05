@@ -22,7 +22,7 @@ namespace LiveDrop.Transports
             _writer = new DataWriter(socket.OutputStream) { ByteOrder = ByteOrder.BigEndian };
         }
 
-        internal static async Task<SocketConnection> ConnectAsync(string address, int port)
+        internal static async Task<SocketConnection> ConnectAsync(string address, int port, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Protocols.ProtocolUtilities.IsLoopbackAddress(address))
                 throw new InvalidOperationException("Loopback transfers are disabled.");
@@ -31,8 +31,16 @@ namespace LiveDrop.Transports
             // socket enters the connected state. Setting NoDelay after
             // ConnectAsync raises E_ILLEGAL_METHOD_CALL on UWP.
             socket.Control.NoDelay = true;
-            await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket);
-            return new SocketConnection(socket);
+            try
+            {
+                using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
+                {
+                    timeout.CancelAfter(TimeSpan.FromSeconds(15));
+                    await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket).AsTask(timeout.Token);
+                }
+                return new SocketConnection(socket);
+            }
+            catch { socket.Dispose(); throw; }
         }
 
         internal async Task WriteFrameAsync(byte[] frame, CancellationToken cancellationToken)
@@ -43,8 +51,8 @@ namespace LiveDrop.Transports
             {
                 _writer.WriteUInt32((uint)frame.Length);
                 _writer.WriteBytes(frame);
-                await _writer.StoreAsync();
-                await _writer.FlushAsync();
+                await _writer.StoreAsync().AsTask(cancellationToken);
+                await _writer.FlushAsync().AsTask(cancellationToken);
             }
             finally { _writeLock.Release(); }
         }
@@ -76,8 +84,8 @@ namespace LiveDrop.Transports
             try
             {
                 _writer.WriteBytes(data);
-                await _writer.StoreAsync();
-                await _writer.FlushAsync();
+                await _writer.StoreAsync().AsTask(cancellationToken);
+                await _writer.FlushAsync().AsTask(cancellationToken);
             }
             finally { _writeLock.Release(); }
         }
@@ -88,7 +96,7 @@ namespace LiveDrop.Transports
             while (loaded < length)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var count = await _reader.LoadAsync(length - loaded);
+                var count = await _reader.LoadAsync(length - loaded).AsTask(cancellationToken);
                 if (count == 0) throw new EndOfStreamException("The peer closed the connection.");
                 loaded += count;
             }

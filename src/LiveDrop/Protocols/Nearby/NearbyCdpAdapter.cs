@@ -188,6 +188,8 @@ namespace LiveDrop.Protocols.Nearby
                 return;
             }
             var peer = new PeerDescriptor("nearby:" + address, "Nearby device", Transport, address, TcpPort, "CDP v3/TCP");
+            ShareOfferReceivedEventArgs received = null;
+            var transferAccepted = false;
             try
             {
                 using (var connection = new SocketConnection(socket))
@@ -197,13 +199,16 @@ namespace LiveDrop.Protocols.Nearby
                         var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                         if (OfferReceived == null) return true;
-                        OfferReceived(this, new ShareOfferReceivedEventArgs(remote, offer, complete));
-                        return await decision.Task;
-                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken);
+                        received = new ShareOfferReceivedEventArgs(remote, offer, complete);
+                        OfferReceived(this, received);
+                        transferAccepted = await decision.Task;
+                        return transferAccepted;
+                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken, progress => received?.ReportProgress(progress));
+                    received?.ReportCompletion(transferAccepted, transferAccepted ? "Files are saved in Pictures/LiveDrop." : "Share canceled.");
                 }
             }
-            catch (OperationCanceledException) { }
-            catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Microsoft Nearby transfer failed: " + ex.Message)); }
+            catch (OperationCanceledException) { received?.ReportCompletion(false, "Share canceled."); }
+            catch (Exception ex) { received?.ReportCompletion(false, ex.Message); StatusChanged?.Invoke(this, new StatusChangedEventArgs("Microsoft Nearby transfer failed: " + ex.Message)); }
         }
 
         private async Task SendDatagramAsync(byte[] data, string address, CancellationToken cancellationToken)

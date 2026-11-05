@@ -11,7 +11,7 @@ namespace LiveDrop.Models
 {
     public enum ShareTransport { MicrosoftNearby, GoogleQuickShare }
     public class PeerDescriptor { public ShareTransport Transport; }
-    public class ShareOffer { }
+    public class ShareOffer { public Uri WebLink; }
     public class ShareProgress { }
     public class PeerDiscoveredEventArgs : EventArgs { }
     public class ShareOfferReceivedEventArgs : EventArgs { }

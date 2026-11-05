@@ -406,6 +406,7 @@ namespace LiveDrop
 
         private static string GetOfferDisplayName(ShareOffer offer)
         {
+            if (offer != null && offer.WebLink != null) return offer.WebLink.AbsoluteUri;
             if (offer == null || offer.Files == null || offer.Files.Count == 0) return "file";
             if (offer.Files.Count == 1) return offer.Files[0].Name;
             return offer.Files.Count + " files";
@@ -521,11 +522,13 @@ namespace LiveDrop
                 operation.ReportDataRetrieved();
                 _pendingShareOperation = operation;
                 _pendingOffer = offer;
-                StatusText.Text = offer.Files.Count == 0
+                StatusText.Text = !offer.HasContent
                     ? "This share contains no supported files or text."
-                    : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
+                    : offer.WebLink != null ? "Web link is ready to share after selecting a peer." : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
+                SelectedFileText.Text = GetOfferDisplayName(offer);
+                SelectedFileText.Visibility = Visibility.Visible;
                 SendButton.Visibility = Visibility.Visible;
-                SendButton.IsEnabled = PeersList.SelectedItem != null && offer.Files.Count > 0;
+                SendButton.IsEnabled = PeersList.SelectedItem != null && offer.HasContent;
             }
             catch (Exception ex)
             {
@@ -541,13 +544,29 @@ namespace LiveDrop
             await RunOnViewAsync(() =>
             {
                 if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
+                if (e.Peer == null || LiveDrop.Protocols.ProtocolUtilities.IsLoopbackAddress(e.Peer.Address)) return;
                 var key = PeerListItem.GetKey(e.Peer);
+                var matches = PeersList.Items.OfType<PeerListItem>().Where(x => x.Matches(e.Peer)).ToList();
+                var existing = matches.FirstOrDefault();
+                // One row per IP, preferring Quick Share when both adapters
+                // discover the same device. Nearby traffic must not keep a
+                // vanished Quick Share endpoint alive.
+                if (existing != null && existing.Peer.Transport == ShareTransport.GoogleQuickShare && e.Peer.Transport != ShareTransport.GoogleQuickShare) return;
                 _peerLastSeen[key] = DateTime.UtcNow;
-                var existing = PeersList.Items.OfType<PeerListItem>().FirstOrDefault(x => x.Matches(e.Peer));
+                foreach (var duplicate in matches.Skip(1))
+                {
+                    if (ReferenceEquals(PeersList.SelectedItem, duplicate)) PeersList.SelectedItem = existing;
+                    _peerLastSeen.Remove(duplicate.Key);
+                    PeersList.Items.Remove(duplicate);
+                }
                 if (existing == null)
                     PeersList.Items.Add(new PeerListItem(e.Peer, NearbyCheckBox.IsChecked == true && QuickShareCheckBox.IsChecked == true));
                 else
+                {
+                    _peerLastSeen.Remove(existing.Key);
                     existing.Update(e.Peer);
+                    _peerLastSeen[existing.Key] = DateTime.UtcNow;
+                }
             });
         }
 
@@ -585,7 +604,6 @@ namespace LiveDrop
                             TelemetryService.Instance.TrackShareSucceeded(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer);
                             _incomingTelemetryPending = false;
                         }
-                        TransferNotification.Show("Share complete", e.Message);
                     }
                     else if (e.Message.IndexOf("transfer failed", StringComparison.OrdinalIgnoreCase) >= 0)
                     {
@@ -594,7 +612,6 @@ namespace LiveDrop
                             TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer, "transfer_failed");
                             _incomingTelemetryPending = false;
                         }
-                        TransferNotification.Show("Share failed", e.Message);
                     }
                 }
                 if (!_updateCheckInProgress) StatusText.Text = string.Join("\n", _discoveryStatus.Values);
@@ -603,7 +620,7 @@ namespace LiveDrop
 
         private void OnPeerSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SendButton.IsEnabled = _pendingOffer != null && _pendingOffer.Files.Count > 0 &&
+            SendButton.IsEnabled = _pendingOffer != null && _pendingOffer.HasContent &&
                 (_shareTargetSession ? PeersList.SelectedItem != null : true);
         }
 
@@ -619,19 +636,21 @@ namespace LiveDrop
             SendButton.IsEnabled = false;
             NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
             _sendCancellation = new CancellationTokenSource();
+            var notification = TransferNotification.Begin("Sending...", "Sending " + GetOfferDisplayName(_pendingOffer) + " to " + selected.Peer.DisplayName + ".", GetOfferDisplayName(_pendingOffer));
             try
             {
                 var outgoingName = GetOfferDisplayName(_pendingOffer);
                 var outgoingOffer = _pendingOffer;
                 TelemetryService.Instance.TrackShareStarted(selected.Peer.Transport, "send", outgoingOffer);
-                TransferNotification.Show("Sending", "Sending " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 StatusText.Text = "Sending " + outgoingName + " to " + selected.Peer.DisplayName + "...";
                 var progress = new Progress<ShareProgress>(value =>
                 {
+                    notification.Update(value);
                     if (!_viewClosed) ShowTransferProgress(value);
                 });
                 await _coordinator.SendAsync(selected.Peer, outgoingOffer, progress, _sendCancellation.Token);
                 TelemetryService.Instance.TrackShareSucceeded(selected.Peer.Transport, "send", outgoingOffer);
+                notification.Complete(true, "Sent " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 if (_viewClosed) return;
                 TryReportShareCompleted();
                 if (outgoingOffer.Files.Count == 1)
@@ -639,7 +658,6 @@ namespace LiveDrop
                     var completedSize = outgoingOffer.Files[0].Size;
                     ShowTransferProgress(new ShareProgress(outgoingName, completedSize, completedSize));
                 }
-                TransferNotification.Show("Share complete", "Sent " + outgoingName + " to " + selected.Peer.DisplayName + ".");
                 _pendingOffer = null;
                 if (!_shareTargetSession)
                 {
@@ -651,20 +669,20 @@ namespace LiveDrop
             }
             catch (OperationCanceledException)
             {
+                notification.Complete(false, "Share canceled.");
                 TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", _pendingOffer);
                 if (!_viewClosed)
                 {
                     StatusText.Text = "Share canceled.";
-                    TransferNotification.Show("Share canceled", "The file share was canceled.");
                 }
             }
             catch (Exception ex)
             {
+                notification.Complete(false, ex.Message);
                 TelemetryService.Instance.TrackShareFailed(selected.Peer.Transport, "send", _pendingOffer, TelemetryService.ClassifyFailure(ex));
                 if (!_viewClosed)
                 {
                     StatusText.Text = "Share failed: " + ex.Message;
-                    TransferNotification.Show("Share failed", ex.Message);
                 }
                 TryReportShareError(ex.Message);
             }
@@ -707,12 +725,15 @@ namespace LiveDrop
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
             var fileName = GetOfferDisplayName(e.Offer);
+            var notification = TransferNotification.Begin("Receiving...", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".", fileName);
+            e.TransferCompleted += (succeeded, message) => notification.Complete(succeeded, message);
             _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
             _incomingTelemetryOffer = e.Offer;
             _incomingTelemetryPending = true;
             TelemetryService.Instance.TrackShareStarted(_incomingTelemetryTransport, "receive", e.Offer);
             e.ProgressChanged += progress =>
             {
+                notification.Update(progress);
                 _ = RunOnViewAsync(() => ShowTransferProgress(progress));
             };
             try
@@ -725,7 +746,6 @@ namespace LiveDrop
                     ResetTransferProgress();
                     TransferProgressPanel.Visibility = Visibility.Visible;
                     TransferProgressText.Text = "Accepting";
-                    TransferNotification.Show("Incoming share", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".");
                     StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in Pictures/LiveDrop.";
                 });
                 // LiveDrop sessions accept automatically so two LiveDrop
@@ -746,31 +766,37 @@ namespace LiveDrop
         }
     }
 
-    internal sealed class PeerListItem
+    [Windows.UI.Xaml.Data.Bindable]
+    internal sealed class PeerListItem : System.ComponentModel.INotifyPropertyChanged
     {
         private readonly bool _showProtocol;
         internal PeerDescriptor Peer { get; private set; }
         internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }
         internal string Key { get { return GetKey(Peer); } }
-        internal void Update(PeerDescriptor peer) { if (peer != null) Peer = peer; }
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
+        internal void Update(PeerDescriptor peer)
+        {
+            if (peer == null) return;
+            Peer = peer;
+            PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs("DisplayText"));
+        }
         internal static string GetKey(PeerDescriptor peer)
         {
             if (peer == null) return string.Empty;
-            var identity = !string.IsNullOrWhiteSpace(peer.StableId)
-                ? peer.StableId
-                : peer.Address + ":" + peer.Port;
-            return peer.Transport + "|" + identity;
+            var identity = !string.IsNullOrWhiteSpace(peer.Address) ? peer.Address.ToLowerInvariant() : peer.StableId;
+            return identity;
         }
         internal bool Matches(PeerDescriptor peer)
         {
-            if (peer == null || Peer == null || Peer.Transport != peer.Transport) return false;
-            if (!string.IsNullOrWhiteSpace(Peer.StableId) && !string.IsNullOrWhiteSpace(peer.StableId))
-                return string.Equals(Peer.StableId, peer.StableId, StringComparison.OrdinalIgnoreCase);
-            return string.Equals(Peer.Address, peer.Address, StringComparison.OrdinalIgnoreCase) && Peer.Port == peer.Port;
+            if (peer == null || Peer == null) return false;
+            if (Peer.Transport == peer.Transport && !string.IsNullOrWhiteSpace(Peer.StableId) && !string.IsNullOrWhiteSpace(peer.StableId) &&
+                string.Equals(Peer.StableId, peer.StableId, StringComparison.Ordinal)) return true;
+            return !string.IsNullOrWhiteSpace(Peer.Address) && string.Equals(Peer.Address, peer.Address, StringComparison.OrdinalIgnoreCase);
         }
-        public override string ToString()
+        public string DisplayText
         {
-            return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? "Quick Share" : "Microsoft Nearby Share") : "");
+            get { return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? "Quick Share" : "Microsoft Nearby Share") : ""); }
         }
+        public override string ToString() { return DisplayText; }
     }
 }

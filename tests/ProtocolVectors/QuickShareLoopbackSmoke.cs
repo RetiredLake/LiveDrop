@@ -20,11 +20,22 @@ internal static class QuickShareLoopbackSmoke
 {
     private static void Main()
     {
-        RunAsync().GetAwaiter().GetResult();
+        try { RunAsync().GetAwaiter().GetResult(); }
+        catch (Exception ex)
+        {
+            var aggregate = ex as AggregateException;
+            if (aggregate != null) foreach (var failure in aggregate.Flatten().InnerExceptions) Console.Error.WriteLine(failure);
+            else Console.Error.WriteLine(ex);
+            Environment.ExitCode = 1;
+        }
     }
 
     private static async Task RunAsync()
     {
+        var namedRequest = QuickShareFrames.ParseConnectionRequest(QuickShareFrames.BuildConnectionRequest(
+            "test", "", QuickShareFrames.BuildEndpointInfo("Pixel test", 1)));
+        if (namedRequest.EndpointName != "Pixel test")
+            throw new InvalidOperationException("Endpoint metadata name was lost.");
         if (!ProtocolUtilities.IsLoopbackAddress("127.0.0.1") ||
             !ProtocolUtilities.IsLoopbackAddress("::1") ||
             !ProtocolUtilities.IsLoopbackAddress("::ffff:127.0.0.1") ||
@@ -48,7 +59,7 @@ internal static class QuickShareLoopbackSmoke
             for (var i = 0; i < expected.Length; i++) expected[i] = (byte)((i * 31 + 7) & 0xFF);
             await FileIO.WriteBytesAsync(source, expected);
             var secondSource = await root.CreateFileAsync("loopback-second.txt", CreationCollisionOption.ReplaceExisting);
-            var secondExpected = new byte[131073];
+            var secondExpected = new byte[700000];
             for (var i = 0; i < secondExpected.Length; i++) secondExpected[i] = (byte)((i * 17 + 3) & 0xFF);
             await FileIO.WriteBytesAsync(secondSource, secondExpected);
 
@@ -59,23 +70,62 @@ internal static class QuickShareLoopbackSmoke
                     new ShareFileDescriptor(secondSource, "text/plain", secondExpected.Length)
                 },
                 string.Empty);
+            await TransferAsync(offer, receivedFolder);
+            var files = await receivedFolder.GetFilesAsync();
+            await AssertFileContentsAsync(files, "loopback.bin", expected);
+            await AssertFileContentsAsync(files, "loopback-second.txt", secondExpected);
+            var link = new Uri("https://example.org/path?q=phone%20test&second=2#anchor");
+            var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
+            package.SetWebLink(link);
+            var textRequested = false;
+            package.SetDataProvider(Windows.ApplicationModel.DataTransfer.StandardDataFormats.Text, request =>
+            {
+                textRequested = true;
+                request.SetData("A page title, not the URL");
+            });
+            var linkOffer = await ShareOfferFactory.FromDataPackageViewAsync(package.GetView());
+            if (linkOffer.WebLink != link || !linkOffer.HasContent || linkOffer.Files.Count != 0 || textRequested)
+                throw new InvalidOperationException("Browser WebLink must take precedence over the fallback text.");
+            var legacyPackage = new Windows.ApplicationModel.DataTransfer.DataPackage();
+#pragma warning disable 618
+            legacyPackage.SetUri(link);
+#pragma warning restore 618
+            if ((await ShareOfferFactory.FromDataPackageViewAsync(legacyPackage.GetView())).WebLink != link)
+                throw new InvalidOperationException("Legacy browser Uri share was lost.");
+            await TransferAsync(linkOffer, receivedFolder);
+            files = await receivedFolder.GetFilesAsync();
+            var shortcut = files.FirstOrDefault(file => file.Name == link.Host + ".txt");
+            if (shortcut == null || (await FileIO.ReadTextAsync(shortcut)) != link.AbsoluteUri)
+                throw new InvalidOperationException("Native Quick Share URL did not round-trip.");
+        }
+        finally
+        {
+            try { Directory.Delete(rootPath, true); } catch { }
+        }
+        Console.WriteLine("PASS: Quick Share handshake, multi-file transfer, browser WebLink to native URL payload and receive; production loopback guard");
+    }
+
+    private static async Task TransferAsync(ShareOffer offer, StorageFolder receivedFolder)
+    {
+            var savedPaths = new List<string>();
             var listener = new StreamSocketListener();
             var receiverTaskSource = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
-            listener.add_ConnectionReceived((sender, args) =>
+            listener.ConnectionReceived += (sender, args) =>
             {
                 var task = QuickShareSession.ReceiveAsync(
                     args.Socket,
                     "Loopback receiver",
                     (peer, incoming) => Task.FromResult(true),
                     status => { },
-                    progress => { },
+                    progress => { if (!string.IsNullOrWhiteSpace(progress.SavedFilePath)) savedPaths.Add(progress.SavedFilePath); },
                     CancellationToken.None,
                     receivedFolder);
                 if (!receiverTaskSource.TrySetResult(task)) args.Socket.Dispose();
-            });
+            };
 
-            await listener.BindServiceNameAsync("0");
+            await listener.BindEndpointAsync(new HostName("127.0.0.1"), string.Empty);
             var outboundSocket = new StreamSocket();
+            Exception sendError = null;
             try
             {
                 await outboundSocket.ConnectAsync(
@@ -95,6 +145,7 @@ internal static class QuickShareLoopbackSmoke
                         timeout.Token);
                 }
             }
+            catch (Exception ex) { sendError = ex; }
             finally
             {
                 listener.Dispose();
@@ -102,17 +153,12 @@ internal static class QuickShareLoopbackSmoke
 
             var receiverWait = await Task.WhenAny(receiverTaskSource.Task, Task.Delay(TimeSpan.FromSeconds(30)));
             if (receiverWait != receiverTaskSource.Task) throw new TimeoutException("Loopback receiver did not accept the connection.");
-            await (await receiverTaskSource.Task);
+            try { await (await receiverTaskSource.Task); }
+            catch (Exception ex) { throw new AggregateException("Loopback receiver failed.", sendError ?? ex, ex); }
+            if (sendError != null) throw sendError;
+            if (savedPaths.Count != (offer.WebLink == null ? offer.Files.Count : 1) || savedPaths.Any(path => !File.Exists(path)))
+                throw new InvalidOperationException("Saved-file notification targets must exist after finalization.");
 
-            var files = await receivedFolder.GetFilesAsync();
-            await AssertFileContentsAsync(files, "loopback.bin", expected);
-            await AssertFileContentsAsync(files, "loopback-second.txt", secondExpected);
-        }
-        finally
-        {
-            try { Directory.Delete(rootPath, true); } catch { }
-        }
-        Console.WriteLine("PASS: Quick Share loopback handshake and multi-file receive; production loopback guard");
     }
 
     private static async Task AssertFileContentsAsync(IReadOnlyList<StorageFile> files, string name, byte[] expected)

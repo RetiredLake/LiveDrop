@@ -17,17 +17,23 @@ namespace LiveDrop
             UnhandledException += OnUnhandledException;
         }
 
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
             NavigateToMainPage();
             var page = (Window.Current.Content as Frame)?.Content as MainPage;
-            page?.BeginRegularSession();
+            if (!Services.TransferNotification.IsTransferActivation(e.Arguments)) page?.BeginRegularSession();
             Window.Current.Activate();
+            await Services.TransferNotification.HandleActivationAsync(e.Arguments);
         }
 
-        protected override void OnActivated(IActivatedEventArgs args)
+        protected override async void OnActivated(IActivatedEventArgs args)
         {
             base.OnActivated(args);
+            var toast = args as ToastNotificationActivatedEventArgs;
+            if (toast == null) return;
+            NavigateToMainPage();
+            Window.Current.Activate();
+            await Services.TransferNotification.HandleActivationAsync(toast.Argument);
         }
 
         protected override async void OnShareTargetActivated(ShareTargetActivatedEventArgs args)

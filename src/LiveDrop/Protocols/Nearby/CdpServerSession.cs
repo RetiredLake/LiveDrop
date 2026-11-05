@@ -46,11 +46,11 @@ namespace LiveDrop.Protocols.Nearby
             _identity = identity;
         }
 
-        internal static async Task ReceiveAsync(SocketConnection connection, CdpIdentity identity, PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken)
+        internal static async Task ReceiveAsync(SocketConnection connection, CdpIdentity identity, PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken, Action<ShareProgress> progress = null)
         {
             var session = new CdpServerSession(connection, identity);
             await session.AuthenticateAsync(cancellationToken);
-            await session.ReceiveFilesAsync(peer, consent, status, cancellationToken);
+            await session.ReceiveFilesAsync(peer, consent, status, cancellationToken, progress);
         }
 
         private async Task AuthenticateAsync(CancellationToken cancellationToken)
@@ -113,7 +113,7 @@ namespace LiveDrop.Protocols.Nearby
             await SendPlainConnectAsync(packet.Header, responseType, responsePayload.ToArray(), cancellationToken);
         }
 
-        private async Task ReceiveFilesAsync(PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken)
+        private async Task ReceiveFilesAsync(PeerDescriptor peer, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, CancellationToken cancellationToken, Action<ShareProgress> progress)
         {
             var handshakeChannel = await AcceptChannelAsync(cancellationToken);
             var handshake = await ReadValueSetAsync(handshakeChannel, cancellationToken);
@@ -179,6 +179,7 @@ namespace LiveDrop.Protocols.Nearby
                             await file.Writer.StoreAsync();
                         }
                         position += (ulong)body.Count;
+                        progress?.Invoke(new ShareProgress(file.Metadata.Name, (long)position, file.Metadata.Size));
                         status?.Invoke("Received " + file.Metadata.Name + " (" + position + "/" + file.Metadata.Size + " bytes).");
                         if (file.Metadata.Size == 0) break;
                     }
@@ -188,6 +189,7 @@ namespace LiveDrop.Protocols.Nearby
                     file.Stream.Dispose();
                     await file.Temporary.RenameAsync(ProtocolUtilities.NormalizeFileName(file.Metadata.Name), NameCollisionOption.GenerateUniqueName);
                     file.Completed = true;
+                    progress?.Invoke(new ShareProgress(file.Metadata.Name, file.Metadata.Size, file.Metadata.Size, file.Temporary.Path));
                 }
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 2), cancellationToken);
                 status?.Invoke("Microsoft Nearby transfer received. Files are saved in Pictures/LiveDrop.");

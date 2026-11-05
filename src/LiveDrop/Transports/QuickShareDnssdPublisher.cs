@@ -38,7 +38,11 @@ namespace LiveDrop.Transports
                     hostName,
                     checked((ushort)int.Parse(listener.Information.LocalPort)));
                 service.TextAttributes["n"] = _endpointInfo;
-                var result = await service.RegisterStreamSocketListenerAsync(listener);
+                var localHost = hostNames.FirstOrDefault(item => item.Type == HostNameType.Ipv4 &&
+                    string.Equals(item.RawName, address, StringComparison.OrdinalIgnoreCase));
+                var adapter = localHost == null || localHost.IPInformation == null ? null : localHost.IPInformation.NetworkAdapter;
+                if (adapter == null) return false;
+                var result = await service.RegisterStreamSocketListenerAsync(listener, adapter);
                 if (result == null || result.Status != DnssdRegistrationStatus.Success)
                     return false;
                 _service = service;

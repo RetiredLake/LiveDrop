@@ -74,6 +74,8 @@ namespace LiveDrop.Services
 
         internal async Task SendAsync(PeerDescriptor peer, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
         {
+            if (offer != null && offer.WebLink != null && peer.Transport != ShareTransport.GoogleQuickShare)
+                throw new ShareProtocolException("Native web link sharing currently requires Google Quick Share.");
             foreach (var adapter in _adapters)
                 if (adapter.Transport == peer.Transport) { await adapter.SendAsync(peer, offer, progress, cancellationToken); return; }
             throw new ShareProtocolException("No adapter is available for the selected peer.");
