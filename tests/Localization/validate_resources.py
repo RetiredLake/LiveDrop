@@ -1,5 +1,6 @@
 """Validate the source resource contract before packaging or accepting translations."""
 from pathlib import Path
+import json
 import re
 import string
 import xml.etree.ElementTree as ET
@@ -42,9 +43,17 @@ for path in root.glob('Package*.appxmanifest'):
         assert match in english, f'Missing manifest string: {match}'
 assert english['SelectFilesButton.Content'] == 'Select Files'
 assert placeholders(english['DevelopedBy']) == [('0', '')]
+coverage = json.loads((Path(__file__).with_name('translation_coverage.json')).read_text())
+expected = set(coverage['translated_keys'])
+fallback = set(coverage['english_fallback_keys'])
+assert not expected & fallback and expected | fallback == english.keys(), 'Coverage contract differs from English source'
+languages = {p.parent.name for p in (root / 'Strings').glob('*/Resources.resw')} - {'en-US'}
+assert languages == set(coverage['languages']), 'Translation language set differs from coverage contract'
 for path in (root / 'Strings').glob('*/Resources.resw'):
     translated = read_resources(path)
-    assert translated.keys() == english.keys(), f'Resource keys differ: {path}'
+    required = english.keys() if path.parent.name == 'en-US' else expected
+    assert translated.keys() == required, f'Resource keys differ: {path}'
     for key, value in translated.items():
         assert placeholders(value) == placeholders(english[key]), f'Placeholder mismatch: {path}: {key}'
 print(f'PASS: {len(english)} resources; code, XAML, manifest references and translation placeholders')
+
