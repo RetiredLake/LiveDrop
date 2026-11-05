@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Data.Json;
 using Windows.Storage;
@@ -69,37 +70,51 @@ namespace LiveDrop.Services
 
         public async Task<StorageFile> DownloadAsync(GitHubReleaseInfo release, IProgress<double> progress)
         {
+            return await DownloadAsync(release, progress, CancellationToken.None);
+        }
+
+        public async Task<StorageFile> DownloadAsync(GitHubReleaseInfo release, IProgress<double> progress, CancellationToken cancellationToken)
+        {
             if (release == null || string.IsNullOrWhiteSpace(release.BundleUrl) || string.IsNullOrWhiteSpace(release.BundleName))
                 throw new ArgumentException(AppText.Get("TheGitHubReleaseDoesNotContainADownloadable"), "release");
 
+            cancellationToken.ThrowIfCancellationRequested();
             var folder = await ApplicationData.Current.TemporaryFolder.CreateFolderAsync("Updates", CreationCollisionOption.OpenIfExists);
             var file = await folder.CreateFileAsync(release.BundleName, CreationCollisionOption.ReplaceExisting);
-            using (var client = CreateClient())
-            using (var response = await client.GetAsync(release.BundleUrl, HttpCompletionOption.ResponseHeadersRead))
+            try
             {
-                response.EnsureSuccessStatusCode();
-                var total = response.Content.Headers.ContentLength ?? release.BundleSize;
-                using (var input = await response.Content.ReadAsStreamAsync())
-                using (var output = await file.OpenStreamForWriteAsync())
+                using (var client = CreateClient())
+                using (var response = await client.GetAsync(release.BundleUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
-                    var buffer = new byte[81920];
-                    long copied = 0;
-                    int read;
-                    while ((read = await input.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                    response.EnsureSuccessStatusCode();
+                    var total = response.Content.Headers.ContentLength ?? release.BundleSize;
+                    using (var input = await response.Content.ReadAsStreamAsync())
+                    using (var output = await file.OpenStreamForWriteAsync())
                     {
-                        await output.WriteAsync(buffer, 0, read);
-                        copied += read;
-                        if (total > 0 && progress != null) progress.Report((double)copied / total);
+                        var buffer = new byte[81920];
+                        long copied = 0;
+                        int read;
+                        while ((read = await input.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
+                        {
+                            await output.WriteAsync(buffer, 0, read, cancellationToken);
+                            copied += read;
+                            if (total > 0 && progress != null) progress.Report((double)copied / total);
+                        }
                     }
                 }
+                return file;
             }
-            return file;
+            catch
+            {
+                try { await file.DeleteAsync(); } catch { }
+                throw;
+            }
         }
 
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.9");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.12");
             return client;
         }
 

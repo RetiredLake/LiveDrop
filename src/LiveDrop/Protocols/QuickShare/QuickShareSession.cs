@@ -100,15 +100,15 @@ namespace LiveDrop.Protocols.QuickShare
             }
         }
 
-        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken)
+        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, Action<string> pinReceived = null)
         {
-            await ReceiveAsync(socket, displayName, consent, status, progress, cancellationToken, null);
+            await ReceiveAsync(socket, displayName, consent, status, progress, cancellationToken, null, pinReceived);
         }
 
         // The receive-folder overload is used only by the protocol loopback
         // fixture. The app's adapters use the normal Pictures-backed overload
         // above, so a local test socket cannot become a user-facing route.
-        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, StorageFolder receiveFolder)
+        internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, StorageFolder receiveFolder, Action<string> pinReceived = null)
         {
             using (var connection = new SocketConnection(socket))
             {
@@ -132,7 +132,8 @@ namespace LiveDrop.Protocols.QuickShare
                 var sharedSecret = serverKey.ComputeSharedSecretHash(QuickShareFrames.ParseClientFinishedPublicKey(clientFinishMessage.Data));
                 byte[] authKey;
                 var crypto = QuickShareCrypto.Create(sharedSecret, clientInit, serverInit, true, out authKey);
-                status?.Invoke(AppText.Format("QuickShareSecurityPin", crypto.PinCode(authKey)));
+                var securityPin = crypto.PinCode(authKey);
+                pinReceived?.Invoke(securityPin);
                 using (var keepAliveSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
                     Task keepAlive = null;
@@ -151,10 +152,25 @@ namespace LiveDrop.Protocols.QuickShare
                         var files = new List<ShareFileDescriptor>();
                         foreach (var item in metadata) files.Add(new ShareFileDescriptor(item.Name, item.MimeType, item.Size));
                         var offer = new ShareOffer(files, string.Empty);
-                        var accepted = consent == null || await consent(peer, offer);
+                        var consentTask = consent == null ? Task.FromResult(true) : consent(peer, offer);
+                        if (keepAlive != null)
+                        {
+                            var completedTask = await Task.WhenAny(consentTask, keepAlive);
+                            if (completedTask == keepAlive)
+                            {
+                                // The sender may cancel while the consent prompt is
+                                // visible. The keep-alive writer is the only active
+                                // socket operation during that wait, so surface a
+                                // closed connection instead of leaving stale buttons.
+                                await keepAlive;
+                                cancellationToken.ThrowIfCancellationRequested();
+                                throw new EndOfStreamException(AppText.Get("ThePeerClosedTheConnection"));
+                            }
+                        }
+                        var accepted = await consentTask;
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
-                        status?.Invoke(AppText.Format(System.Linq.Enumerable.All(metadata, item => item.IsText && item.TextType == 2) ? "QuickShareSecurityPin" : "QuickShareReceivingPin", crypto.PinCode(authKey)));
+                        status?.Invoke(AppText.Get("Receiving"));
                         await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken, receiveFolder);
                         await CompleteIncomingSessionAsync(connection, crypto, cancellationToken);
                         status?.Invoke(AppText.Get(System.Linq.Enumerable.All(metadata, item => item.IsText && item.TextType == 2) ? "WebLinkReceived" : "QuickShareTransferReceivedFilesAreSavedIn"));

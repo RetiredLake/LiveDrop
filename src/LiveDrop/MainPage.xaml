@@ -31,6 +31,7 @@
           </ListView.ItemTemplate>
         </ListView>
         <TextBlock x:Name="SelectedFileText" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,12,0,0" />
+        <TextBlock x:Name="IncomingDetailsText" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,12,0,0" />
         <Grid x:Name="TransferProgressPanel" Visibility="Collapsed" Margin="0,8,0,0">
           <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -39,7 +40,16 @@
           <ProgressBar x:Name="TransferProgressBar" Grid.Column="0" Height="6" Minimum="0" Maximum="1" VerticalAlignment="Center" />
           <TextBlock x:Name="TransferProgressText" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" />
         </Grid>
-        <Button x:Name="ShareButton" x:Uid="SelectFilesButton" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnShareClicked" />
+        <TextBlock x:Name="ReceiveCompleteText" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,16,0,0" />
+        <StackPanel x:Name="IncomingDecisionPanel" Orientation="Horizontal" Visibility="Collapsed" Margin="0,12,0,0">
+          <Button x:Name="AcceptIncomingButton" x:Uid="AcceptIncomingButton" Click="OnAcceptIncomingClicked" />
+          <Button x:Name="DenyIncomingButton" x:Uid="DenyIncomingButton" Margin="8,0,0,0" Click="OnDenyIncomingClicked" />
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+          <Button x:Name="ShareButton" x:Uid="SelectFilesButton" Click="OnShareClicked" />
+          <Button x:Name="ViewFilesButton" x:Uid="ViewFilesButton" Visibility="Collapsed" Margin="8,0,0,0" Click="OnViewFilesClicked" />
+          <Button x:Name="DismissReceivedButton" x:Uid="DismissReceivedButton" Visibility="Collapsed" Margin="8,0,0,0" Click="OnDismissReceivedClicked" />
+        </StackPanel>
         <Button x:Name="SendButton" x:Uid="SendButton" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
         <Button x:Name="CancelButton" x:Uid="CancelButton" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnCancelClicked" />
         <TextBlock x:Name="StatusText" x:Uid="StartingDiscovery" TextWrapping="Wrap" Margin="0,16,0,0" />

@@ -207,6 +207,7 @@ namespace LiveDrop.Protocols.QuickShare
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
         {
             ShareOfferReceivedEventArgs received = null;
+            string securityPin = null;
             var transferAccepted = false;
             var remoteAddress = socket.Information.RemoteAddress == null ? string.Empty : socket.Information.RemoteAddress.RawName;
             if (ProtocolUtilities.IsLoopbackAddress(remoteAddress) || IsLocalAddress(remoteAddress))
@@ -225,11 +226,14 @@ namespace LiveDrop.Protocols.QuickShare
                         var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                         var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                         if (OfferReceived == null) return true;
-                        received = new ShareOfferReceivedEventArgs(peer, offer, complete, receiveCancellation.Cancel);
-                        OfferReceived(this, received);
-                        transferAccepted = await decision.Task;
+                        using (cancellationToken.Register(() => decision.TrySetResult(false)))
+                        {
+                            received = new ShareOfferReceivedEventArgs(peer, offer, complete, receiveCancellation.Cancel, securityPin);
+                            OfferReceived(this, received);
+                            transferAccepted = await decision.Task;
+                        }
                         return transferAccepted;
-                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken);
+                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken, value => securityPin = value);
                     received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
                 }
                 catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }

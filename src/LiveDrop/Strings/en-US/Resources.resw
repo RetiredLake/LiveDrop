@@ -153,8 +153,8 @@
     <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
   </data>
   <data name="CouldNotCreatePicturesLiveDropForReceivedFiles" xml:space="preserve">
-    <value>Could not create Pictures/LiveDrop for received files.</value>
-    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+    <value>Could not create the LiveDrop folder for received files.</value>
+    <comment>Shown by TransferFileStore.cs. Do not expose the storage path to users.</comment>
   </data>
   <data name="CouldNotOpenSavedContent" xml:space="preserve">
     <value>Could not open saved content</value>
@@ -205,8 +205,8 @@
     <comment>Preserve numbered placeholders and product/protocol names.</comment>
   </data>
   <data name="FilesAreSavedInPicturesLiveDrop" xml:space="preserve">
-    <value>Files are saved in Pictures/LiveDrop.</value>
-    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+    <value>Files saved to the LiveDrop Folder.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
   </data>
   <data name="FilesReady" xml:space="preserve">
     <value>{0} files are ready to share after selecting a peer.</value>
@@ -413,8 +413,8 @@
     <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
   </data>
   <data name="MicrosoftNearbyTransferReceivedFilesAreSavedIn" xml:space="preserve">
-    <value>Microsoft Nearby transfer received. Files are saved in Pictures/LiveDrop.</value>
-    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+    <value>Files saved to the LiveDrop Folder.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
   </data>
   <data name="MoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
     <value>More</value>
@@ -653,8 +653,8 @@
     <comment>Product/brand name. Do not translate.</comment>
   </data>
   <data name="QuickShareReceivingPin" xml:space="preserve">
-    <value>Quick Share security PIN: {0}. Compare it with the other device. Receiving files to Pictures/LiveDrop.</value>
-    <comment>{0}: numeric security PIN. Pictures/LiveDrop is the save location.</comment>
+    <value>Quick Share security PIN: {0}. Compare it with the other device.</value>
+    <comment>{0}: numeric security PIN; do not translate or reformat it.</comment>
   </data>
   <data name="QuickShareRecipientCancelledTheTransfer" xml:space="preserve">
     <value>Quick Share recipient cancelled the transfer.</value>
@@ -749,8 +749,8 @@
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
   <data name="QuickShareTransferReceivedFilesAreSavedIn" xml:space="preserve">
-    <value>Quick Share transfer received. Files are saved in Pictures/LiveDrop.</value>
-    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+    <value>Files saved to the LiveDrop Folder.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
   </data>
   <data name="QuickShareUKEY2ClientInitReceivedPreparingReceiverKey" xml:space="preserve">
     <value>Quick Share UKEY2 ClientInit received; preparing receiver key.</value>
@@ -777,11 +777,11 @@
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
   <data name="ReceivedFileBatch" xml:space="preserve">
-    <value>Received {0} ({1}/{2}). Saved in Pictures/LiveDrop.</value>
+    <value>Received {0} ({1}/{2}).</value>
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
   <data name="ReceivedFileSaved" xml:space="preserve">
-    <value>Received {0}. Saved in Pictures/LiveDrop.</value>
+    <value>Received {0}.</value>
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
   <data name="Receiving" xml:space="preserve">
@@ -793,7 +793,7 @@
     <comment>{0}: filename or file count; {1}: sender device name.</comment>
   </data>
   <data name="ReceivingFileLocation" xml:space="preserve">
-    <value>Receiving {0}. Files are saved automatically in Pictures/LiveDrop.</value>
+    <value>Receiving {0}.</value>
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
   <data name="ReceivingFromDevice" xml:space="preserve">
@@ -813,7 +813,7 @@
     <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
   </data>
   <data name="SelectAPeerFirst" xml:space="preserve">
-    <value>Select a peer first.</value>
+    <value>Select a peer first. Set the other device to Everyone mode.</value>
     <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
   </data>
   <data name="SelectAPeerThenSendTheFile" xml:space="preserve">
@@ -980,6 +980,10 @@
     <value>Update check failed: {0}</value>
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
   </data>
+  <data name="UpdateDownloadCanceled" xml:space="preserve">
+    <value>Update download canceled.</value>
+    <comment>Shown by MainPage.xaml.cs when the user cancels an update download.</comment>
+  </data>
   <data name="UpdateHttpError" xml:space="preserve">
     <value>GitHub returned HTTP {0}. Please try again later.</value>
     <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
@@ -1039,5 +1043,41 @@
   <data name="ReceivingContent" xml:space="preserve">
     <value>Receiving {0}...</value>
     <comment>{0}: incoming filename or file count. May also be a URL attachment.</comment>
+  </data>
+  <data name="AcceptIncomingButton.Content" xml:space="preserve">
+    <value>Accept</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DenyIncomingButton.Content" xml:space="preserve">
+    <value>Deny</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DismissReceivedButton.Content" xml:space="preserve">
+    <value>Dismiss</value>
+    <comment>Dismisses the successful receive notice.</comment>
+  </data>
+  <data name="FilesSavedToLiveDropFolder" xml:space="preserve">
+    <value>Files saved to the LiveDrop Folder.</value>
+    <comment>Shown after receiving files; do not reveal the storage path.</comment>
+  </data>
+  <data name="IncomingShareRequest" xml:space="preserve">
+    <value>Incoming share request.</value>
+    <comment>Consent prompt when the incoming protocol does not provide a verification PIN.</comment>
+  </data>
+  <data name="IncomingShareQueueFull" xml:space="preserve">
+    <value>Too many incoming share requests are waiting. Try again later.</value>
+    <comment>Shown when the bounded incoming consent queue is full.</comment>
+  </data>
+  <data name="MicrosoftNearbySentTooManyPacketsBeforeConsent" xml:space="preserve">
+    <value>Microsoft Nearby sent too much data before the transfer was accepted.</value>
+    <comment>Shown when a remote device sends excessive protocol data while awaiting consent.</comment>
+  </data>
+  <data name="LiveDropFolder" xml:space="preserve">
+    <value>LiveDrop Folder</value>
+    <comment>Menu item that opens the app's receive folder.</comment>
+  </data>
+  <data name="ViewFilesButton.Content" xml:space="preserve">
+    <value>View Files</value>
+    <comment>Opens the most recently received file or folder.</comment>
   </data>
 </root>

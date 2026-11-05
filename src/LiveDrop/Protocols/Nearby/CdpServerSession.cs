@@ -29,9 +29,12 @@ namespace LiveDrop.Protocols.Nearby
         private const byte AuthDoneResponse = 7;
         private const uint MessageFragmentSize = 16384;
         private const uint BlobSize = 102400;
+        private const int MaximumBufferedPacketsWhileAwaitingConsent = 16;
 
         private readonly SocketConnection _connection;
         private readonly CdpIdentity _identity;
+        private readonly Queue<CdpPacket> _bufferedPackets = new Queue<CdpPacket>();
+        private Task<CdpPacket> _pendingPacketRead;
         private readonly P256KeyAgreement _key = P256KeyAgreement.Create();
         private ulong _hostNonce;
         private ulong _clientNonce;
@@ -55,7 +58,7 @@ namespace LiveDrop.Protocols.Nearby
 
         private async Task AuthenticateAsync(CancellationToken cancellationToken)
         {
-            var requestPacket = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var requestPacket = await ReadPacketAsync(cancellationToken);
             var requestPayload = new MemoryStream(ReadConnectionPayload(requestPacket, ConnectRequest));
             var curve = requestPayload.ReadByte();
             var hmacSize = ReadUInt16(requestPayload);
@@ -93,7 +96,7 @@ namespace LiveDrop.Protocols.Nearby
             await ReceiveAuthenticationAsync(DeviceAuthRequest, DeviceAuthResponse, cancellationToken);
             await ReceiveAuthenticationAsync(UserDeviceAuthRequest, UserDeviceAuthResponse, cancellationToken);
 
-            var donePacket = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var donePacket = await ReadPacketAsync(cancellationToken);
             var done = ReadConnectionPayload(donePacket, AuthDoneRequest);
             if (done.Length != 1 || done[0] != 0) throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentAnInvalidCDPAuthenticationCompletion"));
             await SendPlainConnectAsync(donePacket.Header, AuthDoneResponse, new byte[] { 0 }, cancellationToken);
@@ -101,7 +104,7 @@ namespace LiveDrop.Protocols.Nearby
 
         private async Task ReceiveAuthenticationAsync(byte expectedRequest, byte responseType, CancellationToken cancellationToken)
         {
-            var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+            var packet = await ReadPacketAsync(cancellationToken);
             var payload = new MemoryStream(ReadConnectionPayload(packet, expectedRequest));
             var certificate = ReadBytesWithLength(payload);
             var signature = ReadBytesWithLength(payload);
@@ -139,10 +142,17 @@ namespace LiveDrop.Protocols.Nearby
                 descriptors.Add(new ShareFileDescriptor(ProtocolUtilities.NormalizeFileName(fileNames[i]), "application/octet-stream", checked((long)contentSizes[i])));
             }
             var offer = new ShareOffer(descriptors, string.Empty);
-            var accepted = consent != null && await consent(peer, offer);
+            var consentTask = consent == null ? Task.FromResult(false) : consent(peer, offer);
+            var accepted = await WaitForConsentOrDisconnectAsync(consentTask, cancellationToken);
             if (!accepted)
             {
                 await SendValueSetAsync(transferChannel, transfer.MessageId, new CdpValueSet().AddUInt32("ControlMessage", 5), cancellationToken);
+                if (_pendingPacketRead != null)
+                {
+                    _connection.Dispose();
+                    try { await _pendingPacketRead; } catch { }
+                    _pendingPacketRead = null;
+                }
                 return;
             }
 
@@ -210,7 +220,7 @@ namespace LiveDrop.Protocols.Nearby
         {
             while (true)
             {
-                var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+                var packet = await ReadPacketAsync(cancellationToken);
                 if (packet.Header.Type != CdpHeader.Control) continue;
                 var plain = _crypto.Decrypt(packet);
                 if (plain.Length < 1 || plain[0] != 0) continue;
@@ -271,10 +281,42 @@ namespace LiveDrop.Protocols.Nearby
         {
             while (true)
             {
-                var packet = await CdpConnection.ReadAsync(_connection, cancellationToken);
+                var packet = await ReadPacketAsync(cancellationToken);
                 if (packet.Header.Type != CdpHeader.Session || packet.Header.ChannelId != channelId) continue;
                 return new CdpPacket(packet.Header, _crypto.Decrypt(packet));
             }
+        }
+
+        private async Task<bool> WaitForConsentOrDisconnectAsync(Task<bool> consentTask, CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                if (consentTask.IsCompleted) return await consentTask;
+
+                var readTask = _pendingPacketRead ?? (_pendingPacketRead = CdpConnection.ReadAsync(_connection, cancellationToken));
+                await Task.WhenAny(consentTask, readTask);
+                if (readTask.IsCompleted)
+                {
+                    var packet = await readTask;
+                    _pendingPacketRead = null;
+                    if (_bufferedPackets.Count >= MaximumBufferedPacketsWhileAwaitingConsent)
+                        throw new ShareProtocolException(AppText.Get("MicrosoftNearbySentTooManyPacketsBeforeConsent"));
+                    _bufferedPackets.Enqueue(packet);
+                    if (consentTask.IsCompleted) return await consentTask;
+                    continue;
+                }
+
+                return await consentTask;
+            }
+        }
+
+        private async Task<CdpPacket> ReadPacketAsync(CancellationToken cancellationToken)
+        {
+            if (_bufferedPackets.Count > 0) return _bufferedPackets.Dequeue();
+            var pending = _pendingPacketRead;
+            if (pending == null) return await CdpConnection.ReadAsync(_connection, cancellationToken);
+            _pendingPacketRead = null;
+            return await pending;
         }
 
         private async Task WriteEncryptedAsync(CdpHeader header, byte[] payload, CancellationToken cancellationToken)

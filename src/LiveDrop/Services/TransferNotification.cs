@@ -144,6 +144,7 @@ namespace LiveDrop.Services
             private DateTime _lastUpdate = DateTime.MinValue;
             private bool _finished;
             private Uri _receivedLink;
+            private string _launchArgument = "transfer";
             private uint _sequence;
 
             internal Session(string title, string body, string fileName, string heading)
@@ -196,12 +197,20 @@ namespace LiveDrop.Services
                                 launch = RegisterTarget("link|" + _receivedLink.AbsoluteUri);
                         }
                         catch { }
+                        _launchArgument = launch;
                         if (succeeded && _saved.Count > 0) body = AppText.Get("PressToViewFiles");
                         else if (succeeded && _receivedLink != null) body = AppText.Get("PressToViewLink");
                         ShowToast(succeeded ? AppText.Get("ShareComplete") : body == AppText.Get("ShareCanceledMessage") ? AppText.Get("ShareCanceledTitle") : AppText.Get("ShareFailed"), body, _tag, launch, false);
                     }
                     catch { }
                 }
+            }
+
+            internal Task OpenSavedContentAsync()
+            {
+                string launchArgument;
+                lock (_sync) launchArgument = _launchArgument;
+                return HandleActivationAsync(launchArgument);
             }
         }
     }

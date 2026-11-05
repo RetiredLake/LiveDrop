@@ -23,8 +23,16 @@ namespace LiveDrop
         private ShareCoordinator _coordinator;
         private ShareOperation _pendingShareOperation;
         private ShareOffer _pendingOffer;
+        private ShareOfferReceivedEventArgs _pendingIncomingOffer;
+        private ShareOfferReceivedEventArgs _rejectingIncomingOffer;
         private ShareOfferReceivedEventArgs _incomingTransfer;
         private CancellationTokenSource _sendCancellation;
+        private CancellationTokenSource _updateCancellation;
+        private TaskCompletionSource<bool> _sendCompletion;
+        private TaskCompletionSource<bool> _incomingCompletion;
+        private readonly System.Collections.Generic.Queue<ShareOfferReceivedEventArgs> _incomingOfferQueue = new System.Collections.Generic.Queue<ShareOfferReceivedEventArgs>();
+        private TransferNotification.Session _lastReceivedNotification;
+        private string _updateFileName;
         private readonly MenuFlyout _moreMenu;
         private bool _updateCheckInProgress;
         private readonly CoreDispatcher _viewDispatcher;
@@ -35,6 +43,7 @@ namespace LiveDrop
         private bool _filePickerPending;
         private bool _shareOperationStarted;
         private bool _incomingTelemetryPending;
+        private bool _receiveCompleteVisible;
         private ShareTransport _incomingTelemetryTransport;
         private ShareOffer _incomingTelemetryOffer;
         private readonly System.Collections.Generic.Dictionary<string, string> _discoveryStatus = new System.Collections.Generic.Dictionary<string, string>();
@@ -44,6 +53,7 @@ namespace LiveDrop
         private const int HostNameMaximumLength = 32;
         private const string HostNameAllowedSpecialCharacters = " '._-()&+";
         private const int PeerTimeoutSeconds = 10;
+        private const int MaximumQueuedIncomingOffers = 4;
         private const bool DefaultNearbyEnabled = false;
         private const bool DefaultQuickShareEnabled = true;
 
@@ -61,6 +71,8 @@ namespace LiveDrop
             Window.Current.Closed += OnWindowClosed;
             TelemetryService.Instance.TrackApplicationStarted();
             _moreMenu = new MenuFlyout();
+            var folderItem = new MenuFlyoutItem { Text = AppText.Get("LiveDropFolder") };
+            folderItem.Click += OnOpenLiveDropFolderClicked;
             var hostnameItem = new MenuFlyoutItem { Text = AppText.Get("ChangeHostname") };
             hostnameItem.Click += OnChangeHostnameClicked;
             var githubItem = new MenuFlyoutItem { Text = AppText.Get("About") };
@@ -69,6 +81,7 @@ namespace LiveDrop
             var updateItem = new MenuFlyoutItem { Text = AppText.Get("CheckForUpdate") };
             updateItem.Click += OnCheckForUpdateClicked;
 #endif
+            _moreMenu.Items.Add(folderItem);
             _moreMenu.Items.Add(hostnameItem);
             _moreMenu.Items.Add(githubItem);
 #if !MICROSOFT_STORE
@@ -94,37 +107,149 @@ namespace LiveDrop
             _moreMenu.ShowAt(MoreButton);
         }
 
+        private async void OnOpenLiveDropFolderClicked(object sender, RoutedEventArgs e)
+        {
+            DismissReceiveCompleteNotice();
+            try
+            {
+                var folder = await TransferFileStore.GetReceiveFolderAsync(null);
+                if (!await Launcher.LaunchFolderAsync(folder))
+                    StatusText.Text = AppText.Get("CouldNotOpenSavedContent");
+            }
+            catch
+            {
+                StatusText.Text = AppText.Get("CouldNotOpenSavedContent");
+            }
+        }
+
         internal void BeginRegularSession()
         {
             if (_incomingTransfer != null) return;
+            DismissReceiveCompleteNotice();
             _shareTargetSession = false;
             _pendingShareOperation = null;
             _pendingOffer = null;
             _shareOperationStarted = false;
             MoreButton.Visibility = Visibility.Visible;
-            ShareButton.Visibility = Visibility.Visible;
-            SendButton.Visibility = Visibility.Collapsed;
-            SendButton.IsEnabled = false;
-            CancelButton.Visibility = Visibility.Collapsed;
             SelectedFileText.Text = string.Empty;
             SelectedFileText.Visibility = Visibility.Collapsed;
             ResetTransferProgress();
+            RefreshTransferActions();
         }
 
         internal void BeginShareTargetSession()
         {
+            DismissReceiveCompleteNotice();
             _shareTargetSession = true;
             _pendingShareOperation = null;
             _pendingOffer = null;
             _shareOperationStarted = false;
             MoreButton.Visibility = Visibility.Collapsed;
-            ShareButton.Visibility = Visibility.Collapsed;
-            CancelButton.Visibility = Visibility.Collapsed;
-            SelectedFileText.Visibility = Visibility.Collapsed;
-            SendButton.Visibility = Visibility.Visible;
-            SendButton.IsEnabled = false;
             SendButton.Content = AppText.Get("SendSelectedShare");
             ResetTransferProgress();
+            RefreshTransferActions();
+        }
+
+        private bool IsTransferInProgress
+        {
+            get { return _sendCancellation != null || _incomingTransfer != null || _updateCancellation != null; }
+        }
+
+        private void RefreshTransferActions()
+        {
+            PromoteIncomingOfferIfIdle();
+            var transferInProgress = IsTransferInProgress;
+            var incomingDecisionVisible = _pendingIncomingOffer != null && !transferInProgress &&
+                !_updateCheckInProgress && !_filePickerPending;
+            var incomingOfferQueued = _pendingIncomingOffer != null || _incomingOfferQueue.Count > 0 ||
+                _rejectingIncomingOffer != null;
+
+            ShareButton.Visibility = !_shareTargetSession && !transferInProgress && !incomingOfferQueued && !_receiveCompleteVisible
+                ? Visibility.Visible : Visibility.Collapsed;
+            ShareButton.IsEnabled = !_filePickerPending && !_updateCheckInProgress && !transferInProgress &&
+                !incomingOfferQueued && !_receiveCompleteVisible;
+
+            SendButton.Visibility = (_shareTargetSession || _pendingOffer != null) && !transferInProgress && !incomingOfferQueued && !_receiveCompleteVisible
+                ? Visibility.Visible : Visibility.Collapsed;
+            SendButton.IsEnabled = !transferInProgress && !_updateCheckInProgress && !incomingOfferQueued && _pendingOffer != null &&
+                _pendingOffer.HasContent && (!_shareTargetSession || PeersList.SelectedItem != null);
+
+            CancelButton.Visibility = transferInProgress ? Visibility.Visible : Visibility.Collapsed;
+            var cancellationRequested =
+                (_sendCancellation != null && _sendCancellation.IsCancellationRequested) ||
+                (_incomingTransfer != null && _incomingTransfer.IsCancellationRequested) ||
+                (_updateCancellation != null && _updateCancellation.IsCancellationRequested);
+            CancelButton.IsEnabled = transferInProgress && !cancellationRequested;
+
+            IncomingDecisionPanel.Visibility = incomingDecisionVisible ? Visibility.Visible : Visibility.Collapsed;
+            if (incomingDecisionVisible)
+            {
+                IncomingDetailsText.Text = string.IsNullOrWhiteSpace(_pendingIncomingOffer.SecurityPin)
+                    ? AppText.Get("IncomingShareRequest")
+                    : AppText.Format("QuickShareSecurityPin", _pendingIncomingOffer.SecurityPin);
+                IncomingDetailsText.Visibility = Visibility.Visible;
+                SelectedFileText.Text = string.Empty;
+                SelectedFileText.Visibility = Visibility.Collapsed;
+            }
+            else if (_incomingTransfer != null)
+            {
+                IncomingDetailsText.Text = string.Empty;
+                IncomingDetailsText.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                IncomingDetailsText.Text = string.Empty;
+                IncomingDetailsText.Visibility = Visibility.Collapsed;
+            }
+
+            StatusText.Visibility = incomingDecisionVisible ? Visibility.Collapsed : Visibility.Visible;
+            ViewFilesButton.Visibility = _receiveCompleteVisible && !transferInProgress ? Visibility.Visible : Visibility.Collapsed;
+            DismissReceivedButton.Visibility = _receiveCompleteVisible && !transferInProgress ? Visibility.Visible : Visibility.Collapsed;
+            ReceiveCompleteText.Visibility = _receiveCompleteVisible && !transferInProgress ? Visibility.Visible : Visibility.Collapsed;
+
+            if (_updateCancellation != null)
+            {
+                SelectedFileText.Text = _updateFileName ?? string.Empty;
+                SelectedFileText.Visibility = string.IsNullOrEmpty(_updateFileName) ? Visibility.Collapsed : Visibility.Visible;
+            }
+            else if (_incomingTransfer != null)
+            {
+                SelectedFileText.Text = GetOfferDisplayName(_incomingTransfer.Offer);
+                SelectedFileText.Visibility = Visibility.Visible;
+            }
+            else if (incomingDecisionVisible)
+            {
+                SelectedFileText.Text = string.Empty;
+                SelectedFileText.Visibility = Visibility.Collapsed;
+            }
+            else if (_pendingOffer != null)
+            {
+                SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
+                SelectedFileText.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                SelectedFileText.Text = string.Empty;
+                SelectedFileText.Visibility = Visibility.Collapsed;
+            }
+        }
+
+        private void PromoteIncomingOfferIfIdle()
+        {
+            if (_pendingIncomingOffer != null || _incomingOfferQueue.Count == 0 || IsTransferInProgress ||
+                _updateCheckInProgress || _filePickerPending || _rejectingIncomingOffer != null) return;
+            _pendingIncomingOffer = _incomingOfferQueue.Dequeue();
+            DismissReceiveCompleteNotice();
+        }
+
+        private void DismissReceiveCompleteNotice()
+        {
+            _receiveCompleteVisible = false;
+            _lastReceivedNotification = null;
+            if (ReceiveCompleteText != null) ReceiveCompleteText.Text = string.Empty;
+            if (ViewFilesButton != null) ViewFilesButton.Visibility = Visibility.Collapsed;
+            if (DismissReceivedButton != null) DismissReceivedButton.Visibility = Visibility.Collapsed;
+            if (ReceiveCompleteText != null) ReceiveCompleteText.Visibility = Visibility.Collapsed;
         }
 
         private async void OnAboutClicked(object sender, RoutedEventArgs e)
@@ -245,13 +370,18 @@ namespace LiveDrop
         private async Task CheckForUpdateAsync()
         {
             if (_updateCheckInProgress) return;
+            DismissReceiveCompleteNotice();
             _updateCheckInProgress = true;
+            RefreshTransferActions();
             TelemetryService.Instance.TrackUpdateCheck("started");
             try
             {
+                await CancelActiveTransfersAsync();
+                if (_viewClosed) return;
                 StatusText.Text = AppText.Get("CheckingGitHubForUpdates");
                 var service = new GitHubUpdateService();
                 var release = await service.GetLatestReleaseAsync();
+                if (_viewClosed) return;
                 if (release == null)
                 {
                     TelemetryService.Instance.TrackUpdateCheck("no_release");
@@ -273,13 +403,34 @@ namespace LiveDrop
                 TelemetryService.Instance.TrackUpdateAvailable(release.Version);
                 StatusText.Text = AppText.Format("DownloadingVersion", release.Version.ToString(4));
                 TelemetryService.Instance.TrackUpdateDownloadStarted(release.Version);
+                _updateFileName = release.BundleName;
+                _updateCancellation = new CancellationTokenSource();
+                TransferProgressPanel.Visibility = Visibility.Visible;
+                TransferProgressBar.IsIndeterminate = true;
+                TransferProgressText.Text = string.Empty;
+                RefreshTransferActions();
                 var progress = new Progress<double>(value =>
-                    StatusText.Text = AppText.Format("DownloadingVersionProgress", release.Version.ToString(4), value));
-                var file = await service.DownloadAsync(release, progress);
-                StatusText.Text = AppText.Get("OpeningTheWindowsInstaller");
+                {
+                    if (_viewClosed || _updateCancellation == null || _updateCancellation.IsCancellationRequested) return;
+                    TransferProgressPanel.Visibility = Visibility.Visible;
+                    TransferProgressBar.IsIndeterminate = false;
+                    TransferProgressBar.Value = Math.Min(1.0, Math.Max(0.0, value));
+                    TransferProgressText.Text = TransferProgressBar.Value.ToString("P0", System.Globalization.CultureInfo.CurrentCulture);
+                    StatusText.Text = AppText.Format("DownloadingVersionProgress", release.Version.ToString(4), value);
+                });
+                var file = await service.DownloadAsync(release, progress, _updateCancellation.Token);
+                _updateCancellation.Dispose();
+                _updateCancellation = null;
+                _updateFileName = null;
+                if (!_viewClosed)
+                {
+                    ResetTransferProgress();
+                    RefreshTransferActions();
+                    StatusText.Text = AppText.Get("OpeningTheWindowsInstaller");
+                }
                 if (!await Launcher.LaunchFileAsync(file))
                 {
-                    StatusText.Text = AppText.Get("WindowsCouldNotOpenTheInstaller");
+                    if (!_viewClosed) StatusText.Text = AppText.Get("WindowsCouldNotOpenTheInstaller");
                     await Launcher.LaunchUriAsync(new Uri(release.ReleaseUrl));
                 }
                 else
@@ -290,22 +441,53 @@ namespace LiveDrop
             catch (System.Net.Http.HttpRequestException)
             {
                 TelemetryService.Instance.TrackUpdateFailed("network");
-                StatusText.Text = AppText.Get("CouldNotReachGitHubCheckYourConnectionAnd");
+                if (!_viewClosed) StatusText.Text = AppText.Get("CouldNotReachGitHubCheckYourConnectionAnd");
             }
-            catch (TaskCanceledException)
+            catch (OperationCanceledException)
             {
-                TelemetryService.Instance.TrackUpdateFailed("timeout");
-                StatusText.Text = AppText.Get("TheUpdateCheckTimedOutPleaseTryAgain");
+                if (_updateCancellation != null && _updateCancellation.IsCancellationRequested)
+                {
+                    if (!_viewClosed) StatusText.Text = AppText.Get("UpdateDownloadCanceled");
+                }
+                else
+                {
+                    TelemetryService.Instance.TrackUpdateFailed("timeout");
+                    if (!_viewClosed) StatusText.Text = AppText.Get("TheUpdateCheckTimedOutPleaseTryAgain");
+                }
             }
             catch (Exception ex)
             {
                 TelemetryService.Instance.TrackUpdateFailed(TelemetryService.ClassifyFailure(ex));
-                StatusText.Text = AppText.Format("UpdateCheckFailed", ex.Message);
+                if (!_viewClosed) StatusText.Text = AppText.Format("UpdateCheckFailed", ex.Message);
             }
             finally
             {
+                if (_updateCancellation != null) { _updateCancellation.Dispose(); _updateCancellation = null; }
+                _updateFileName = null;
                 _updateCheckInProgress = false;
+                if (!_viewClosed)
+                {
+                    ResetTransferProgress();
+                    RefreshTransferActions();
+                }
             }
+        }
+
+        private async Task CancelActiveTransfersAsync()
+        {
+            var completions = new System.Collections.Generic.List<Task>();
+            if (_sendCancellation != null)
+            {
+                if (_sendCompletion != null) completions.Add(_sendCompletion.Task);
+                try { _sendCancellation.Cancel(); } catch (ObjectDisposedException) { }
+            }
+            if (_incomingTransfer != null)
+            {
+                if (_incomingCompletion != null) completions.Add(_incomingCompletion.Task);
+                _incomingTransfer.CancelTransfer();
+            }
+            if (!_viewClosed) RefreshTransferActions();
+            if (completions.Count > 0) await Task.WhenAll(completions);
         }
 
         private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -342,21 +524,18 @@ namespace LiveDrop
             }
             TryReportShareError(AppText.Get("ShareCanceledMessage"));
             if (_sendCancellation != null) _sendCancellation.Cancel();
+            if (_updateCancellation != null) _updateCancellation.Cancel();
             _incomingTransfer?.CancelTransfer();
+            _incomingCompletion?.TrySetResult(true);
             await ApplyProtocolsAsync();
         }
 
         private async void OnShareClicked(object sender, RoutedEventArgs e)
         {
-            if (_incomingTransfer != null)
-            {
-                ShareButton.IsEnabled = false;
-                StatusText.Text = AppText.Get("Canceling");
-                _incomingTransfer.CancelTransfer();
-                return;
-            }
-            if (_shareTargetSession || _filePickerPending) return;
+            if (_shareTargetSession || _filePickerPending || _updateCheckInProgress || IsTransferInProgress) return;
+            DismissReceiveCompleteNotice();
             _filePickerPending = true;
+            RefreshTransferActions();
             try
             {
                 var phonePicker = IsWindowsPhonePicker();
@@ -374,6 +553,7 @@ namespace LiveDrop
             finally
             {
                 _filePickerPending = false;
+                RefreshTransferActions();
             }
         }
 
@@ -395,6 +575,10 @@ namespace LiveDrop
         {
             if (files == null || files.Count == 0)
             {
+                _pendingOffer = null;
+                SelectedFileText.Text = string.Empty;
+                SelectedFileText.Visibility = Visibility.Collapsed;
+                RefreshTransferActions();
                 StatusText.Text = AppText.Get("NoFileSelected");
                 return;
             }
@@ -402,17 +586,17 @@ namespace LiveDrop
             _pendingOffer = await ShareOfferFactory.FromPickedFilesAsync(files);
             if (_pendingOffer.Files.Count == 0)
             {
+                _pendingOffer = null;
+                SelectedFileText.Text = string.Empty;
+                SelectedFileText.Visibility = Visibility.Collapsed;
+                RefreshTransferActions();
                 StatusText.Text = AppText.Get("NoFileSelected");
                 return;
             }
             SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
-            SelectedFileText.Visibility = Visibility.Visible;
             ResetTransferProgress();
-            ShareButton.Visibility = Visibility.Collapsed;
-            SendButton.Visibility = Visibility.Visible;
             SendButton.Content = AppText.Get("SendSelectedShare");
-            SendButton.IsEnabled = true;
-            CancelButton.Visibility = Visibility.Visible;
+            RefreshTransferActions();
             StatusText.Text = AppText.Get("SelectAPeerThenSendTheFile");
         }
 
@@ -426,29 +610,38 @@ namespace LiveDrop
 
         private void OnCancelClicked(object sender, RoutedEventArgs e)
         {
-            if (_shareTargetSession) return;
+            if (_updateCancellation != null)
+            {
+                CancelButton.IsEnabled = false;
+                StatusText.Text = AppText.Get("Canceling");
+                try { _updateCancellation.Cancel(); } catch (ObjectDisposedException) { }
+                RefreshTransferActions();
+                return;
+            }
+            if (_incomingTransfer != null)
+            {
+                CancelButton.IsEnabled = false;
+                StatusText.Text = AppText.Get("Canceling");
+                _incomingTransfer.CancelTransfer();
+                RefreshTransferActions();
+                return;
+            }
             if (_sendCancellation != null)
             {
                 CancelButton.IsEnabled = false;
                 StatusText.Text = AppText.Get("Canceling");
-                _sendCancellation.Cancel();
+                try { _sendCancellation.Cancel(); } catch (ObjectDisposedException) { }
+                RefreshTransferActions();
                 return;
             }
-            ResetSelectedShare(AppText.Get("ChooseAFileToShare"));
         }
 
         private void ResetSelectedShare(string status)
         {
             _pendingOffer = null;
             _pendingShareOperation = null;
-            SelectedFileText.Text = string.Empty;
-            SelectedFileText.Visibility = Visibility.Collapsed;
-            SendButton.Visibility = Visibility.Collapsed;
-            SendButton.IsEnabled = false;
-            CancelButton.Visibility = Visibility.Collapsed;
-            CancelButton.IsEnabled = true;
-            ShareButton.Visibility = Visibility.Visible;
             ResetTransferProgress();
+            RefreshTransferActions();
             StatusText.Text = status;
         }
 
@@ -495,7 +688,7 @@ namespace LiveDrop
                 if (_viewClosed || !_loaded) return;
                 PeersList.Items.Clear();
                 _peerLastSeen.Clear();
-                SendButton.IsEnabled = false;
+                RefreshTransferActions();
                 _discoveryStatus.Clear();
                 var nearby = NearbyCheckBox.IsChecked == true;
                 var quickShare = QuickShareCheckBox.IsChecked == true;
@@ -550,16 +743,17 @@ namespace LiveDrop
                 StatusText.Text = !offer.HasContent
                     ? AppText.Get("ThisShareContainsNoSupportedFilesOrText")
                     : offer.WebLink != null ? AppText.Get("WebLinkIsReadyToShareAfterSelecting") : (offer.Files.Count == 1 ? AppText.Get("OneFileReady") : AppText.Format("FilesReady", offer.Files.Count));
-                SelectedFileText.Text = GetOfferDisplayName(offer);
-                SelectedFileText.Visibility = Visibility.Visible;
-                SendButton.Visibility = Visibility.Visible;
-                SendButton.IsEnabled = PeersList.SelectedItem != null && offer.HasContent;
+                RefreshTransferActions();
             }
             catch (Exception ex)
             {
                 _pendingShareOperation = null;
                 _pendingOffer = null;
-                await RunOnViewAsync(() => StatusText.Text = AppText.Format("ReadShareFailed", ex.Message));
+                await RunOnViewAsync(() =>
+                {
+                    RefreshTransferActions();
+                    StatusText.Text = AppText.Format("ReadShareFailed", ex.Message);
+                });
                 TryReportShareError(operation, AppText.Get("LiveDropCouldNotReadTheSharedContentPlease"));
             }
         }
@@ -620,33 +814,45 @@ namespace LiveDrop
             {
                 if (!_loaded || !ReferenceEquals(coordinator, _coordinator)) return;
                 _discoveryStatus[adapter == null ? AppText.Get("DiscoveryLabel") : adapter.Name] = e.Message;
-                if (!_updateCheckInProgress) StatusText.Text = string.Join("\n", _discoveryStatus.Values);
+                if (!_updateCheckInProgress && _pendingIncomingOffer == null && !_receiveCompleteVisible &&
+                    !string.Equals(e.Message, AppText.Get("FilesSavedToLiveDropFolder"), StringComparison.Ordinal))
+                    StatusText.Text = GetDiscoveryStatusText();
             });
+        }
+
+        private string GetDiscoveryStatusText()
+        {
+            var savedMessage = AppText.Get("FilesSavedToLiveDropFolder");
+            return string.Join("\n", _discoveryStatus.Values.Where(message =>
+                !string.Equals(message, savedMessage, StringComparison.Ordinal)));
         }
 
         private void OnPeerSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SendButton.IsEnabled = _pendingOffer != null && _pendingOffer.HasContent &&
-                (_shareTargetSession ? PeersList.SelectedItem != null : true);
+            RefreshTransferActions();
         }
 
         private async void OnSendClicked(object sender, RoutedEventArgs e)
         {
             var selected = PeersList.SelectedItem as PeerListItem;
-            if (_incomingTransfer != null || _pendingOffer == null || _coordinator == null) return;
+            if (IsTransferInProgress || _updateCheckInProgress || _pendingOffer == null || _coordinator == null) return;
             if (selected == null)
             {
                 StatusText.Text = AppText.Get("SelectAPeerFirst");
                 return;
             }
-            SendButton.IsEnabled = false;
-            NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
+            var outgoingOffer = _pendingOffer;
+            var outgoingName = GetOfferDisplayName(outgoingOffer);
+            DismissReceiveCompleteNotice();
+            var sendCompletion = new TaskCompletionSource<bool>();
+            _sendCompletion = sendCompletion;
             _sendCancellation = new CancellationTokenSource();
-            var notification = TransferNotification.Begin(AppText.Get("Sending"), AppText.Format("SendingFileBody", GetOfferDisplayName(_pendingOffer), selected.Peer.DisplayName), GetOfferDisplayName(_pendingOffer), AppText.Format("SendingToDevice", selected.Peer.DisplayName));
+            NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
+            RefreshTransferActions();
+            TransferNotification.Session notification = null;
             try
             {
-                var outgoingName = GetOfferDisplayName(_pendingOffer);
-                var outgoingOffer = _pendingOffer;
+                notification = TransferNotification.Begin(AppText.Get("Sending"), AppText.Format("SendingFileBody", outgoingName, selected.Peer.DisplayName), outgoingName, AppText.Format("SendingToDevice", selected.Peer.DisplayName));
                 TelemetryService.Instance.TrackShareStarted(selected.Peer.Transport, "send", outgoingOffer);
                 StatusText.Text = AppText.Format("SendingFileStatus", outgoingName, selected.Peer.DisplayName);
                 var progress = new Progress<ShareProgress>(value =>
@@ -660,39 +866,30 @@ namespace LiveDrop
                 notification.Complete(true, AppText.Format("SentFile", outgoingName, selected.Peer.DisplayName));
                 if (_viewClosed) return;
                 TryReportShareCompleted();
-                if (outgoingOffer.Files.Count == 1)
-                {
-                    var completedSize = outgoingOffer.Files[0].Size;
-                    ShowTransferProgress(new ShareProgress(outgoingName, completedSize, completedSize));
-                }
                 _pendingOffer = null;
-                if (!_shareTargetSession)
-                {
-                    SendButton.Visibility = Visibility.Collapsed;
-                    CancelButton.Visibility = Visibility.Collapsed;
-                    ShareButton.Visibility = Visibility.Visible;
-                }
+                ResetTransferProgress();
+                RefreshTransferActions();
                 StatusText.Text = AppText.Get("ShareCompleted");
             }
             catch (OperationCanceledException)
             {
-                notification.Complete(false, AppText.Get("ShareCanceledMessage"));
-                TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", _pendingOffer);
+                notification?.Complete(false, AppText.Get("ShareCanceledMessage"));
+                TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", outgoingOffer);
+                TryReportShareError(AppText.Get("ShareCanceledMessage"));
                 if (!_viewClosed)
                 {
-                    if (!_shareTargetSession) ResetSelectedShare(AppText.Get("ShareCanceledMessage"));
-                    else StatusText.Text = AppText.Get("ShareCanceledMessage");
+                    ResetSelectedShare(AppText.Get("ShareCanceledMessage"));
                 }
             }
             catch (Exception ex)
             {
-                notification.Complete(false, ex.Message);
-                TelemetryService.Instance.TrackShareFailed(selected.Peer.Transport, "send", _pendingOffer, TelemetryService.ClassifyFailure(ex));
+                notification?.Complete(false, ex.Message);
+                TelemetryService.Instance.TrackShareFailed(selected.Peer.Transport, "send", outgoingOffer, TelemetryService.ClassifyFailure(ex));
+                TryReportShareError(ex.Message);
                 if (!_viewClosed)
                 {
-                    StatusText.Text = AppText.Format("ShareFailedDetail", ex.Message);
+                    ResetSelectedShare(AppText.Format("ShareFailedDetail", ex.Message));
                 }
-                TryReportShareError(ex.Message);
             }
             finally
             {
@@ -700,9 +897,10 @@ namespace LiveDrop
                 if (!_viewClosed)
                 {
                     NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = true;
-                    SendButton.IsEnabled = _pendingOffer != null &&
-                        (_shareTargetSession ? PeersList.SelectedItem != null : true);
+                    RefreshTransferActions();
                 }
+                if (ReferenceEquals(_sendCompletion, sendCompletion)) _sendCompletion = null;
+                sendCompletion.TrySetResult(true);
             }
         }
 
@@ -730,54 +928,64 @@ namespace LiveDrop
             _shareOperationStarted = false;
         }
 
-        private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
+        private async void OnAcceptIncomingClicked(object sender, RoutedEventArgs e)
         {
-            var oldShareVisibility = Visibility.Collapsed;
-            var oldSendVisibility = Visibility.Collapsed;
-            var oldCancelVisibility = Visibility.Collapsed;
-            object oldShareContent = null;
-            var oldSendEnabled = false;
-            var oldNearbyEnabled = false;
-            var oldQuickShareEnabled = false;
-            var fileName = GetOfferDisplayName(e.Offer);
-            await RunOnViewAsync(() =>
-            {
-                if (!_loaded || !ReferenceEquals(sender, _coordinator) || _incomingTransfer != null ||
-                    _sendCancellation != null || _filePickerPending) return;
-                _incomingTransfer = e;
-                oldShareVisibility = ShareButton.Visibility;
-                oldShareContent = ShareButton.Content;
-                oldSendVisibility = SendButton.Visibility;
-                oldSendEnabled = SendButton.IsEnabled;
-                oldCancelVisibility = CancelButton.Visibility;
-                oldNearbyEnabled = NearbyCheckBox.IsEnabled;
-                oldQuickShareEnabled = QuickShareCheckBox.IsEnabled;
-                ShareButton.Content = AppText.Get("Cancel");
-                ShareButton.IsEnabled = true;
-                ShareButton.Visibility = Visibility.Visible;
-                SendButton.Visibility = CancelButton.Visibility = Visibility.Collapsed;
-                NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
-                SelectedFileText.Text = fileName;
-                SelectedFileText.Visibility = Visibility.Visible;
-                ResetTransferProgress();
-                TransferProgressPanel.Visibility = Visibility.Visible;
-                TransferProgressText.Text = AppText.Get("Accepting");
-                StatusText.Text = AppText.Format("ReceivingContent", fileName);
-            });
-            if (!ReferenceEquals(_incomingTransfer, e))
-            {
-                if (e.CompleteAsync != null) await e.CompleteAsync(false);
-                return;
-            }
+            var offer = _pendingIncomingOffer;
+            if (offer == null || IsTransferInProgress || _updateCheckInProgress) return;
+            _pendingIncomingOffer = null;
+            DismissReceiveCompleteNotice();
+            await StartIncomingReceiveAsync(offer);
+        }
 
-            Uri receivedLink = null;
-            var notification = TransferNotification.Begin(AppText.Get("Receiving"), AppText.Format("ReceivingFileBody", fileName, e.Peer.DisplayName), fileName, AppText.Format("ReceivingFromDevice", e.Peer.DisplayName));
+        private async void OnDenyIncomingClicked(object sender, RoutedEventArgs e)
+        {
+            var offer = _pendingIncomingOffer;
+            if (offer == null || IsTransferInProgress || _updateCheckInProgress) return;
+            _pendingIncomingOffer = null;
+            _rejectingIncomingOffer = offer;
+            DismissReceiveCompleteNotice();
+            StatusText.Text = AppText.Get("ShareCanceledMessage");
+            RefreshTransferActions();
+            try
+            {
+                if (offer.CompleteAsync != null) await offer.CompleteAsync(false);
+            }
+            catch
+            {
+                if (ReferenceEquals(_rejectingIncomingOffer, offer)) _rejectingIncomingOffer = null;
+                RefreshTransferActions();
+            }
+        }
+
+        private async Task StartIncomingReceiveAsync(ShareOfferReceivedEventArgs e)
+        {
+            var oldNearbyEnabled = NearbyCheckBox.IsEnabled;
+            var oldQuickShareEnabled = QuickShareCheckBox.IsEnabled;
+            var incomingCompletion = new TaskCompletionSource<bool>();
+            var fileName = GetOfferDisplayName(e.Offer);
+            var peerName = e.Peer == null ? AppText.Get("UnknownPeer") : e.Peer.DisplayName;
+            _incomingTransfer = e;
+            _incomingCompletion = incomingCompletion;
+            NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
+            ResetTransferProgress();
+            TransferProgressPanel.Visibility = Visibility.Visible;
+            TransferProgressBar.IsIndeterminate = true;
+            TransferProgressText.Text = AppText.Get("Accepting");
+            StatusText.Text = AppText.Format("ReceivingContent", fileName);
+            RefreshTransferActions();
+
+            var notification = TransferNotification.Begin(AppText.Get("Receiving"), AppText.Format("ReceivingFileBody", fileName, peerName), fileName, AppText.Format("ReceivingFromDevice", peerName));
             _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
             _incomingTelemetryOffer = e.Offer;
             _incomingTelemetryPending = true;
             TelemetryService.Instance.TrackShareStarted(_incomingTelemetryTransport, "receive", e.Offer);
-            e.TransferCompleted += (succeeded, message) =>
+            Uri receivedLink = null;
+            var completionHandled = 0;
+            Action<bool, string> completed = null;
+            completed = (succeeded, message) =>
             {
+                if (System.Threading.Interlocked.Exchange(ref completionHandled, 1) != 0) return;
+                e.TransferCompleted -= completed;
                 notification.Complete(succeeded, message);
                 if (_incomingTelemetryPending)
                 {
@@ -789,24 +997,32 @@ namespace LiveDrop
                 }
                 _ = RunOnViewAsync(() =>
                 {
-                    if (!ReferenceEquals(_incomingTransfer, e)) return;
+                    if (!ReferenceEquals(_incomingTransfer, e))
+                    {
+                        incomingCompletion.TrySetResult(true);
+                        return;
+                    }
                     _incomingTransfer = null;
-                    ShareButton.Content = oldShareContent;
-                    ShareButton.IsEnabled = true;
-                    ShareButton.Visibility = oldShareVisibility;
-                    SendButton.Visibility = oldSendVisibility;
-                    SendButton.IsEnabled = oldSendEnabled;
-                    CancelButton.Visibility = oldCancelVisibility;
+                    if (ReferenceEquals(_incomingCompletion, incomingCompletion)) _incomingCompletion = null;
                     NearbyCheckBox.IsEnabled = oldNearbyEnabled;
                     QuickShareCheckBox.IsEnabled = oldQuickShareEnabled;
-                    if (_pendingOffer != null) SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
-                    if (!succeeded) ResetTransferProgress();
-                    StatusText.Text = succeeded ? AppText.Get(receivedLink == null ? "FilesAreSavedInPicturesLiveDrop" : "WebLinkReceived") : message;
-                    // The receiver only reports URL metadata here, after the full
-                    // transfer succeeds. A regular .txt file never enters this path.
+                    ResetTransferProgress();
+                    if (succeeded && e.Offer.Files.Count > 0 && receivedLink == null)
+                    {
+                        _lastReceivedNotification = notification;
+                        _receiveCompleteVisible = true;
+                        ReceiveCompleteText.Text = AppText.Get("FilesSavedToLiveDropFolder");
+                    }
+                    StatusText.Text = succeeded
+                        ? (receivedLink == null ? GetDiscoveryStatusText() : AppText.Get("WebLinkReceived"))
+                        : message;
+                    RefreshTransferActions();
+                    // Open only protocol-declared web links after a successful transfer.
                     if (succeeded && receivedLink != null) _ = OpenReceivedLinkAsync(receivedLink);
+                    incomingCompletion.TrySetResult(true);
                 });
             };
+            e.TransferCompleted += completed;
             e.ProgressChanged += progress =>
             {
                 if (progress.ReceivedWebLink != null && receivedLink == null) receivedLink = progress.ReceivedWebLink;
@@ -816,15 +1032,82 @@ namespace LiveDrop
                     if (ReferenceEquals(_incomingTransfer, e) && !e.IsCancellationRequested) ShowTransferProgress(progress);
                 });
             };
+
             try
             {
-                if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed && !e.IsCancellationRequested);
+                if (e.CompleteAsync != null) await e.CompleteAsync(true);
             }
-            catch
+            catch (Exception ex)
             {
                 e.CancelTransfer();
                 try { if (e.CompleteAsync != null) await e.CompleteAsync(false); } catch { }
+                completed(false, ex.Message);
             }
+        }
+
+        private async void OnViewFilesClicked(object sender, RoutedEventArgs e)
+        {
+            var notification = _lastReceivedNotification;
+            if (notification != null) await notification.OpenSavedContentAsync();
+        }
+
+        private void OnDismissReceivedClicked(object sender, RoutedEventArgs e)
+        {
+            DismissReceiveCompleteNotice();
+            StatusText.Text = GetDiscoveryStatusText();
+            RefreshTransferActions();
+        }
+
+        private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
+        {
+            var reject = true;
+            var queueFull = false;
+            await RunOnViewAsync(() =>
+            {
+                if (!_loaded || _viewClosed || !ReferenceEquals(sender, _coordinator)) return;
+                if (_incomingOfferQueue.Count + (_pendingIncomingOffer == null ? 0 : 1) + (_rejectingIncomingOffer == null ? 0 : 1) >= MaximumQueuedIncomingOffers)
+                {
+                    queueFull = true;
+                    return;
+                }
+                reject = false;
+                DismissReceiveCompleteNotice();
+                Action<bool, string> completion = null;
+                completion = (succeeded, message) =>
+                {
+                    e.TransferCompleted -= completion;
+                    _ = RunOnViewAsync(() => OnQueuedIncomingOfferCompleted(e, succeeded, message));
+                };
+                e.TransferCompleted += completion;
+                _incomingOfferQueue.Enqueue(e);
+                RefreshTransferActions();
+            });
+            if (reject)
+            {
+                try { if (e.CompleteAsync != null) await e.CompleteAsync(false); } catch { }
+                if (queueFull)
+                    await RunOnViewAsync(() => StatusText.Text = AppText.Get("IncomingShareQueueFull"));
+            }
+        }
+
+        private void OnQueuedIncomingOfferCompleted(ShareOfferReceivedEventArgs offer, bool succeeded, string message)
+        {
+            if (ReferenceEquals(_incomingTransfer, offer)) return;
+            var wasRejected = ReferenceEquals(_rejectingIncomingOffer, offer);
+            if (ReferenceEquals(_pendingIncomingOffer, offer)) _pendingIncomingOffer = null;
+            if (wasRejected) _rejectingIncomingOffer = null;
+            if (_incomingOfferQueue.Count > 0)
+            {
+                var retained = new System.Collections.Generic.Queue<ShareOfferReceivedEventArgs>();
+                while (_incomingOfferQueue.Count > 0)
+                {
+                    var queued = _incomingOfferQueue.Dequeue();
+                    if (!ReferenceEquals(queued, offer)) retained.Enqueue(queued);
+                }
+                while (retained.Count > 0) _incomingOfferQueue.Enqueue(retained.Dequeue());
+            }
+            if (!succeeded && !wasRejected && !_viewClosed) StatusText.Text = message;
+            RefreshTransferActions();
         }
 
         private async Task OpenReceivedLinkAsync(Uri link)

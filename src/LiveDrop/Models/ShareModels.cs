@@ -107,6 +107,7 @@ namespace LiveDrop.Models
     {
         public PeerDescriptor Peer { get; private set; }
         public ShareOffer Offer { get; private set; }
+        public string SecurityPin { get; private set; }
         public Func<bool, Task> CompleteAsync { get; private set; }
         private readonly Action _cancelTransfer;
         private int _cancelRequested;
@@ -115,12 +116,13 @@ namespace LiveDrop.Models
         public event System.Action<ShareProgress> ProgressChanged;
         public event System.Action<bool, string> TransferCompleted;
 
-        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync, Action cancelTransfer = null)
+        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync, Action cancelTransfer = null, string securityPin = null)
         {
             Peer = peer;
             Offer = offer;
             CompleteAsync = completeAsync;
             _cancelTransfer = cancelTransfer;
+            SecurityPin = securityPin ?? string.Empty;
         }
 
         public void CancelTransfer()

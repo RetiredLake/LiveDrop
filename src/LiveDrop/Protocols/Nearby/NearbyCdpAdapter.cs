@@ -209,9 +209,12 @@ namespace LiveDrop.Protocols.Nearby
                             var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                             var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
                             if (OfferReceived == null) return true;
-                            received = new ShareOfferReceivedEventArgs(remote, offer, complete, receiveCancellation.Cancel);
-                            OfferReceived(this, received);
-                            transferAccepted = await decision.Task;
+                            using (cancellationToken.Register(() => decision.TrySetResult(false)))
+                            {
+                                received = new ShareOfferReceivedEventArgs(remote, offer, complete, receiveCancellation.Cancel);
+                                OfferReceived(this, received);
+                                transferAccepted = await decision.Task;
+                            }
                             return transferAccepted;
                         }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken, progress => received?.ReportProgress(progress));
                         received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
