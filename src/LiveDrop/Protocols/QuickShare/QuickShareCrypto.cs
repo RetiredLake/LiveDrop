@@ -108,7 +108,7 @@ namespace LiveDrop.Protocols.QuickShare
                 else if ((tag >> 3) == 2 && (tag & 7) == 2) signature = secureReader.ReadBytes();
                 else secureReader.Skip(tag & 7);
             }
-            if (!FixedEquals(signature, Hmac(headerAndBodyBytes, _receiveHmac))) throw new InvalidOperationException("Quick Share HMAC verification failed.");
+            if (!FixedEquals(signature, Hmac(headerAndBodyBytes, _receiveHmac))) throw new InvalidOperationException(AppText.Get("QuickShareHMACVerificationFailed"));
             var bodyReader = new ProtoReader(headerAndBodyBytes);
             var header = new byte[0];
             var encryptedBody = new byte[0];
@@ -138,7 +138,7 @@ namespace LiveDrop.Protocols.QuickShare
                 else if ((tag >> 3) == 2 && (tag & 7) == 0) sequence = (int)deviceReader.ReadVarint();
                 else deviceReader.Skip(tag & 7);
             }
-            if (sequence != ++_receiveSequence) throw new InvalidOperationException("Quick Share sequence number is out of order.");
+            if (sequence != ++_receiveSequence) throw new InvalidOperationException(AppText.Get("QuickShareSequenceNumberIsOutOfOrder"));
             return message;
         }
 

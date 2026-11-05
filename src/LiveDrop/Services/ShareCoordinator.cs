@@ -57,7 +57,7 @@ namespace LiveDrop.Services
             catch (Exception ex)
             {
                 await adapter.StopAsync();
-                StatusChanged?.Invoke(adapter, new StatusChangedEventArgs(adapter.Name + " startup: " + ex.Message));
+                StatusChanged?.Invoke(adapter, new StatusChangedEventArgs(AppText.Format("AdapterStartupFailed", adapter.Name, ex.Message)));
             }
         }
 
@@ -68,17 +68,17 @@ namespace LiveDrop.Services
             _stopSource.Cancel();
             foreach (var adapter in _adapters)
             {
-                try { await adapter.StopAsync().ConfigureAwait(false); } catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Discovery shutdown: " + ex.Message)); }
+                try { await adapter.StopAsync().ConfigureAwait(false); } catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("DiscoveryShutdownFailed", ex.Message))); }
             }
         }
 
         internal async Task SendAsync(PeerDescriptor peer, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
         {
             if (offer != null && offer.WebLink != null && peer.Transport != ShareTransport.GoogleQuickShare)
-                throw new ShareProtocolException("Native web link sharing currently requires Google Quick Share.");
+                throw new ShareProtocolException(AppText.Get("NativeWebLinkSharingCurrentlyRequiresGoogleQuick"));
             foreach (var adapter in _adapters)
                 if (adapter.Transport == peer.Transport) { await adapter.SendAsync(peer, offer, progress, cancellationToken); return; }
-            throw new ShareProtocolException("No adapter is available for the selected peer.");
+            throw new ShareProtocolException(AppText.Get("NoAdapterIsAvailableForTheSelectedPeer"));
         }
 
         private void OnPeerDiscovered(object sender, PeerDiscoveredEventArgs e) { PeerDiscovered?.Invoke(this, e); }

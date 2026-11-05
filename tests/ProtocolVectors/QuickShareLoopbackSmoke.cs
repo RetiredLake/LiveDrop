@@ -20,6 +20,7 @@ internal static class QuickShareLoopbackSmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         try { RunAsync().GetAwaiter().GetResult(); }
         catch (Exception ex)
         {

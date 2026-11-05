@@ -5,6 +5,7 @@ internal static class TransferNotificationSmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         var legacy = TransferNotification.BuildXml("Sending...", "photo <1> & two.jpg", "transfer", false);
         if (legacy.GetElementsByTagName("progress").Count != 0 || legacy.GetElementsByTagName("text")[1].InnerText != "photo <1> & two.jpg")
             throw new Exception("The legacy text fallback or XML escaping failed.");

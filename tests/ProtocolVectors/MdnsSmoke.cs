@@ -41,6 +41,7 @@ internal static class MdnsSmoke
 
     private static void Main()
     {
+        TestResources.Initialize();
         const string service = "_FC9F5ED42C8A._tcp.local.";
         const string instance = "I2FiY2T8n14AAA";
         var endpoint = new byte[22]; endpoint[17] = 4;

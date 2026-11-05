@@ -14,6 +14,7 @@ internal static class QuickShareCancellationSmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         try { RunAsync().GetAwaiter().GetResult(); }
         catch (Exception ex) { Console.Error.WriteLine(ex); Environment.ExitCode = 1; }
     }

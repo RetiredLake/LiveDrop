@@ -12,6 +12,7 @@ namespace LiveDrop
 
         public App()
         {
+            AppText.Lookup = Windows.ApplicationModel.Resources.ResourceLoader.GetForViewIndependentUse().GetString;
             InitializeComponent();
             Suspending += OnSuspending;
             UnhandledException += OnUnhandledException;
@@ -51,7 +52,7 @@ namespace LiveDrop
             }
             catch (Exception ex)
             {
-                try { args.ShareOperation.ReportError("LiveDrop could not open this share: " + ex.Message); } catch { }
+                try { args.ShareOperation.ReportError(AppText.Format("OpenShareFailed", ex.Message)); } catch { }
             }
         }
 

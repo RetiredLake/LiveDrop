@@ -7,6 +7,7 @@ internal static class LanInterfaceSmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         var hosts = MdnsMulticastService.GetLanHosts();
         var primary = NetworkInformation.GetInternetConnectionProfile();
         if (hosts.Count == 0) throw new Exception("No LAN interface selected.");

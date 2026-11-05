@@ -60,7 +60,7 @@ namespace LiveDrop.Services
                 bar.SetAttribute("title", "{fileName}");
                 bar.SetAttribute("value", "{progressValue}");
                 bar.SetAttribute("valueStringOverride", "{percentage}");
-                bar.SetAttribute("status", (title ?? "Transferring").TrimEnd('.'));
+                bar.SetAttribute("status", (title ?? AppText.Get("Transferring")).TrimEnd('.'));
                 xml.GetElementsByTagName("binding")[0].AppendChild(bar);
             }
             return xml;
@@ -114,9 +114,9 @@ namespace LiveDrop.Services
                 else if (target != null && target.StartsWith("file|", StringComparison.Ordinal))
                     opened = await Launcher.LaunchFileAsync(await StorageFile.GetFileFromPathAsync(target.Substring(5)));
                 else return;
-                if (!opened) Show("Could not open saved content", "No application could open this file or folder.");
+                if (!opened) Show(AppText.Get("CouldNotOpenSavedContent"), AppText.Get("NoApplicationCouldOpenThisFileOrFolder"));
             }
-            catch { Show("Could not open saved content", "The saved file or folder is no longer available."); }
+            catch { Show(AppText.Get("CouldNotOpenSavedContent"), AppText.Get("TheSavedFileOrFolderIsNoLonger")); }
         }
 
         internal sealed class Session
@@ -176,7 +176,7 @@ namespace LiveDrop.Services
                             else if (succeeded && _saved.Count > 1) launch = RegisterSavedTarget(Path.GetDirectoryName(_saved.First()), true);
                         }
                         catch { }
-                        ShowToast(succeeded ? "Share complete" : body == "Share canceled." ? "Share canceled" : "Share failed", body, _tag, launch, false);
+                        ShowToast(succeeded ? AppText.Get("ShareComplete") : body == AppText.Get("ShareCanceledMessage") ? AppText.Get("ShareCanceledTitle") : AppText.Get("ShareFailed"), body, _tag, launch, false);
                     }
                     catch { }
                 }

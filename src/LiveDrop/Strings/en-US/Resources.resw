@@ -1,0 +1,1023 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="EmptyTransferSize" xml:space="preserve">
+    <value>0 B</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AWebLinkOfferMustContainOneHTTP" xml:space="preserve">
+    <value>A web-link offer must contain one HTTP or HTTPS link without files.</value>
+    <comment>Shown by ShareModels.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>About</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AboutVersion" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>{0}: four-part app version, such as 0.1.8.8.</comment>
+  </data>
+  <data name="Accepting" xml:space="preserve">
+    <value>Accepting</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AdapterStartupFailed" xml:space="preserve">
+    <value>{0} startup: {1}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="AndroidDevice" xml:space="preserve">
+    <value>Android device</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Nearby file sharing for Windows 10 Mobile</value>
+    <comment>Package description shown by Windows.</comment>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>LiveDrop</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="CDPAdditionalHeaderIsTooLarge" xml:space="preserve">
+    <value>CDP additional header is too large.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPAdditionalHeaderIsTruncated" xml:space="preserve">
+    <value>CDP additional header is truncated.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPAdditionalHeaderValueIsTruncated" xml:space="preserve">
+    <value>CDP additional header value is truncated.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPDecryptedPacketIsTruncated" xml:space="preserve">
+    <value>CDP decrypted packet is truncated.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPEncryptedPacketIsTruncated" xml:space="preserve">
+    <value>CDP encrypted packet is truncated.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPEndOfHeaderMarkerIsInvalid" xml:space="preserve">
+    <value>CDP end-of-header marker is invalid.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPHMACVerificationFailed" xml:space="preserve">
+    <value>CDP HMAC verification failed.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPHeaderContainsTrailingBytes" xml:space="preserve">
+    <value>CDP header contains trailing bytes.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPHeaderIsTruncated" xml:space="preserve">
+    <value>CDP header is truncated.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPLengthDelimitedValueIsTruncated" xml:space="preserve">
+    <value>CDP length-delimited value is truncated.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPMessageLengthIsInvalid" xml:space="preserve">
+    <value>CDP message length is invalid.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPPacketIsNotEncrypted" xml:space="preserve">
+    <value>CDP packet is not encrypted.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPPayloadLengthIsInvalid" xml:space="preserve">
+    <value>CDP payload length is invalid.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPSharedSecretMustBe64Bytes" xml:space="preserve">
+    <value>CDP shared secret must be 64 bytes.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPSignatureIsInvalid" xml:space="preserve">
+    <value>CDP signature is invalid.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CDPVersionIsNotSupported" xml:space="preserve">
+    <value>CDP version is not supported.</value>
+    <comment>Shown by CdpWire.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CancelButton.Content" xml:space="preserve">
+    <value>Cancel</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="Canceling" xml:space="preserve">
+    <value>Canceling...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChangeHostname" xml:space="preserve">
+    <value>Change Hostname</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckForUpdate" xml:space="preserve">
+    <value>Check for Update</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckingGitHubForUpdates" xml:space="preserve">
+    <value>Checking GitHub for updates...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChooseAFileToShare" xml:space="preserve">
+    <value>Choose a file to share.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="HostnameInstructions" xml:space="preserve">
+    <value>Choose the name other devices will see (1-32 letters, numbers, spaces, and ' _ - . ( ) &amp; +).</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Close</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CompletingUKEY2SecurityHandshake" xml:space="preserve">
+    <value>completing UKEY2 security handshake</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotCreatePicturesLiveDropForReceivedFiles" xml:space="preserve">
+    <value>Could not create Pictures/LiveDrop for received files.</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotOpenSavedContent" xml:space="preserve">
+    <value>Could not open saved content</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotReachGitHubCheckYourConnectionAnd" xml:space="preserve">
+    <value>Could not reach GitHub. Check your connection and try again.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DevelopedBy" xml:space="preserve">
+    <value>Developed by {0}</value>
+    <comment>{0}: clickable developer name retiredlake. Include exactly once; it may move.</comment>
+  </data>
+  <data name="DiscoveryFailed" xml:space="preserve">
+    <value>Discovery could not start: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryHeading.Text" xml:space="preserve">
+    <value>Discovery</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="DiscoveryIsOffSelectAProtocolToFind" xml:space="preserve">
+    <value>Discovery is off. Select a protocol to find peers.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryShutdownFailed" xml:space="preserve">
+    <value>Discovery shutdown: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersion" xml:space="preserve">
+    <value>Downloading v{0}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersionProgress" xml:space="preserve">
+    <value>Downloading v{0} - {1:P0}</value>
+    <comment>{0}: version; {1:P0}: fractional download progress formatted as a percentage. Keep :P0.</comment>
+  </data>
+  <data name="EnterAtLeastOneLetterOrNumber" xml:space="preserve">
+    <value>Enter at least one letter or number.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="FileCount" xml:space="preserve">
+    <value>{0} files</value>
+    <comment>{0}: file count (two or more). Single files display their filename.</comment>
+  </data>
+  <data name="FileLabel" xml:space="preserve">
+    <value>file</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="FilesAreSavedInPicturesLiveDrop" xml:space="preserve">
+    <value>Files are saved in Pictures/LiveDrop.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="FilesReady" xml:space="preserve">
+    <value>{0} files are ready to share after selecting a peer.</value>
+    <comment>{0}: file count (two or more).</comment>
+  </data>
+  <data name="FrameIsTooLarge" xml:space="preserve">
+    <value>Frame is too large.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="GitHubIsLimitingRequestsPleaseTryAgainLater" xml:space="preserve">
+    <value>GitHub is limiting requests. Please try again later.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="GoogleQuickShare" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>LiveDrop 2</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HostnameMaximumLength" xml:space="preserve">
+    <value>Use no more than {0} characters.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="InvalidDNSLabel" xml:space="preserve">
+    <value>Invalid DNS label.</value>
+    <comment>Shown by MdnsCodec.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="InvalidDNSPointer" xml:space="preserve">
+    <value>Invalid DNS pointer.</value>
+    <comment>Shown by MdnsCodec.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="InvalidProtobufFieldLength" xml:space="preserve">
+    <value>Invalid protobuf field length.</value>
+    <comment>Shown by ProtoWriter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="InvalidProtobufLength" xml:space="preserve">
+    <value>Invalid protobuf length.</value>
+    <comment>Shown by ProtoWriter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="InvalidProtobufVarint" xml:space="preserve">
+    <value>Invalid protobuf varint.</value>
+    <comment>Shown by ProtoWriter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LettersNumbersSpaces" xml:space="preserve">
+    <value>Letters, numbers, spaces, ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropCouldNotReadTheSharedContentPlease" xml:space="preserve">
+    <value>LiveDrop could not read the shared content. Please share it again.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropIsUpToDate" xml:space="preserve">
+    <value>LiveDrop is up to date.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LoopbackTransfersAreDisabled" xml:space="preserve">
+    <value>Loopback transfers are disabled.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyBluetoothAndLANDiscoveryIsActive" xml:space="preserve">
+    <value>Microsoft Nearby Bluetooth and LAN discovery is active.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyCDPAuthenticationDidNotComplete" xml:space="preserve">
+    <value>Microsoft Nearby CDP authentication did not complete.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyCanceledTheTransfer" xml:space="preserve">
+    <value>Microsoft Nearby canceled the transfer.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyEncryptedACDPAuthenticationMessageToo" xml:space="preserve">
+    <value>Microsoft Nearby encrypted a CDP authentication message too early.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyLANDiscoveryIsActiveBluetoothDiscovery" xml:space="preserve">
+    <value>Microsoft Nearby LAN discovery is active; Bluetooth discovery is unavailable.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyPlatformHandshakeFailed" xml:space="preserve">
+    <value>Microsoft Nearby platform handshake failed.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyRefusedTheNearShareChannel" xml:space="preserve">
+    <value>Microsoft Nearby refused the NearShare channel.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyRejectedTheCDPConnection" xml:space="preserve">
+    <value>Microsoft Nearby rejected the CDP connection.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyRequestedAnInvalidFileRange" xml:space="preserve">
+    <value>Microsoft Nearby requested an invalid file range.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyRequiresAtLeastOneFile" xml:space="preserve">
+    <value>Microsoft Nearby requires at least one file.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyReturnedANonConnectionCDPMessage" xml:space="preserve">
+    <value>Microsoft Nearby returned a non-connection CDP message.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyReturnedATruncatedCDPConnectionMessage" xml:space="preserve">
+    <value>Microsoft Nearby returned a truncated CDP connection message.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyReturnedAnInvalidCDPCertificateSignature" xml:space="preserve">
+    <value>Microsoft Nearby returned an invalid CDP certificate signature.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyReturnedAnUnexpectedCDPConnectionMessage" xml:space="preserve">
+    <value>Microsoft Nearby returned an unexpected CDP connection message.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyReturnedInvalidCDPParameters" xml:space="preserve">
+    <value>Microsoft Nearby returned invalid CDP parameters.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAFileResponseForThe" xml:space="preserve">
+    <value>Microsoft Nearby sent a file response for the wrong range.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentANonConnectionCDPMessage" xml:space="preserve">
+    <value>Microsoft Nearby sent a non-connection CDP message.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentATruncatedCDPConnectionMessage" xml:space="preserve">
+    <value>Microsoft Nearby sent a truncated CDP connection message.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentATruncatedNearShareMessage" xml:space="preserve">
+    <value>Microsoft Nearby sent a truncated NearShare message.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidCDPAuthenticationCompletion" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid CDP authentication completion.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidCDPCertificateSignature" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid CDP certificate signature.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidChannelRequest" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid channel request.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidFileRange" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid file range.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidNearShareSessionFragment" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid NearShare session fragment.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidPlatformHandshake" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid platform handshake.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnInvalidTransferRequest" xml:space="preserve">
+    <value>Microsoft Nearby sent an invalid transfer request.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnUnexpectedCDPConnectionMessage" xml:space="preserve">
+    <value>Microsoft Nearby sent an unexpected CDP connection message.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnUnexpectedFileResponse" xml:space="preserve">
+    <value>Microsoft Nearby sent an unexpected file response.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentAnUnexpectedNearShareControlMessage" xml:space="preserve">
+    <value>Microsoft Nearby sent an unexpected NearShare control message.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentInvalidCDPConnectionParameters" xml:space="preserve">
+    <value>Microsoft Nearby sent invalid CDP connection parameters.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentInvalidContentIdentifiers" xml:space="preserve">
+    <value>Microsoft Nearby sent invalid content identifiers.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentInvalidFileMetadata" xml:space="preserve">
+    <value>Microsoft Nearby sent invalid file metadata.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentOutOfOrderCDPFragments" xml:space="preserve">
+    <value>Microsoft Nearby sent out-of-order CDP fragments.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbySentOutOfOrderNearShareFragments" xml:space="preserve">
+    <value>Microsoft Nearby sent out-of-order NearShare fragments.</value>
+    <comment>Shown by CdpClientSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyShare" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="MicrosoftNearbyShareIsUnavailableOnWindows10" xml:space="preserve">
+    <value>Microsoft Nearby Share is unavailable on Windows 10 Mobile; Google Quick Share remains available.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>Microsoft Nearby transfer received. Files are saved in Pictures/LiveDrop.</value>
+    <comment>Shown by CdpServerSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>More</value>
+    <comment>XAML AutomationProperties.Name. Product names remain unchanged.</comment>
+  </data>
+  <data name="NativeWebLinkSharingCurrentlyRequiresGoogleQuick" xml:space="preserve">
+    <value>Native web link sharing currently requires Google Quick Share.</value>
+    <comment>Shown by ShareCoordinator.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareGuidValueIsInvalid" xml:space="preserve">
+    <value>NearShare Guid value is invalid.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareListElementTypeIsInvalid" xml:space="preserve">
+    <value>NearShare list element type is invalid.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareListIsTooLarge" xml:space="preserve">
+    <value>NearShare list is too large.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearSharePropertyStructIsInvalid" xml:space="preserve">
+    <value>NearShare property struct is invalid.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearSharePropertyTypeIsInvalid" xml:space="preserve">
+    <value>NearShare property type is invalid.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareUnsupportedProperty" xml:space="preserve">
+    <value>NearShare ValueSet property type is not implemented: {0}</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="NearShareValueSetIsNotAMap" xml:space="preserve">
+    <value>NearShare ValueSet is not a map.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareValueSetIsNotTerminated" xml:space="preserve">
+    <value>NearShare ValueSet is not terminated.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareValueSetIsTooLarge" xml:space="preserve">
+    <value>NearShare ValueSet is too large.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearShareValueSetMapTypesAreInvalid" xml:space="preserve">
+    <value>NearShare ValueSet map types are invalid.</value>
+    <comment>Shown by CdpBondValueSet.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDevice" xml:space="preserve">
+    <value>Nearby device</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDiscoveryError" xml:space="preserve">
+    <value>Nearby discovery: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyProtocol.Content" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="NearbyReceivedBytes" xml:space="preserve">
+    <value>Received {0} ({1}/{2} bytes).</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="NearbyTcpUnavailable" xml:space="preserve">
+    <value>Could not open TCP 5040 ({0}). Windows Nearby Sharing may already be using this port.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyTransferFailed" xml:space="preserve">
+    <value>Microsoft Nearby transfer failed: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyUdpUnavailable" xml:space="preserve">
+    <value>Could not open UDP 5050 ({0}). Windows Nearby Sharing may already be using this port.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NoAdapterIsAvailableForTheSelectedPeer" xml:space="preserve">
+    <value>No adapter is available for the selected peer.</value>
+    <comment>Shown by ShareCoordinator.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoApplicationCouldOpenThisFileOrFolder" xml:space="preserve">
+    <value>No application could open this file or folder.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoConnectedLANIPv4AddressIsAvailableFor" xml:space="preserve">
+    <value>No connected LAN IPv4 address is available for Quick Share.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoFileSelected" xml:space="preserve">
+    <value>No file selected.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoLANInterfaceCouldStartMDNSDiscovery" xml:space="preserve">
+    <value>No LAN interface could start mDNS discovery.</value>
+    <comment>Shown by MdnsMulticastService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailable" xml:space="preserve">
+    <value>No published update is available.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailableYet" xml:space="preserve">
+    <value>No published update is available yet.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoUpdateAvailable" xml:space="preserve">
+    <value>No update available</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OneFileReady" xml:space="preserve">
+    <value>One file is ready to share after selecting a peer.</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="OnlyHTTPAndHTTPSWebLinksAreSupported" xml:space="preserve">
+    <value>Only HTTP and HTTPS web links are supported.</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OpenShareFailed" xml:space="preserve">
+    <value>LiveDrop could not open this share: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="OpeningTheTCPConnection" xml:space="preserve">
+    <value>opening the TCP connection</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OpeningTheWindowsInstaller" xml:space="preserve">
+    <value>Opening the Windows installer...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="PickerFailed" xml:space="preserve">
+    <value>Could not open the file picker: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Privacy Policy</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareBluetoothAndLANDiscoveryIsActive" xml:space="preserve">
+    <value>Quick Share Bluetooth and LAN discovery is active.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareChangedAControlPayloadSizeMid" xml:space="preserve">
+    <value>Quick Share changed a control payload size mid-transfer.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareClientDidNotSendUKEY2ClientFinish" xml:space="preserve">
+    <value>Quick Share client did not send UKEY2 ClientFinish.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareClientDidNotSendUKEY2ClientInit" xml:space="preserve">
+    <value>Quick Share client did not send UKEY2 ClientInit.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareClientRejectedTheConnection" xml:space="preserve">
+    <value>Quick Share client rejected the connection.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnecting" xml:space="preserve">
+    <value>Quick Share connecting to {0}:{1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnectionReceived" xml:space="preserve">
+    <value>Quick Share TCP connection received from {0}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnectionRequestReceivedWaitingForUKEY2" xml:space="preserve">
+    <value>Quick Share connection request received; waiting for UKEY2 ClientInit.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnectionRequestWasInvalid" xml:space="preserve">
+    <value>Quick Share connection request was invalid.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareControlPayloadExceededItsDeclaredSize" xml:space="preserve">
+    <value>Quick Share control payload exceeded its declared size.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareControlPayloadSizeDidNotMatch" xml:space="preserve">
+    <value>Quick Share control payload size did not match its header.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareDiscoveryError" xml:space="preserve">
+    <value>Quick Share discovery: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareFileChunkExceedsItsAnnouncedSize" xml:space="preserve">
+    <value>Quick Share file chunk exceeds its announced size.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareFileMetadataAndPayloadIDsMust" xml:space="preserve">
+    <value>Quick Share file metadata and payload IDs must have the same count.</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareFileSizeDidNotMatchIts" xml:space="preserve">
+    <value>Quick Share file size did not match its introduction metadata.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareHMACVerificationFailed" xml:space="preserve">
+    <value>Quick Share HMAC verification failed.</value>
+    <comment>Shown by QuickShareCrypto.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareLanDiscoveryActive" xml:space="preserve">
+    <value>Quick Share LAN discovery is active. Set the other device to Everyone mode</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareLinkSizeDidNotMatchIts" xml:space="preserve">
+    <value>Quick Share link size did not match its metadata.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareMdnsUnavailable" xml:space="preserve">
+    <value>Quick Share mDNS socket unavailable: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareName" xml:space="preserve">
+    <value>Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickShareOutboundFailed" xml:space="preserve">
+    <value>Quick Share outbound failed while {0} to {1}:{2}: {3} (0x{4}).</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickSharePayloadIDsMustBePositive" xml:space="preserve">
+    <value>Quick Share payload IDs must be positive.</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickSharePeerDisconnectedDuringTheTransfer" xml:space="preserve">
+    <value>Quick Share peer disconnected during the transfer.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareProtocol.Content" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickShareReceivingPin" xml:space="preserve">
+    <value>Quick Share security PIN: {0}. Compare it with the other device. Receiving files to Pictures/LiveDrop.</value>
+    <comment>{0}: numeric security PIN. Pictures/LiveDrop is the save location.</comment>
+  </data>
+  <data name="QuickShareRecipientCancelledTheTransfer" xml:space="preserve">
+    <value>Quick Share recipient cancelled the transfer.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientDisconnectedDuringUpload" xml:space="preserve">
+    <value>Quick Share recipient disconnected during upload.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientRejectedTheTransfer" xml:space="preserve">
+    <value>Quick Share recipient rejected the transfer.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRejectedTheConnection" xml:space="preserve">
+    <value>Quick Share rejected the connection.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRepeatedACompletedLinkPayload" xml:space="preserve">
+    <value>Quick Share repeated a completed link payload.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareReturnedAnUnexpectedUKEY2Message" xml:space="preserve">
+    <value>Quick Share returned an unexpected UKEY2 message.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSecurityPin" xml:space="preserve">
+    <value>Quick Share security PIN: {0}. Compare it with the other device.</value>
+    <comment>{0}: numeric security PIN; never translate or reformat the PIN.</comment>
+  </data>
+  <data name="QuickShareSenderCancelledTheTransfer" xml:space="preserve">
+    <value>Quick Share sender cancelled the transfer.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAControlPayloadAtThe" xml:space="preserve">
+    <value>Quick Share sent a control payload at the wrong offset.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAControlPayloadWithAn" xml:space="preserve">
+    <value>Quick Share sent a control payload with an invalid offset.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAFileChunkAtThe" xml:space="preserve">
+    <value>Quick Share sent a file chunk at the wrong offset.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnEmptyControlPayload" xml:space="preserve">
+    <value>Quick Share sent an empty control payload.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnEmptyPayload" xml:space="preserve">
+    <value>Quick Share sent an empty payload.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnInvalidFileList" xml:space="preserve">
+    <value>Quick Share sent an invalid file list.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnInvalidSharingControlFrame" xml:space="preserve">
+    <value>Quick Share sent an invalid sharing control frame.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnInvalidWebLink" xml:space="preserve">
+    <value>Quick Share sent an invalid web link.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentAnOversizedControlPayload" xml:space="preserve">
+    <value>Quick Share sent an oversized control payload.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentInvalidFileMetadata" xml:space="preserve">
+    <value>Quick Share sent invalid file metadata.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentTooManyIncompleteControlPayloads" xml:space="preserve">
+    <value>Quick Share sent too many incomplete control payloads.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSentUnsupportedTextMetadata" xml:space="preserve">
+    <value>Quick Share sent unsupported text metadata.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSequenceNumberIsOutOfOrder" xml:space="preserve">
+    <value>Quick Share sequence number is out of order.</value>
+    <comment>Shown by QuickShareCrypto.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTCPConnectionEstablished" xml:space="preserve">
+    <value>Quick Share TCP connection established.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferFailed" xml:space="preserve">
+    <value>Quick Share transfer failed: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>Quick Share transfer received. Files are saved in Pictures/LiveDrop.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareUKEY2ClientInitReceivedPreparingReceiverKey" xml:space="preserve">
+    <value>Quick Share UKEY2 ClientInit received; preparing receiver key.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareUKEY2CommitmentDidNotVerify" xml:space="preserve">
+    <value>Quick Share UKEY2 commitment did not verify.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareUnexpectedFrame" xml:space="preserve">
+    <value>Quick Share sent sharing frame type {0}; expected {1}.</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="QuickShareUnexpectedPayloadType" xml:space="preserve">
+    <value>Quick Share sent payload type {0}; expected a file payload.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareUnknownPayload" xml:space="preserve">
+    <value>Quick Share sent an unknown file payload (id={0}, type={1}, size={2}, name={3}; expected {4}).</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReadShareFailed" xml:space="preserve">
+    <value>Could not read the shared content: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileBatch" xml:space="preserve">
+    <value>Received {0} ({1}/{2}). Saved in Pictures/LiveDrop.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileSaved" xml:space="preserve">
+    <value>Received {0}. Saved in Pictures/LiveDrop.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="Receiving" xml:space="preserve">
+    <value>Receiving...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFileBody" xml:space="preserve">
+    <value>Receiving {0} from {1}.</value>
+    <comment>{0}: filename or file count; {1}: sender device name.</comment>
+  </data>
+  <data name="ReceivingFileLocation" xml:space="preserve">
+    <value>Receiving {0}. Files are saved automatically in Pictures/LiveDrop.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFromDevice" xml:space="preserve">
+    <value>Receiving from {0}</value>
+    <comment>{0}: sender device name.</comment>
+  </data>
+  <data name="RestartingDiscovery" xml:space="preserve">
+    <value>Restarting discovery as {0}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileFromPhotosOrFileExplorer" xml:space="preserve">
+    <value>Select a file from Photos or File Explorer.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileOrWebLinkToShare" xml:space="preserve">
+    <value>Select a file or web link to share.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerFirst" xml:space="preserve">
+    <value>Select a peer first.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerThenSendTheFile" xml:space="preserve">
+    <value>Select a peer, then send the file.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectFilesButton.Content" xml:space="preserve">
+    <value>Select Files</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendButton.Content" xml:space="preserve">
+    <value>Send selected share</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendSelectedShare" xml:space="preserve">
+    <value>Send selected share</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>Sending...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SendingFileBody" xml:space="preserve">
+    <value>Sending {0} to {1}.</value>
+    <comment>{0}: filename or file count; {1}: recipient device name.</comment>
+  </data>
+  <data name="SendingFileStatus" xml:space="preserve">
+    <value>Sending {0} to {1}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SendingToDevice" xml:space="preserve">
+    <value>Sending to {0}</value>
+    <comment>{0}: recipient device name.</comment>
+  </data>
+  <data name="SentFile" xml:space="preserve">
+    <value>Sent {0} to {1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledMessage" xml:space="preserve">
+    <value>Share canceled.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledTitle" xml:space="preserve">
+    <value>Share canceled</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareComplete" xml:space="preserve">
+    <value>Share complete</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCompleted" xml:space="preserve">
+    <value>Share completed.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>Share failed</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailedDetail" xml:space="preserve">
+    <value>Share failed: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SpacesCannotBeAtTheBeginningOrEnd" xml:space="preserve">
+    <value>Spaces cannot be at the beginning or end.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="StartingDiscovery.Text" xml:space="preserve">
+    <value>Starting foreground discovery...</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="SupportedPeers.Text" xml:space="preserve">
+    <value>Supported peers</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="TheGitHubReleaseDoesNotContainADownloadable" xml:space="preserve">
+    <value>The GitHub release does not contain a downloadable bundle.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheLatestReleaseDoesNotContainAUnique" xml:space="preserve">
+    <value>The latest release does not contain a unique LiveDrop app bundle.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheLatestReleaseHasAnInvalidVersionNumber" xml:space="preserve">
+    <value>The latest release has an invalid version number.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheOutgoingFileChangedBeforeQuickShareCould" xml:space="preserve">
+    <value>The outgoing file changed before Quick Share could send it.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheOutgoingFileEndedEarly" xml:space="preserve">
+    <value>The outgoing file ended early.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheOutgoingFileHasNoLocalSource" xml:space="preserve">
+    <value>The outgoing file has no local source.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheP256SharedPointIsInvalid" xml:space="preserve">
+    <value>The P-256 shared point is invalid.</value>
+    <comment>Shown by P256KeyAgreement.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThePeerClosedTheConnection" xml:space="preserve">
+    <value>The peer closed the connection.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThePeerP256KeyIsInvalid" xml:space="preserve">
+    <value>The peer P-256 key is invalid.</value>
+    <comment>Shown by P256KeyAgreement.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSavedFileOrFolderIsNoLonger" xml:space="preserve">
+    <value>The saved file or folder is no longer available.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedFileEndedBeforeTheRequestedRange" xml:space="preserve">
+    <value>The selected file ended before the requested range.</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedFileIsUnavailable" xml:space="preserve">
+    <value>The selected file is unavailable.</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedPeerIsNotAMicrosoftNearby" xml:space="preserve">
+    <value>The selected peer is not a Microsoft Nearby peer.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedPeerIsNotAQuickShare" xml:space="preserve">
+    <value>The selected peer is not a Quick Share peer.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheTCPConnectionTimedOut" xml:space="preserve">
+    <value>The TCP connection timed out.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheUKEY2PublicKeyIsMissingCoordinates" xml:space="preserve">
+    <value>The UKEY2 public key is missing coordinates.</value>
+    <comment>Shown by P256KeyAgreement.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheUpdateCheckTimedOutPleaseTryAgain" xml:space="preserve">
+    <value>The update check timed out. Please try again.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheWebLinkIsTooLong" xml:space="preserve">
+    <value>The web link is too long.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThisShareContainsNoSupportedFilesOrText" xml:space="preserve">
+    <value>This share contains no supported files or text.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Transferring" xml:space="preserve">
+    <value>Transferring</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UnknownPeer" xml:space="preserve">
+    <value>unknown peer</value>
+    <comment>Fallback device label.</comment>
+  </data>
+  <data name="UnsupportedProtobufWireType" xml:space="preserve">
+    <value>Unsupported protobuf wire type {0}.</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Update check failed: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="UpdateHttpError" xml:space="preserve">
+    <value>GitHub returned HTTP {0}. Please try again later.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="UseLettersNumbersSpacesAndOnly" xml:space="preserve">
+    <value>Use letters, numbers, spaces, and ' _ - . ( ) &amp; + only.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ValidatingTheSelectedEndpoint" xml:space="preserve">
+    <value>validating the selected endpoint</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WebLinkIsReadyToShareAfterSelecting" xml:space="preserve">
+    <value>Web link is ready to share after selecting a peer.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsCouldNotOpenTheInstaller" xml:space="preserve">
+    <value>Windows could not open the installer.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsCouldNotRegisterTheQuickShareDNS" xml:space="preserve">
+    <value>Windows could not register the Quick Share DNS-SD service.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsPC" xml:space="preserve">
+    <value>Windows PC</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="YouAlreadyHaveTheLatestRelease" xml:space="preserve">
+    <value>You already have the latest release.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryLabel" xml:space="preserve">
+    <value>Discovery</value>
+    <comment>Preserve numbered placeholders and protocol names.</comment>
+  </data>
+  <data name="QuickShareUnexpectedEncryptedFrame" xml:space="preserve">
+    <value>Quick Share sent an unexpected encrypted control frame (type={0}).</value>
+    <comment>Preserve numbered placeholders and protocol names.</comment>
+  </data>
+</root>

@@ -61,18 +61,18 @@ namespace LiveDrop.Protocols.QuickShare
         internal byte[] ComputeSharedSecretHash(byte[] genericPublicKey)
         {
             var peer = ParseGenericPublicKey(genericPublicKey);
-            if (peer.Infinity || !IsOnCurve(peer)) throw new InvalidOperationException("The peer P-256 key is invalid.");
+            if (peer.Infinity || !IsOnCurve(peer)) throw new InvalidOperationException(AppText.Get("ThePeerP256KeyIsInvalid"));
             var shared = Multiply(peer, _private);
-            if (shared.Infinity) throw new InvalidOperationException("The P-256 shared point is invalid.");
+            if (shared.Infinity) throw new InvalidOperationException(AppText.Get("TheP256SharedPointIsInvalid"));
             using (var sha = SHA256.Create()) return sha.ComputeHash(ToBigEndian(shared.X, 32));
         }
 
         internal byte[] ComputeCdpSharedSecret(byte[] publicX, byte[] publicY)
         {
             var peer = new Point(FromBigEndian(publicX), FromBigEndian(publicY));
-            if (peer.Infinity || !IsOnCurve(peer)) throw new InvalidOperationException("The peer P-256 key is invalid.");
+            if (peer.Infinity || !IsOnCurve(peer)) throw new InvalidOperationException(AppText.Get("ThePeerP256KeyIsInvalid"));
             var shared = Multiply(peer, _private);
-            if (shared.Infinity) throw new InvalidOperationException("The P-256 shared point is invalid.");
+            if (shared.Infinity) throw new InvalidOperationException(AppText.Get("TheP256SharedPointIsInvalid"));
             var data = new byte[8 + 32 + 8];
             var prepend = new byte[] { 0xD6, 0x37, 0xF1, 0xAA, 0xE2, 0xF0, 0x41, 0x8C };
             var append = new byte[] { 0xA8, 0xF8, 0x1A, 0x57, 0x4E, 0x22, 0x8A, 0xB7 };
@@ -245,7 +245,7 @@ namespace LiveDrop.Protocols.QuickShare
                 else if ((tag >> 3) == 2 && (tag & 7) == 2) y = coordinates.ReadBytes();
                 else coordinates.Skip(tag & 7);
             }
-            if (x.Length == 0 || y.Length == 0) throw new InvalidOperationException("The UKEY2 public key is missing coordinates.");
+            if (x.Length == 0 || y.Length == 0) throw new InvalidOperationException(AppText.Get("TheUKEY2PublicKeyIsMissingCoordinates"));
             return new Point(FromBigEndian(x), FromBigEndian(y));
         }
 

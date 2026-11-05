@@ -48,7 +48,7 @@ namespace LiveDrop.Protocols.Nearby
             WriteUInt16(stream, FragmentIndex); WriteUInt16(stream, FragmentCount); WriteUInt64(stream, SessionId); WriteUInt64(stream, ChannelId);
             foreach (var header in AdditionalHeaders)
             {
-                if (header.Value.Length > 255) throw new InvalidOperationException("CDP additional header is too large.");
+                if (header.Value.Length > 255) throw new InvalidOperationException(AppText.Get("CDPAdditionalHeaderIsTooLarge"));
                 stream.WriteByte(header.Type); stream.WriteByte((byte)header.Value.Length); stream.Write(header.Value, 0, header.Value.Length);
             }
             stream.WriteByte(0); stream.WriteByte(0);
@@ -57,13 +57,13 @@ namespace LiveDrop.Protocols.Nearby
 
         internal static CdpHeader Parse(byte[] data)
         {
-            if (data == null || data.Length < 42) throw new InvalidDataException("CDP header is truncated.");
+            if (data == null || data.Length < 42) throw new InvalidDataException(AppText.Get("CDPHeaderIsTruncated"));
             var offset = 0;
-            if (ReadUInt16(data, ref offset) != Signature) throw new InvalidDataException("CDP signature is invalid.");
+            if (ReadUInt16(data, ref offset) != Signature) throw new InvalidDataException(AppText.Get("CDPSignatureIsInvalid"));
             var messageLength = ReadUInt16(data, ref offset);
             var version = data[offset++];
             var type = data[offset++];
-            if (version != Version) throw new InvalidDataException("CDP version is not supported.");
+            if (version != Version) throw new InvalidDataException(AppText.Get("CDPVersionIsNotSupported"));
             var header = new CdpHeader { MessageLength = messageLength, Type = type };
             header.Flags = unchecked((short)ReadUInt16(data, ref offset));
             header.SequenceNumber = ReadUInt32(data, ref offset); header.RequestId = ReadUInt64(data, ref offset);
@@ -71,18 +71,18 @@ namespace LiveDrop.Protocols.Nearby
             header.SessionId = ReadUInt64(data, ref offset); header.ChannelId = ReadUInt64(data, ref offset);
             while (true)
             {
-                if (offset + 2 > data.Length) throw new InvalidDataException("CDP additional header is truncated.");
+                if (offset + 2 > data.Length) throw new InvalidDataException(AppText.Get("CDPAdditionalHeaderIsTruncated"));
                 var additionalType = data[offset++]; var length = data[offset++];
                 if (additionalType == 0)
                 {
-                    if (length != 0) throw new InvalidDataException("CDP end-of-header marker is invalid.");
+                    if (length != 0) throw new InvalidDataException(AppText.Get("CDPEndOfHeaderMarkerIsInvalid"));
                     break;
                 }
-                if (offset + length > data.Length) throw new InvalidDataException("CDP additional header value is truncated.");
+                if (offset + length > data.Length) throw new InvalidDataException(AppText.Get("CDPAdditionalHeaderValueIsTruncated"));
                 var value = new byte[length]; Buffer.BlockCopy(data, offset, value, 0, length); offset += length;
                 header.AdditionalHeaders.Add(new CdpAdditionalHeader(additionalType, value));
             }
-            if (offset != data.Length) throw new InvalidDataException("CDP header contains trailing bytes.");
+            if (offset != data.Length) throw new InvalidDataException(AppText.Get("CDPHeaderContainsTrailingBytes"));
             return header;
         }
 
@@ -123,7 +123,7 @@ namespace LiveDrop.Protocols.Nearby
 
         internal CdpCrypto(byte[] sharedSecret)
         {
-            if (sharedSecret == null || sharedSecret.Length != 64) throw new ArgumentException("CDP shared secret must be 64 bytes.");
+            if (sharedSecret == null || sharedSecret.Length != 64) throw new ArgumentException(AppText.Get("CDPSharedSecretMustBe64Bytes"));
             _encryptionKey = Copy(sharedSecret, 0, 16); _ivKey = Copy(sharedSecret, 16, 16); _hmacKey = Copy(sharedSecret, 32, 32);
         }
 
@@ -144,8 +144,8 @@ namespace LiveDrop.Protocols.Nearby
 
         internal byte[] Decrypt(CdpPacket packet)
         {
-            if ((packet.Header.Flags & CdpHeader.HasHmac) == 0 || (packet.Header.Flags & CdpHeader.SessionEncrypted) == 0) throw new InvalidDataException("CDP packet is not encrypted.");
-            if (packet.Payload.Length < 32) throw new InvalidDataException("CDP encrypted packet is truncated.");
+            if ((packet.Header.Flags & CdpHeader.HasHmac) == 0 || (packet.Header.Flags & CdpHeader.SessionEncrypted) == 0) throw new InvalidDataException(AppText.Get("CDPPacketIsNotEncrypted"));
+            if (packet.Payload.Length < 32) throw new InvalidDataException(AppText.Get("CDPEncryptedPacketIsTruncated"));
             var encryptedLength = packet.Payload.Length - 32;
             var encrypted = new byte[encryptedLength]; var supplied = new byte[32];
             Buffer.BlockCopy(packet.Payload, 0, encrypted, 0, encryptedLength); Buffer.BlockCopy(packet.Payload, encryptedLength, supplied, 0, 32);
@@ -153,10 +153,10 @@ namespace LiveDrop.Protocols.Nearby
             packet.Header.MessageLength = checked((ushort)(oldLength - 32));
             var expected = Hmac(Combine(packet.Header.Serialize(), encrypted));
             packet.Header.MessageLength = oldLength;
-            if (!FixedEquals(expected, supplied)) throw new InvalidDataException("CDP HMAC verification failed.");
+            if (!FixedEquals(expected, supplied)) throw new InvalidDataException(AppText.Get("CDPHMACVerificationFailed"));
             var plain = AesCrypt(encrypted, BuildIv(packet.Header), false, false);
-            if (plain.Length < 4) throw new InvalidDataException("CDP decrypted packet is truncated.");
-            var length = ReadUInt32(plain, 0); if (length > plain.Length - 4) throw new InvalidDataException("CDP payload length is invalid.");
+            if (plain.Length < 4) throw new InvalidDataException(AppText.Get("CDPDecryptedPacketIsTruncated"));
+            var length = ReadUInt32(plain, 0); if (length > plain.Length - 4) throw new InvalidDataException(AppText.Get("CDPPayloadLengthIsInvalid"));
             var result = new byte[length]; Buffer.BlockCopy(plain, 4, result, 0, (int)length); return result;
         }
 
@@ -198,11 +198,11 @@ namespace LiveDrop.Protocols.Nearby
             while (true)
             {
                 var pair = await connection.ReadRawAsync(2, cancellationToken); bytes.Write(pair, 0, pair.Length);
-                if (pair[0] == 0) { if (pair[1] != 0) throw new InvalidDataException("CDP end-of-header marker is invalid."); break; }
+                if (pair[0] == 0) { if (pair[1] != 0) throw new InvalidDataException(AppText.Get("CDPEndOfHeaderMarkerIsInvalid")); break; }
                 if (pair[1] > 0) { var value = await connection.ReadRawAsync(pair[1], cancellationToken); bytes.Write(value, 0, value.Length); }
             }
             var header = CdpHeader.Parse(bytes.ToArray());
-            if (header.MessageLength < bytes.Length) throw new InvalidDataException("CDP message length is invalid.");
+            if (header.MessageLength < bytes.Length) throw new InvalidDataException(AppText.Get("CDPMessageLengthIsInvalid"));
             var payload = await connection.ReadRawAsync(checked((int)(header.MessageLength - bytes.Length)), cancellationToken);
             return new CdpPacket(header, payload);
         }

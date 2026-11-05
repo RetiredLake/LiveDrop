@@ -79,7 +79,7 @@ namespace LiveDrop.Transports
                 }
             }
             _started = _sockets.Count > 0;
-            if (!_started) throw new InvalidOperationException("No LAN interface could start mDNS discovery.", lastError);
+            if (!_started) throw new InvalidOperationException(AppText.Get("NoLANInterfaceCouldStartMDNSDiscovery"), lastError);
         }
 
         internal async Task QueryAsync(CancellationToken cancellationToken)

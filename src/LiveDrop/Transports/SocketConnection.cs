@@ -27,7 +27,7 @@ namespace LiveDrop.Transports
         internal static async Task<SocketConnection> ConnectAsync(string address, int port, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Protocols.ProtocolUtilities.IsLoopbackAddress(address))
-                throw new InvalidOperationException("Loopback transfers are disabled.");
+                throw new InvalidOperationException(AppText.Get("LoopbackTransfersAreDisabled"));
             var socket = new StreamSocket();
             // StreamSocketControl properties must be configured before the
             // socket enters the connected state. Setting NoDelay after
@@ -46,15 +46,15 @@ namespace LiveDrop.Transports
             catch (Exception ex)
             {
                 socket.Dispose();
-                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException("Share canceled.", ex, cancellationToken);
-                if (ex is OperationCanceledException) throw new TimeoutException("The TCP connection timed out.", ex);
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException(AppText.Get("ShareCanceledMessage"), ex, cancellationToken);
+                if (ex is OperationCanceledException) throw new TimeoutException(AppText.Get("TheTCPConnectionTimedOut"), ex);
                 throw;
             }
         }
 
         internal async Task WriteFrameAsync(byte[] frame, CancellationToken cancellationToken)
         {
-            if (frame == null || frame.Length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException("Frame is too large.");
+            if (frame == null || frame.Length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException(AppText.Get("FrameIsTooLarge"));
             using (cancellationToken.Register(Abort))
             {
                 await _writeLock.WaitAsync(cancellationToken);
@@ -73,7 +73,7 @@ namespace LiveDrop.Transports
         {
             await LoadExactlyAsync(4, cancellationToken);
             var length = _reader.ReadUInt32();
-            if (length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException("Frame is too large.");
+            if (length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException(AppText.Get("FrameIsTooLarge"));
             await LoadExactlyAsync(length, cancellationToken);
             var data = new byte[length];
             _reader.ReadBytes(data);
@@ -116,13 +116,13 @@ namespace LiveDrop.Transports
                     {
                         cancellationToken.ThrowIfCancellationRequested();
                         var count = await _reader.LoadAsync(length - loaded).AsTask(cancellationToken);
-                        if (count == 0) throw new EndOfStreamException("The peer closed the connection.");
+                        if (count == 0) throw new EndOfStreamException(AppText.Get("ThePeerClosedTheConnection"));
                         loaded += count;
                     }
                 }
                 catch (Exception ex) when (cancellationToken.IsCancellationRequested)
                 {
-                    throw new OperationCanceledException("Share canceled.", ex, cancellationToken);
+                    throw new OperationCanceledException(AppText.Get("ShareCanceledMessage"), ex, cancellationToken);
                 }
             }
         }

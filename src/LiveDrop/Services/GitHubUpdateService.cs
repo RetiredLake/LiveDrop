@@ -31,14 +31,14 @@ namespace LiveDrop.Services
             {
                 if (response.StatusCode == System.Net.HttpStatusCode.NotFound) return null;
                 if ((int)response.StatusCode == 403 || (int)response.StatusCode == 429)
-                    throw new InvalidOperationException("GitHub is limiting requests. Please try again later.");
+                    throw new InvalidOperationException(AppText.Get("GitHubIsLimitingRequestsPleaseTryAgainLater"));
                 if (!response.IsSuccessStatusCode)
-                    throw new InvalidOperationException("GitHub returned HTTP " + (int)response.StatusCode + ". Please try again later.");
+                    throw new InvalidOperationException(AppText.Format("UpdateHttpError", (int)response.StatusCode));
                 var root = JsonObject.Parse(await response.Content.ReadAsStringAsync());
                 var tag = root.GetNamedString("tag_name", "");
                 Version version;
                 if (!TryParseVersion(tag, out version))
-                    throw new InvalidDataException("The latest release has an invalid version number.");
+                    throw new InvalidDataException(AppText.Get("TheLatestReleaseHasAnInvalidVersionNumber"));
 
                 var assets = new List<JsonObject>();
                 foreach (var value in root.GetNamedArray("assets", new JsonArray()))
@@ -53,7 +53,7 @@ namespace LiveDrop.Services
                 var asset = assets.FirstOrDefault(item => item.GetNamedString("name", "").Contains(expected));
                 if (asset == null && assets.Count == 1) asset = assets[0];
                 if (asset == null)
-                    throw new InvalidDataException("The latest release does not contain a unique LiveDrop app bundle.");
+                    throw new InvalidDataException(AppText.Get("TheLatestReleaseDoesNotContainAUnique"));
 
                 return new GitHubReleaseInfo
                 {
@@ -70,7 +70,7 @@ namespace LiveDrop.Services
         public async Task<StorageFile> DownloadAsync(GitHubReleaseInfo release, IProgress<double> progress)
         {
             if (release == null || string.IsNullOrWhiteSpace(release.BundleUrl) || string.IsNullOrWhiteSpace(release.BundleName))
-                throw new ArgumentException("The GitHub release does not contain a downloadable bundle.", "release");
+                throw new ArgumentException(AppText.Get("TheGitHubReleaseDoesNotContainADownloadable"), "release");
 
             var folder = await ApplicationData.Current.TemporaryFolder.CreateFolderAsync("Updates", CreationCollisionOption.OpenIfExists);
             var file = await folder.CreateFileAsync(release.BundleName, CreationCollisionOption.ReplaceExisting);
@@ -99,7 +99,7 @@ namespace LiveDrop.Services
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.7");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.8");
             return client;
         }
 

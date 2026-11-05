@@ -11,7 +11,7 @@
 Run from the repository root in a developer PowerShell:
 
 ```powershell
-csc /nologo /out:tests\ProtocolVectors\MdnsSmoke.exe tests\ProtocolVectors\MdnsSmoke.cs src\LiveDrop\Transports\MdnsCodec.cs
+csc /nologo /out:tests\ProtocolVectors\MdnsSmoke.exe src\LiveDrop\Localization\AppText.cs tests\ProtocolVectors\TestResources.cs tests\ProtocolVectors\MdnsSmoke.cs src\LiveDrop\Transports\MdnsCodec.cs
 & .\tests\ProtocolVectors\MdnsSmoke.exe
 ```
 
@@ -20,8 +20,10 @@ The UWP source check also compiles every `src/LiveDrop/*.cs` file against the ca
 `ShareCoordinatorSmoke.cs` compiles with the production coordinator and protocol interface. Fake network adapters verify all four selections and asynchronous shutdown with a synchronization context that no longer pumps messages:
 
 ```powershell
-csc /nologo /out:tests\ProtocolVectors\ShareCoordinatorSmoke.exe tests\ProtocolVectors\ShareCoordinatorSmoke.cs src\LiveDrop\Services\ShareCoordinator.cs src\LiveDrop\Protocols\ShareProtocol.cs
+csc /nologo /out:tests\ProtocolVectors\ShareCoordinatorSmoke.exe src\LiveDrop\Localization\AppText.cs tests\ProtocolVectors\TestResources.cs tests\ProtocolVectors\ShareCoordinatorSmoke.cs src\LiveDrop\Services\ShareCoordinator.cs src\LiveDrop\Protocols\ShareProtocol.cs
 & .\tests\ProtocolVectors\ShareCoordinatorSmoke.exe
 ```
 
 Use the VS 2019 Roslyn `csc.exe` for these lifecycle tests. `ShareSourceSmoke.cs` is a desktop integration fixture that opens the actual Windows share sheet with either valid Unicode text or a deferred text provider that supplies no data. Compile it as a WinForms executable against `System.Windows.Forms`, `System.Drawing`, `System.Runtime.WindowsRuntime`, SDK `Windows.winmd`, and .NET Framework 4.7.2 facade assemblies `System.Runtime` and `System.Runtime.InteropServices.WindowsRuntime`. Choose **LiveDrop** in the share sheet; no content is transmitted unless Send is explicitly clicked. Close the target while discovery continues, then close/reopen the main app. The unavailable-data case should display a read error without terminating the main app.
+
+All protocol fixtures now initialize the English resource catalog through `TestResources.Initialize()`. Include `src/LiveDrop/Localization/AppText.cs` and `tests/ProtocolVectors/TestResources.cs` when compiling a fixture; the UWP application supplies the PRI resource provider instead. Run from the repository root. Run `python tests/Localization/validate_resources.py` to check resource references and translator placeholders.

@@ -45,22 +45,22 @@ namespace LiveDrop.Protocols.Nearby
         internal static CdpValueSet Parse(byte[] data)
         {
             var stream = new MemoryStream(data ?? new byte[0]);
-            if (ReadFieldHeader(stream) != 0x2D) throw new InvalidDataException("NearShare ValueSet is not a map.");
-            if (stream.ReadByte() != 18 || stream.ReadByte() != 10) throw new InvalidDataException("NearShare ValueSet map types are invalid.");
-            var count = ReadVarUInt(stream); if (count > 1024) throw new InvalidDataException("NearShare ValueSet is too large.");
+            if (ReadFieldHeader(stream) != 0x2D) throw new InvalidDataException(AppText.Get("NearShareValueSetIsNotAMap"));
+            if (stream.ReadByte() != 18 || stream.ReadByte() != 10) throw new InvalidDataException(AppText.Get("NearShareValueSetMapTypesAreInvalid"));
+            var count = ReadVarUInt(stream); if (count > 1024) throw new InvalidDataException(AppText.Get("NearShareValueSetIsTooLarge"));
             var result = new CdpValueSet();
             for (var i = 0; i < (int)count; i++)
             {
                 var key = ReadWString(stream);
-                var typeHeader = ReadFieldHeader(stream); if ((typeHeader & 31) != 16 || ((typeHeader >> 5) & 7) != 0) throw new InvalidDataException("NearShare property type is invalid.");
+                var typeHeader = ReadFieldHeader(stream); if ((typeHeader & 31) != 16 || ((typeHeader >> 5) & 7) != 0) throw new InvalidDataException(AppText.Get("NearSharePropertyTypeIsInvalid"));
                 var propertyType = (int)(ReadVarUInt(stream) >> 1);
                 var valueHeader = ReadFieldHeader(stream); var fieldId = valueHeader >> 5;
                 if (fieldId == 6) fieldId = stream.ReadByte(); else if (fieldId == 7) fieldId = ReadUInt16Little(stream);
                 var value = ReadPropertyValue(stream, propertyType, valueHeader & 31);
                 result.Values[key] = new CdpValue(propertyType, value);
-                if (stream.ReadByte() != 0) throw new InvalidDataException("NearShare property struct is invalid.");
+                if (stream.ReadByte() != 0) throw new InvalidDataException(AppText.Get("NearSharePropertyStructIsInvalid"));
             }
-            if (stream.ReadByte() != 0) throw new InvalidDataException("NearShare ValueSet is not terminated.");
+            if (stream.ReadByte() != 0) throw new InvalidDataException(AppText.Get("NearShareValueSetIsNotTerminated"));
             return result;
         }
 
@@ -83,7 +83,7 @@ namespace LiveDrop.Protocols.Nearby
                 case 24: WriteList(stream, 5, (IList<uint>)value.Value, (s, x) => WriteVarUInt(s, x)); break;
                 case 26: WriteList(stream, 6, (IList<ulong>)value.Value, (s, x) => WriteVarUInt(s, x)); break;
                 case 40: WriteList(stream, 9, (IList<string>)value.Value, WriteString); break;
-                default: throw new InvalidDataException("NearShare ValueSet property type is not implemented: " + value.PropertyType);
+                default: throw new InvalidDataException(AppText.Format("NearShareUnsupportedProperty", value.PropertyType));
             }
         }
 
@@ -94,14 +94,14 @@ namespace LiveDrop.Protocols.Nearby
                 case 5: return (uint)ReadVarUInt(stream);
                 case 7: return ReadVarUInt(stream);
                 case 15:
-                    if (stream.ReadByte() != 10 || ReadVarUInt(stream) != 1) throw new InvalidDataException("NearShare Guid value is invalid.");
+                    if (stream.ReadByte() != 10 || ReadVarUInt(stream) != 1) throw new InvalidDataException(AppText.Get("NearShareGuidValueIsInvalid"));
                     var data = new byte[16]; if (ReadFieldHeader(stream) != 5) throw new InvalidDataException(); WriteUInt32Little(data, 0, ReadVarUInt(stream)); if (ReadFieldHeader(stream) != 36) throw new InvalidDataException(); WriteUInt16Little(data, 4, (ushort)ReadVarUInt(stream)); if (ReadFieldHeader(stream) != 68) throw new InvalidDataException(); WriteUInt16Little(data, 6, (ushort)ReadVarUInt(stream)); if (ReadFieldHeader(stream) != 102) throw new InvalidDataException(); WriteUInt64Little(data, 8, ReadVarUInt(stream)); if (stream.ReadByte() != 0) throw new InvalidDataException(); return new Guid(data);
                 case 39: return ReadString(stream);
                 case 20: return ReadList(stream, 3, x => (byte)(ulong)x);
                 case 24: return ReadList(stream, 5, x => (uint)(ulong)x);
                 case 26: return ReadList(stream, 6, x => (ulong)x);
                 case 40: return ReadStringList(stream);
-                default: throw new InvalidDataException("NearShare ValueSet property type is not implemented: " + propertyType);
+                default: throw new InvalidDataException(AppText.Format("NearShareUnsupportedProperty", propertyType));
             }
         }
 
@@ -121,15 +121,15 @@ namespace LiveDrop.Protocols.Nearby
 
         private static List<T> ReadList<T>(Stream stream, int elementType, Func<object, T> reader)
         {
-            if (stream.ReadByte() != elementType) throw new InvalidDataException("NearShare list element type is invalid.");
-            var count = ReadVarUInt(stream); if (count > 1024 * 1024) throw new InvalidDataException("NearShare list is too large.");
+            if (stream.ReadByte() != elementType) throw new InvalidDataException(AppText.Get("NearShareListElementTypeIsInvalid"));
+            var count = ReadVarUInt(stream); if (count > 1024 * 1024) throw new InvalidDataException(AppText.Get("NearShareListIsTooLarge"));
             var result = new List<T>((int)count); for (var i = 0; i < (int)count; i++) result.Add(reader(ReadVarUInt(stream))); return result;
         }
 
         private static IList<string> ReadStringList(Stream stream)
         {
-            if (stream.ReadByte() != 9) throw new InvalidDataException("NearShare list element type is invalid.");
-            var count = ReadVarUInt(stream); if (count > 1024 * 1024) throw new InvalidDataException("NearShare list is too large.");
+            if (stream.ReadByte() != 9) throw new InvalidDataException(AppText.Get("NearShareListElementTypeIsInvalid"));
+            var count = ReadVarUInt(stream); if (count > 1024 * 1024) throw new InvalidDataException(AppText.Get("NearShareListIsTooLarge"));
             var result = new List<string>((int)count);
             for (var i = 0; i < (int)count; i++) result.Add(ReadString(stream));
             return result;

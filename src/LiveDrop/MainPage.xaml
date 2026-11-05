@@ -14,17 +14,17 @@
         <ColumnDefinition Width="*" />
         <ColumnDefinition Width="Auto" />
       </Grid.ColumnDefinitions>
-      <TextBlock Text="LiveDrop 2" FontSize="32" FontWeight="SemiBold" VerticalAlignment="Center" />
-      <Button x:Name="MoreButton" Grid.Column="1" Width="44" Height="44" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Right" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" AutomationProperties.Name="More" Click="OnMoreClicked">
+      <TextBlock x:Uid="HeaderTitle" FontSize="32" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <Button x:Name="MoreButton" Grid.Column="1" Width="44" Height="44" Padding="0" VerticalAlignment="Center" HorizontalAlignment="Right" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" x:Uid="MoreButton" Click="OnMoreClicked">
         <SymbolIcon Symbol="More" />
       </Button>
     </Grid>
     <ScrollViewer Grid.Row="2" Margin="0,16,0,0">
       <StackPanel>
-        <TextBlock Text="Supported peers" FontSize="20" Margin="0,0,0,8" />
-        <CheckBox x:Name="NearbyCheckBox" Content="Microsoft Nearby Share" IsChecked="False" />
-        <CheckBox x:Name="QuickShareCheckBox" Content="Google Quick Share" IsChecked="True" />
-        <TextBlock Text="Discovery" FontSize="20" Margin="0,24,0,8" />
+        <TextBlock x:Uid="SupportedPeers" FontSize="20" Margin="0,0,0,8" />
+        <CheckBox x:Name="NearbyCheckBox" x:Uid="NearbyProtocol" IsChecked="False" />
+        <CheckBox x:Name="QuickShareCheckBox" x:Uid="QuickShareProtocol" IsChecked="True" />
+        <TextBlock x:Uid="DiscoveryHeading" FontSize="20" Margin="0,24,0,8" />
         <ListView x:Name="PeersList" MinHeight="120" SelectionChanged="OnPeerSelectionChanged">
           <ListView.ItemTemplate>
             <DataTemplate><TextBlock Text="{Binding DisplayText}" /></DataTemplate>
@@ -39,10 +39,10 @@
           <ProgressBar x:Name="TransferProgressBar" Grid.Column="0" Height="6" Minimum="0" Maximum="1" VerticalAlignment="Center" />
           <TextBlock x:Name="TransferProgressText" Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" />
         </Grid>
-        <Button x:Name="ShareButton" Content="Select file" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnShareClicked" />
-        <Button x:Name="SendButton" Content="Send selected share" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
-        <Button x:Name="CancelButton" Content="Cancel" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnCancelClicked" />
-        <TextBlock x:Name="StatusText" Text="Starting foreground discovery..." TextWrapping="Wrap" Margin="0,16,0,0" />
+        <Button x:Name="ShareButton" x:Uid="SelectFilesButton" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnShareClicked" />
+        <Button x:Name="SendButton" x:Uid="SendButton" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
+        <Button x:Name="CancelButton" x:Uid="CancelButton" Visibility="Collapsed" HorizontalAlignment="Left" Margin="0,8,0,0" Click="OnCancelClicked" />
+        <TextBlock x:Name="StatusText" x:Uid="StartingDiscovery" TextWrapping="Wrap" Margin="0,16,0,0" />
       </StackPanel>
     </ScrollViewer>
   </Grid>

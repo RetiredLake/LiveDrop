@@ -28,7 +28,7 @@ namespace LiveDrop.Models
         public PeerDescriptor(string stableId, string displayName, ShareTransport transport, string address, int port, string capabilities)
         {
             StableId = stableId ?? string.Empty;
-            DisplayName = string.IsNullOrWhiteSpace(displayName) ? "Nearby device" : displayName;
+            DisplayName = string.IsNullOrWhiteSpace(displayName) ? AppText.Get("NearbyDevice") : displayName;
             Transport = transport;
             Address = address ?? string.Empty;
             Port = port;
@@ -74,7 +74,7 @@ namespace LiveDrop.Models
             Files = files ?? new List<ShareFileDescriptor>();
             Text = text ?? string.Empty;
             if (webLink != null && (Files.Count != 0 || !webLink.IsAbsoluteUri || (webLink.Scheme != "http" && webLink.Scheme != "https")))
-                throw new ArgumentException("A web-link offer must contain one HTTP or HTTPS link without files.");
+                throw new ArgumentException(AppText.Get("AWebLinkOfferMustContainOneHTTP"));
             WebLink = webLink;
         }
     }

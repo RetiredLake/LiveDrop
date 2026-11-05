@@ -60,12 +60,12 @@ namespace LiveDrop
             Window.Current.Closed += OnWindowClosed;
             TelemetryService.Instance.TrackApplicationStarted();
             _moreMenu = new MenuFlyout();
-            var hostnameItem = new MenuFlyoutItem { Text = "Change Hostname" };
+            var hostnameItem = new MenuFlyoutItem { Text = AppText.Get("ChangeHostname") };
             hostnameItem.Click += OnChangeHostnameClicked;
-            var githubItem = new MenuFlyoutItem { Text = "About" };
+            var githubItem = new MenuFlyoutItem { Text = AppText.Get("About") };
             githubItem.Click += OnAboutClicked;
 #if !MICROSOFT_STORE
-            var updateItem = new MenuFlyoutItem { Text = "Check for Update" };
+            var updateItem = new MenuFlyoutItem { Text = AppText.Get("CheckForUpdate") };
             updateItem.Click += OnCheckForUpdateClicked;
 #endif
             _moreMenu.Items.Add(hostnameItem);
@@ -121,7 +121,7 @@ namespace LiveDrop
             SelectedFileText.Visibility = Visibility.Collapsed;
             SendButton.Visibility = Visibility.Visible;
             SendButton.IsEnabled = false;
-            SendButton.Content = "Send selected share";
+            SendButton.Content = AppText.Get("SendSelectedShare");
             ResetTransferProgress();
         }
 
@@ -131,19 +131,21 @@ namespace LiveDrop
             var version = Windows.ApplicationModel.Package.Current.Id.Version;
             text.Inlines.Add(new Windows.UI.Xaml.Documents.Run
             {
-                Text = "Version " + version.Major + "." + version.Minor + "." + version.Build + "." + version.Revision
+                Text = AppText.Format("AboutVersion", new Version(version.Major, version.Minor, version.Build, version.Revision).ToString(4))
             });
             text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
-            text.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "Developed by " });
+            var credit = AppText.Get("DevelopedBy").Split(new[] { "{0}" }, StringSplitOptions.None);
+            text.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = credit[0] });
             var link = new Windows.UI.Xaml.Documents.Hyperlink { NavigateUri = new Uri(GitHubUpdateService.RepositoryUrl) };
             link.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "retiredlake" });
             text.Inlines.Add(link);
+            if (credit.Length > 1) text.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = credit[1] });
             text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
             text.Inlines.Add(new Windows.UI.Xaml.Documents.LineBreak());
             var privacyLink = new Windows.UI.Xaml.Documents.Hyperlink { NavigateUri = new Uri("https://retiredlake.com/privacy.html") };
-            privacyLink.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = "Privacy Policy" });
+            privacyLink.Inlines.Add(new Windows.UI.Xaml.Documents.Run { Text = AppText.Get("PrivacyPolicy") });
             text.Inlines.Add(privacyLink);
-            await new ContentDialog { Title = "About", Content = text, PrimaryButtonText = "Close" }.ShowAsync();
+            await new ContentDialog { Title = AppText.Get("About"), Content = text, PrimaryButtonText = AppText.Get("Close") }.ShowAsync();
         }
 
         private async void OnChangeHostnameClicked(object sender, RoutedEventArgs e)
@@ -152,19 +154,19 @@ namespace LiveDrop
             {
                 Text = GetBroadcastName(),
                 MaxLength = HostNameMaximumLength,
-                PlaceholderText = "Letters, numbers, spaces, ' _ - . ( ) & +"
+                PlaceholderText = AppText.Get("LettersNumbersSpaces")
             };
             var errorText = new TextBlock { TextWrapping = TextWrapping.Wrap, Foreground = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Colors.DarkRed) };
             var panel = new StackPanel();
-            panel.Children.Add(new TextBlock { Text = "Choose the name other devices will see (1-32 letters, numbers, spaces, and ' _ - . ( ) & +).", TextWrapping = TextWrapping.Wrap });
+            panel.Children.Add(new TextBlock { Text = AppText.Get("HostnameInstructions"), TextWrapping = TextWrapping.Wrap });
             panel.Children.Add(nameBox);
             panel.Children.Add(errorText);
             var dialog = new ContentDialog
             {
-                Title = "Change Hostname",
+                Title = AppText.Get("ChangeHostname"),
                 Content = panel,
-                PrimaryButtonText = "OK",
-                CloseButtonText = "Cancel"
+                PrimaryButtonText = AppText.Get("OK"),
+                CloseButtonText = AppText.Get("Cancel")
             };
             dialog.PrimaryButtonClick += (d, args) =>
             {
@@ -178,7 +180,7 @@ namespace LiveDrop
 
             if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             Windows.Storage.ApplicationData.Current.LocalSettings.Values["BroadcastHostName"] = nameBox.Text;
-            StatusText.Text = "Restarting discovery as " + nameBox.Text + "...";
+            StatusText.Text = AppText.Format("RestartingDiscovery", nameBox.Text);
             await ApplyProtocolsAsync();
         }
 
@@ -209,24 +211,24 @@ namespace LiveDrop
             error = null;
             if (string.IsNullOrEmpty(value) || value.Length < HostNameMinimumLength)
             {
-                error = "Enter at least one letter or number.";
+                error = AppText.Get("EnterAtLeastOneLetterOrNumber");
                 return false;
             }
             if (value.Length > HostNameMaximumLength)
             {
-                error = "Use no more than " + HostNameMaximumLength + " characters.";
+                error = AppText.Format("HostnameMaximumLength", HostNameMaximumLength);
                 return false;
             }
             if (value[0] == ' ' || value[value.Length - 1] == ' ')
             {
-                error = "Spaces cannot be at the beginning or end.";
+                error = AppText.Get("SpacesCannotBeAtTheBeginningOrEnd");
                 return false;
             }
             foreach (var character in value)
             {
                 if (!char.IsLetterOrDigit(character) && HostNameAllowedSpecialCharacters.IndexOf(character) < 0)
                 {
-                    error = "Use letters, numbers, spaces, and ' _ - . ( ) & + only.";
+                    error = AppText.Get("UseLettersNumbersSpacesAndOnly");
                     return false;
                 }
             }
@@ -245,14 +247,14 @@ namespace LiveDrop
             TelemetryService.Instance.TrackUpdateCheck("started");
             try
             {
-                StatusText.Text = "Checking GitHub for updates...";
+                StatusText.Text = AppText.Get("CheckingGitHubForUpdates");
                 var service = new GitHubUpdateService();
                 var release = await service.GetLatestReleaseAsync();
                 if (release == null)
                 {
                     TelemetryService.Instance.TrackUpdateCheck("no_release");
-                    StatusText.Text = "No published update is available.";
-                    await new MessageDialog("No published update is available yet.", "Check for Update").ShowAsync();
+                    StatusText.Text = AppText.Get("NoPublishedUpdateIsAvailable");
+                    await new MessageDialog(AppText.Get("NoPublishedUpdateIsAvailableYet"), AppText.Get("CheckForUpdate")).ShowAsync();
                     return;
                 }
                 var currentId = Windows.ApplicationModel.Package.Current.Id.Version;
@@ -260,22 +262,22 @@ namespace LiveDrop
                 if (release.Version <= current)
                 {
                     TelemetryService.Instance.TrackUpdateCheck("up_to_date");
-                    StatusText.Text = "LiveDrop is up to date.";
-                    await new MessageDialog("You already have the latest release.", "No update available").ShowAsync();
+                    StatusText.Text = AppText.Get("LiveDropIsUpToDate");
+                    await new MessageDialog(AppText.Get("YouAlreadyHaveTheLatestRelease"), AppText.Get("NoUpdateAvailable")).ShowAsync();
                     return;
                 }
 
                 TelemetryService.Instance.TrackUpdateCheck("update_available");
                 TelemetryService.Instance.TrackUpdateAvailable(release.Version);
-                StatusText.Text = "Downloading v" + release.Version.ToString(4) + "...";
+                StatusText.Text = AppText.Format("DownloadingVersion", release.Version.ToString(4));
                 TelemetryService.Instance.TrackUpdateDownloadStarted(release.Version);
                 var progress = new Progress<double>(value =>
-                    StatusText.Text = "Downloading v" + release.Version.ToString(4) + " - " + (int)(value * 100) + "%");
+                    StatusText.Text = AppText.Format("DownloadingVersionProgress", release.Version.ToString(4), value));
                 var file = await service.DownloadAsync(release, progress);
-                StatusText.Text = "Opening the Windows installer...";
+                StatusText.Text = AppText.Get("OpeningTheWindowsInstaller");
                 if (!await Launcher.LaunchFileAsync(file))
                 {
-                    StatusText.Text = "Windows could not open the installer.";
+                    StatusText.Text = AppText.Get("WindowsCouldNotOpenTheInstaller");
                     await Launcher.LaunchUriAsync(new Uri(release.ReleaseUrl));
                 }
                 else
@@ -286,17 +288,17 @@ namespace LiveDrop
             catch (System.Net.Http.HttpRequestException)
             {
                 TelemetryService.Instance.TrackUpdateFailed("network");
-                StatusText.Text = "Could not reach GitHub. Check your connection and try again.";
+                StatusText.Text = AppText.Get("CouldNotReachGitHubCheckYourConnectionAnd");
             }
             catch (TaskCanceledException)
             {
                 TelemetryService.Instance.TrackUpdateFailed("timeout");
-                StatusText.Text = "The update check timed out. Please try again.";
+                StatusText.Text = AppText.Get("TheUpdateCheckTimedOutPleaseTryAgain");
             }
             catch (Exception ex)
             {
                 TelemetryService.Instance.TrackUpdateFailed(TelemetryService.ClassifyFailure(ex));
-                StatusText.Text = "Update check failed: " + ex.Message;
+                StatusText.Text = AppText.Format("UpdateCheckFailed", ex.Message);
             }
             finally
             {
@@ -336,7 +338,7 @@ namespace LiveDrop
                 TelemetryService.Instance.TrackShareCanceled(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer);
                 _incomingTelemetryPending = false;
             }
-            TryReportShareError("Share canceled.");
+            TryReportShareError(AppText.Get("ShareCanceledMessage"));
             if (_sendCancellation != null) _sendCancellation.Cancel();
             await ApplyProtocolsAsync();
         }
@@ -349,7 +351,7 @@ namespace LiveDrop
             {
                 var phonePicker = IsWindowsPhonePicker();
                 var picker = CreateFilePicker(phonePicker);
-                StatusText.Text = "Select a file from Photos or File Explorer.";
+                StatusText.Text = AppText.Get("SelectAFileFromPhotosOrFileExplorer");
                 // Use the multiple-file broker on every UWP target. This keeps
                 // regular launches consistent with the Windows share target and
                 // preserves every item selected by Quick Share-compatible sources.
@@ -357,7 +359,7 @@ namespace LiveDrop
             }
             catch (Exception ex)
             {
-                StatusText.Text = "Could not open the file picker: " + ex.Message;
+                StatusText.Text = AppText.Format("PickerFailed", ex.Message);
             }
             finally
             {
@@ -383,14 +385,14 @@ namespace LiveDrop
         {
             if (files == null || files.Count == 0)
             {
-                StatusText.Text = "No file selected.";
+                StatusText.Text = AppText.Get("NoFileSelected");
                 return;
             }
 
             _pendingOffer = await ShareOfferFactory.FromPickedFilesAsync(files);
             if (_pendingOffer.Files.Count == 0)
             {
-                StatusText.Text = "No file selected.";
+                StatusText.Text = AppText.Get("NoFileSelected");
                 return;
             }
             SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
@@ -398,18 +400,18 @@ namespace LiveDrop
             ResetTransferProgress();
             ShareButton.Visibility = Visibility.Collapsed;
             SendButton.Visibility = Visibility.Visible;
-            SendButton.Content = "Send selected share";
+            SendButton.Content = AppText.Get("SendSelectedShare");
             SendButton.IsEnabled = true;
             CancelButton.Visibility = Visibility.Visible;
-            StatusText.Text = "Select a peer, then send the file.";
+            StatusText.Text = AppText.Get("SelectAPeerThenSendTheFile");
         }
 
         private static string GetOfferDisplayName(ShareOffer offer)
         {
             if (offer != null && offer.WebLink != null) return offer.WebLink.AbsoluteUri;
-            if (offer == null || offer.Files == null || offer.Files.Count == 0) return "file";
+            if (offer == null || offer.Files == null || offer.Files.Count == 0) return AppText.Get("FileLabel");
             if (offer.Files.Count == 1) return offer.Files[0].Name;
-            return offer.Files.Count + " files";
+            return AppText.Format("FileCount", offer.Files.Count);
         }
 
         private void OnCancelClicked(object sender, RoutedEventArgs e)
@@ -418,11 +420,11 @@ namespace LiveDrop
             if (_sendCancellation != null)
             {
                 CancelButton.IsEnabled = false;
-                StatusText.Text = "Canceling...";
+                StatusText.Text = AppText.Get("Canceling");
                 _sendCancellation.Cancel();
                 return;
             }
-            ResetSelectedShare("Choose a file to share.");
+            ResetSelectedShare(AppText.Get("ChooseAFileToShare"));
         }
 
         private void ResetSelectedShare(string status)
@@ -457,12 +459,12 @@ namespace LiveDrop
             {
                 TransferProgressBar.IsIndeterminate = false;
                 TransferProgressBar.Value = 1;
-                TransferProgressText.Text = "0 B";
+                TransferProgressText.Text = AppText.Get("EmptyTransferSize");
                 return;
             }
             TransferProgressBar.IsIndeterminate = false;
             TransferProgressBar.Value = Math.Min(1.0, Math.Max(0.0, (double)progress.BytesTransferred / total));
-            TransferProgressText.Text = ((int)(TransferProgressBar.Value * 100)) + "%";
+            TransferProgressText.Text = TransferProgressBar.Value.ToString("P0", System.Globalization.CultureInfo.CurrentCulture);
         }
 
         private async Task ApplyProtocolsAsync()
@@ -489,7 +491,7 @@ namespace LiveDrop
                 var quickShare = QuickShareCheckBox.IsChecked == true;
                 if (!nearby && !quickShare)
                 {
-                    StatusText.Text = "Discovery is off. Select a protocol to find peers.";
+                    StatusText.Text = AppText.Get("DiscoveryIsOffSelectAProtocolToFind");
                     return;
                 }
                 _coordinator = new ShareCoordinator(GetBroadcastName(), nearby, quickShare);
@@ -500,7 +502,7 @@ namespace LiveDrop
             }
             catch (Exception ex)
             {
-                await RunOnViewAsync(() => StatusText.Text = "Discovery could not start: " + ex.Message);
+                await RunOnViewAsync(() => StatusText.Text = AppText.Format("DiscoveryFailed", ex.Message));
             }
             finally { _lifecycle.Release(); }
         }
@@ -536,8 +538,8 @@ namespace LiveDrop
                 _pendingShareOperation = operation;
                 _pendingOffer = offer;
                 StatusText.Text = !offer.HasContent
-                    ? "This share contains no supported files or text."
-                    : offer.WebLink != null ? "Web link is ready to share after selecting a peer." : offer.Files.Count + " file(s) are ready to share after selecting a peer.";
+                    ? AppText.Get("ThisShareContainsNoSupportedFilesOrText")
+                    : offer.WebLink != null ? AppText.Get("WebLinkIsReadyToShareAfterSelecting") : (offer.Files.Count == 1 ? AppText.Get("OneFileReady") : AppText.Format("FilesReady", offer.Files.Count));
                 SelectedFileText.Text = GetOfferDisplayName(offer);
                 SelectedFileText.Visibility = Visibility.Visible;
                 SendButton.Visibility = Visibility.Visible;
@@ -547,8 +549,8 @@ namespace LiveDrop
             {
                 _pendingShareOperation = null;
                 _pendingOffer = null;
-                await RunOnViewAsync(() => StatusText.Text = "Could not read the shared content: " + ex.Message);
-                TryReportShareError(operation, "LiveDrop could not read the shared content. Please share it again.");
+                await RunOnViewAsync(() => StatusText.Text = AppText.Format("ReadShareFailed", ex.Message));
+                TryReportShareError(operation, AppText.Get("LiveDropCouldNotReadTheSharedContentPlease"));
             }
         }
 
@@ -607,26 +609,7 @@ namespace LiveDrop
             await RunOnViewAsync(() =>
             {
                 if (!_loaded || !ReferenceEquals(coordinator, _coordinator)) return;
-                _discoveryStatus[adapter == null ? "Discovery" : adapter.Name] = e.Message;
-                if (adapter != null)
-                {
-                    if (e.Message.IndexOf("transfer received", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        if (_incomingTelemetryPending)
-                        {
-                            TelemetryService.Instance.TrackShareSucceeded(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer);
-                            _incomingTelemetryPending = false;
-                        }
-                    }
-                    else if (e.Message.IndexOf("transfer failed", StringComparison.OrdinalIgnoreCase) >= 0)
-                    {
-                        if (_incomingTelemetryPending)
-                        {
-                            TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer, "transfer_failed");
-                            _incomingTelemetryPending = false;
-                        }
-                    }
-                }
+                _discoveryStatus[adapter == null ? AppText.Get("DiscoveryLabel") : adapter.Name] = e.Message;
                 if (!_updateCheckInProgress) StatusText.Text = string.Join("\n", _discoveryStatus.Values);
             });
         }
@@ -643,19 +626,19 @@ namespace LiveDrop
             if (_pendingOffer == null || _coordinator == null) return;
             if (selected == null)
             {
-                StatusText.Text = "Select a peer first.";
+                StatusText.Text = AppText.Get("SelectAPeerFirst");
                 return;
             }
             SendButton.IsEnabled = false;
             NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
             _sendCancellation = new CancellationTokenSource();
-            var notification = TransferNotification.Begin("Sending...", "Sending " + GetOfferDisplayName(_pendingOffer) + " to " + selected.Peer.DisplayName + ".", GetOfferDisplayName(_pendingOffer), "Sending to " + selected.Peer.DisplayName);
+            var notification = TransferNotification.Begin(AppText.Get("Sending"), AppText.Format("SendingFileBody", GetOfferDisplayName(_pendingOffer), selected.Peer.DisplayName), GetOfferDisplayName(_pendingOffer), AppText.Format("SendingToDevice", selected.Peer.DisplayName));
             try
             {
                 var outgoingName = GetOfferDisplayName(_pendingOffer);
                 var outgoingOffer = _pendingOffer;
                 TelemetryService.Instance.TrackShareStarted(selected.Peer.Transport, "send", outgoingOffer);
-                StatusText.Text = "Sending " + outgoingName + " to " + selected.Peer.DisplayName + "...";
+                StatusText.Text = AppText.Format("SendingFileStatus", outgoingName, selected.Peer.DisplayName);
                 var progress = new Progress<ShareProgress>(value =>
                 {
                     notification.Update(value);
@@ -664,7 +647,7 @@ namespace LiveDrop
                 });
                 await _coordinator.SendAsync(selected.Peer, outgoingOffer, progress, _sendCancellation.Token);
                 TelemetryService.Instance.TrackShareSucceeded(selected.Peer.Transport, "send", outgoingOffer);
-                notification.Complete(true, "Sent " + outgoingName + " to " + selected.Peer.DisplayName + ".");
+                notification.Complete(true, AppText.Format("SentFile", outgoingName, selected.Peer.DisplayName));
                 if (_viewClosed) return;
                 TryReportShareCompleted();
                 if (outgoingOffer.Files.Count == 1)
@@ -679,16 +662,16 @@ namespace LiveDrop
                     CancelButton.Visibility = Visibility.Collapsed;
                     ShareButton.Visibility = Visibility.Visible;
                 }
-                StatusText.Text = "Share completed.";
+                StatusText.Text = AppText.Get("ShareCompleted");
             }
             catch (OperationCanceledException)
             {
-                notification.Complete(false, "Share canceled.");
+                notification.Complete(false, AppText.Get("ShareCanceledMessage"));
                 TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", _pendingOffer);
                 if (!_viewClosed)
                 {
-                    if (!_shareTargetSession) ResetSelectedShare("Share canceled.");
-                    else StatusText.Text = "Share canceled.";
+                    if (!_shareTargetSession) ResetSelectedShare(AppText.Get("ShareCanceledMessage"));
+                    else StatusText.Text = AppText.Get("ShareCanceledMessage");
                 }
             }
             catch (Exception ex)
@@ -697,7 +680,7 @@ namespace LiveDrop
                 TelemetryService.Instance.TrackShareFailed(selected.Peer.Transport, "send", _pendingOffer, TelemetryService.ClassifyFailure(ex));
                 if (!_viewClosed)
                 {
-                    StatusText.Text = "Share failed: " + ex.Message;
+                    StatusText.Text = AppText.Format("ShareFailedDetail", ex.Message);
                 }
                 TryReportShareError(ex.Message);
             }
@@ -740,8 +723,18 @@ namespace LiveDrop
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
             var fileName = GetOfferDisplayName(e.Offer);
-            var notification = TransferNotification.Begin("Receiving...", "Receiving " + fileName + " from " + e.Peer.DisplayName + ".", fileName, "Receiving from " + e.Peer.DisplayName);
-            e.TransferCompleted += (succeeded, message) => notification.Complete(succeeded, message);
+            var notification = TransferNotification.Begin(AppText.Get("Receiving"), AppText.Format("ReceivingFileBody", fileName, e.Peer.DisplayName), fileName, AppText.Format("ReceivingFromDevice", e.Peer.DisplayName));
+            e.TransferCompleted += (succeeded, message) =>
+            {
+                notification.Complete(succeeded, message);
+                if (_incomingTelemetryPending)
+                {
+                    _incomingTelemetryPending = false;
+                    if (succeeded) TelemetryService.Instance.TrackShareSucceeded(_incomingTelemetryTransport, "receive", e.Offer);
+                    else if (message != AppText.Get("ShareCanceledMessage"))
+                        TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", e.Offer, "transfer_failed");
+                }
+            };
             _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
             _incomingTelemetryOffer = e.Offer;
             _incomingTelemetryPending = true;
@@ -760,8 +753,8 @@ namespace LiveDrop
                     SelectedFileText.Visibility = Visibility.Visible;
                     ResetTransferProgress();
                     TransferProgressPanel.Visibility = Visibility.Visible;
-                    TransferProgressText.Text = "Accepting";
-                    StatusText.Text = "Receiving " + fileName + ". Files are saved automatically in Pictures/LiveDrop.";
+                    TransferProgressText.Text = AppText.Get("Accepting");
+                    StatusText.Text = AppText.Format("ReceivingFileLocation", fileName);
                 });
                 // LiveDrop sessions accept automatically so two LiveDrop
                 // clients cannot wait forever for a consent UI. The protocol
@@ -810,7 +803,7 @@ namespace LiveDrop
         }
         public string DisplayText
         {
-            get { return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? "Quick Share" : "Microsoft Nearby Share") : ""); }
+            get { return Peer.DisplayName + (_showProtocol ? " - " + (Peer.Transport == ShareTransport.GoogleQuickShare ? AppText.Get("QuickShareName") : AppText.Get("MicrosoftNearbyShare")) : ""); }
         }
         public override string ToString() { return DisplayText; }
     }

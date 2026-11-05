@@ -16,6 +16,7 @@ internal static class CdpWireSmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         var secret = new byte[64];
         for (var i = 0; i < secret.Length; i++) secret[i] = (byte)i;
         var crypto = new CdpCrypto(secret);

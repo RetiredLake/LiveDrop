@@ -286,12 +286,12 @@ namespace LiveDrop.Transports
                 if (length == 0) { if (!jumped) offset = cursor; break; }
                 if ((length & 0xC0) == 0xC0)
                 {
-                    if (cursor >= data.Length) throw new InvalidDataException("Invalid DNS pointer.");
+                    if (cursor >= data.Length) throw new InvalidDataException(AppText.Get("InvalidDNSPointer"));
                     var pointer = ((length & 0x3F) << 8) | data[cursor++];
                     if (!jumped) offset = cursor;
                     cursor = pointer; jumped = true; continue;
                 }
-                if (length > 63 || cursor + length > data.Length) throw new InvalidDataException("Invalid DNS label.");
+                if (length > 63 || cursor + length > data.Length) throw new InvalidDataException(AppText.Get("InvalidDNSLabel"));
                 output.Add(Encoding.UTF8.GetString(data, cursor, length)); cursor += length;
             }
             return string.Join(".", output) + ".";

@@ -425,7 +425,7 @@ namespace LiveDrop.Protocols.QuickShare
         internal static byte[] BuildLinkIntroduction(Uri link, long payloadId)
         {
             if (link == null || !link.IsAbsoluteUri || (link.Scheme != "https" && link.Scheme != "http"))
-                throw new ArgumentException("Only HTTP and HTTPS web links are supported.");
+                throw new ArgumentException(AppText.Get("OnlyHTTPAndHTTPSWebLinksAreSupported"));
             var metadata = new ProtoWriter();
             metadata.WriteString(2, link.Host);
             metadata.WriteEnum(3, 2); // TextMetadata.Type.URL (NearDrop wire_format.proto).
@@ -439,13 +439,13 @@ namespace LiveDrop.Protocols.QuickShare
 
         internal static byte[] BuildIntroduction(IReadOnlyList<ShareFileDescriptor> files, IReadOnlyList<long> payloadIds)
         {
-            if (files == null || payloadIds == null || files.Count != payloadIds.Count) throw new ArgumentException("Quick Share file metadata and payload IDs must have the same count.");
+            if (files == null || payloadIds == null || files.Count != payloadIds.Count) throw new ArgumentException(AppText.Get("QuickShareFileMetadataAndPayloadIDsMust"));
             var intro = new ProtoWriter();
             for (var index = 0; index < files.Count; index++)
             {
                 var file = files[index];
                 var payloadId = payloadIds[index];
-                if (payloadId <= 0) throw new ArgumentException("Quick Share payload IDs must be positive.");
+                if (payloadId <= 0) throw new ArgumentException(AppText.Get("QuickSharePayloadIDsMustBePositive"));
                 var metadata = new ProtoWriter();
                 metadata.WriteString(1, file.Name);
                 metadata.WriteEnum(2, FileType(file.MimeType));

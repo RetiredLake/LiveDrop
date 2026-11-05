@@ -6,6 +6,7 @@ internal static class PeerIdentitySmoke
 {
     private static void Main()
     {
+        TestResources.Initialize();
         var oldPeer = new PeerDescriptor("old-id", "Pixel", ShareTransport.GoogleQuickShare, "192.168.1.42", 12345, "");
         var newPeer = new PeerDescriptor("new-id", "Pixel", ShareTransport.GoogleQuickShare, "192.168.1.42", 23456, "");
         var item = new PeerListItem(oldPeer, false);

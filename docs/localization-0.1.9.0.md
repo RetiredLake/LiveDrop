@@ -1,6 +1,21 @@
 # Localization plan for 0.1.9.0
 
-There is no strings.txt or .resw translation file in the current project. Text is hardcoded in MainPage.xaml, MainPage.xaml.cs, Services/TransferNotification.cs, Services/GitHubUpdateService.cs, and protocol status/error messages. This document is a plan; 0.1.8.4 does not introduce a translation system.
+The English resource foundation is implemented in 0.1.8.8. Edit `src/LiveDrop/Strings/en-US/Resources.resw` in Visual Studio's resource editor (Name, Value, Comment), rather than a strings.txt file. The catalog covers XAML, accessibility labels, dialogs, About, notifications, package metadata, discovery/status messages and app-authored errors. The file selection button now reads **Select Files**. Translations are planned for 0.1.9.0; no translated languages are advertised yet.
+
+## Implementation and translation contract
+
+- XAML uses `x:Uid` and property resource names. Attached accessibility properties use Microsoft's `[using:Windows.UI.Xaml.Automation]AutomationProperties.Name` syntax. Package metadata uses `ms-resource:` references.
+- `AppText` is a small platform-neutral formatting/lookup boundary. The UWP host supplies `ResourceLoader.GetForViewIndependentUse()` before initializing UI or services, so background discovery/transfer callbacks do not require a CoreWindow. Windows selects resources from the user's preferred languages, falling back to the project's en-US default.
+- Full sentences use numbered placeholders, with culture-aware display formatting. The linked developer credit is one format resource so translators can reposition the name. Singular file readiness has its own resource. Add additional plural forms where the target language requires them before shipping that translation.
+- Transfer outcome tracking uses completion callbacks, not English status-message substring matching. Wire bytes, crypto labels, service identifiers, filenames, activation tokens and analytics event/property identifiers are not translated. External OS exception details remain supplied by Windows.
+- Preserve resource keys after translations begin. Translate values, read comments, preserve placeholders and format specifiers, and keep brand/protocol names unchanged. Do not create English copies in other language folders and claim those languages are translated.
+- Run `python tests/Localization/validate_resources.py` before packaging. It checks reference resolution, duplicate keys, XAML/manifest resources and translation placeholder consistency. Test long strings, right-to-left layout, English fallback and both modern and legacy notifications on devices before publishing translations.
+
+## Planned language sets
+
+Keep English (`en-US`) as the default. The discussed translation candidates are German (`de-DE`), Italian (`it-IT`), Spanish (`es`), Czech (`cs-CZ`), Japanese (`ja-JP`), Brazilian Portuguese (`pt-BR`), Indonesian (`id-ID`), Polish (`pl-PL`), French (`fr-FR`), Russian (`ru-RU`), Ukrainian (`uk-UA`), Arabic (`ar`), Urdu (`ur-PK`), Hungarian (`hu-HU`), Vietnamese (`vi-VN`), Hindi (`hi-IN`) and Chinese in Simplified script (`zh-Hans`). Mandarin is spoken; Chinese UI resources must specify script. Traditional Chinese (`zh-Hant`) would be a separate translation/review decision. Country data does not establish preferred language or guarantee complete user coverage.
+
+Microsoft reference: https://learn.microsoft.com/en-us/windows/uwp/app-resources/localize-strings-ui-manifest
 
 ## Resource layout
 

@@ -38,7 +38,7 @@ namespace LiveDrop.Protocols.Nearby
             _identity = CdpIdentity.Create(_displayName);
         }
 
-        public string Name { get { return "Microsoft Nearby Share"; } }
+        public string Name { get { return AppText.Get("MicrosoftNearbyShare"); } }
         public ShareTransport Transport { get { return ShareTransport.MicrosoftNearby; } }
         public event EventHandler<PeerDiscoveredEventArgs> PeerDiscovered;
         public event EventHandler<ShareOfferReceivedEventArgs> OfferReceived;
@@ -50,7 +50,7 @@ namespace LiveDrop.Protocols.Nearby
             if (IsWindowsMobile())
             {
                 StatusChanged?.Invoke(this, new StatusChangedEventArgs(
-                    "Microsoft Nearby Share is unavailable on Windows 10 Mobile; Google Quick Share remains available."));
+                    AppText.Get("MicrosoftNearbyShareIsUnavailableOnWindows10")));
                 return;
             }
             _stopSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -59,14 +59,14 @@ namespace LiveDrop.Protocols.Nearby
             try { await _tcp.BindServiceNameAsync(TcpPort.ToString()); }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Could not open TCP 5040 (" + SocketError.GetStatus(ex.HResult) + "). Windows Nearby Sharing may already be using this port.", ex);
+                throw new InvalidOperationException(AppText.Format("NearbyTcpUnavailable", SocketError.GetStatus(ex.HResult)), ex);
             }
             _udp = new DatagramSocket();
             _udp.MessageReceived += OnMessageReceived;
             try { await _udp.BindServiceNameAsync(UdpPort.ToString()); }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Could not open UDP 5050 (" + SocketError.GetStatus(ex.HResult) + "). Windows Nearby Sharing may already be using this port.", ex);
+                throw new InvalidOperationException(AppText.Format("NearbyUdpUnavailable", SocketError.GetStatus(ex.HResult)), ex);
             }
             _bleBeacon = new MicrosoftNearbyBleBeacon();
             var bleStarted = await _bleBeacon.StartAsync(_displayName);
@@ -74,8 +74,8 @@ namespace LiveDrop.Protocols.Nearby
             _queryLoop = Task.Run(() => QueryLoopAsync(discoveryToken));
             StatusChanged?.Invoke(this, new StatusChangedEventArgs(
                 bleStarted
-                    ? "Microsoft Nearby Bluetooth and LAN discovery is active."
-                    : "Microsoft Nearby LAN discovery is active; Bluetooth discovery is unavailable."));
+                    ? AppText.Get("MicrosoftNearbyBluetoothAndLANDiscoveryIsActive")
+                    : AppText.Get("MicrosoftNearbyLANDiscoveryIsActiveBluetoothDiscovery")));
         }
 
         public async Task StopAsync()
@@ -94,11 +94,11 @@ namespace LiveDrop.Protocols.Nearby
         public async Task SendAsync(PeerDescriptor peer, ShareOffer offer, IProgress<ShareProgress> progress, CancellationToken cancellationToken)
         {
             if (peer == null || peer.Transport != ShareTransport.MicrosoftNearby)
-                throw new ShareProtocolException("The selected peer is not a Microsoft Nearby peer.");
+                throw new ShareProtocolException(AppText.Get("TheSelectedPeerIsNotAMicrosoftNearby"));
             if (offer == null || offer.Files == null || offer.Files.Count == 0)
-                throw new ShareProtocolException("Microsoft Nearby requires at least one file.");
+                throw new ShareProtocolException(AppText.Get("MicrosoftNearbyRequiresAtLeastOneFile"));
             if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
-                throw new ShareProtocolException("Loopback transfers are disabled.");
+                throw new ShareProtocolException(AppText.Get("LoopbackTransfersAreDisabled"));
 
             try
             {
@@ -125,7 +125,7 @@ namespace LiveDrop.Protocols.Nearby
                         await SendDatagramAsync(request, address, cancellationToken);
                 }
                 catch (OperationCanceledException) { return; }
-                catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs("Nearby discovery: " + ex.Message)); }
+                catch (Exception ex) { StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("NearbyDiscoveryError", ex.Message))); }
                 try { await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken); }
                 catch (OperationCanceledException) { return; }
             }
@@ -194,7 +194,7 @@ namespace LiveDrop.Protocols.Nearby
                 socket.Dispose();
                 return;
             }
-            var peer = new PeerDescriptor("nearby:" + address, "Nearby device", Transport, address, TcpPort, "CDP v3/TCP");
+            var peer = new PeerDescriptor("nearby:" + address, AppText.Get("NearbyDevice"), Transport, address, TcpPort, "CDP v3/TCP");
             ShareOfferReceivedEventArgs received = null;
             var transferAccepted = false;
             try
@@ -211,11 +211,11 @@ namespace LiveDrop.Protocols.Nearby
                         transferAccepted = await decision.Task;
                         return transferAccepted;
                     }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken, progress => received?.ReportProgress(progress));
-                    received?.ReportCompletion(transferAccepted, transferAccepted ? "Files are saved in Pictures/LiveDrop." : "Share canceled.");
+                    received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
                 }
             }
-            catch (OperationCanceledException) { received?.ReportCompletion(false, "Share canceled."); }
-            catch (Exception ex) { received?.ReportCompletion(false, ex.Message); StatusChanged?.Invoke(this, new StatusChangedEventArgs("Microsoft Nearby transfer failed: " + ex.Message)); }
+            catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
+            catch (Exception ex) { received?.ReportCompletion(false, ex.Message); StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("NearbyTransferFailed", ex.Message))); }
         }
 
         private async Task SendDatagramAsync(byte[] data, string address, CancellationToken cancellationToken)
@@ -282,7 +282,7 @@ namespace LiveDrop.Protocols.Nearby
             var name = Encoding.UTF8.GetString(data, offset, nameLength); offset += nameLength;
             if (offset + 4 + 32 > data.Length) return false;
             offset += 4 + 32;
-            presence = new NearbyPresence { DeviceName = string.IsNullOrWhiteSpace(name) ? "Windows PC" : name, DeviceType = deviceType, Mode = mode };
+            presence = new NearbyPresence { DeviceName = string.IsNullOrWhiteSpace(name) ? AppText.Get("WindowsPC") : name, DeviceType = deviceType, Mode = mode };
             return true;
         }
 
