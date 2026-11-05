@@ -1,5 +1,7 @@
 # Protocol smoke tests
 
+`QuickShareCancellationSmoke.cs` uses isolated loopback sockets to verify cancellation of a blocked read and an outgoing partial file, including receiver cleanup. Production loopback guards remain enabled. `TransferNotificationSmoke.cs` checks the native filename/bar/status layout, legacy text fallback, XML escaping, and completion activation payloads. `PeerIdentitySmoke.cs` checks identity replacement and device-label change notifications.
+
 `P256Smoke.cs` validates the shared P-256, Quick Share encryption, CDP identity, and NearShare ValueSet paths. `CdpWireSmoke.cs` validates CDP header serialization, AES-CBC packet encryption, and HMAC rejection.
 
 `MdnsSmoke.cs` compiles with the production `Transports/MdnsCodec.cs` and checks DNS announcement counts, endpoint fields, records arriving in separate responses, and unrelated-service filtering. Its Base64 helper replaces only the UWP-dependent utility class for this standalone test.

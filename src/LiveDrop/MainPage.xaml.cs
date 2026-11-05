@@ -415,6 +415,18 @@ namespace LiveDrop
         private void OnCancelClicked(object sender, RoutedEventArgs e)
         {
             if (_shareTargetSession) return;
+            if (_sendCancellation != null)
+            {
+                CancelButton.IsEnabled = false;
+                StatusText.Text = "Canceling...";
+                _sendCancellation.Cancel();
+                return;
+            }
+            ResetSelectedShare("Choose a file to share.");
+        }
+
+        private void ResetSelectedShare(string status)
+        {
             _pendingOffer = null;
             _pendingShareOperation = null;
             SelectedFileText.Text = string.Empty;
@@ -422,9 +434,10 @@ namespace LiveDrop
             SendButton.Visibility = Visibility.Collapsed;
             SendButton.IsEnabled = false;
             CancelButton.Visibility = Visibility.Collapsed;
+            CancelButton.IsEnabled = true;
             ShareButton.Visibility = Visibility.Visible;
             ResetTransferProgress();
-            StatusText.Text = "Choose a file to share.";
+            StatusText.Text = status;
         }
 
         private void ResetTransferProgress()
@@ -646,7 +659,8 @@ namespace LiveDrop
                 var progress = new Progress<ShareProgress>(value =>
                 {
                     notification.Update(value);
-                    if (!_viewClosed) ShowTransferProgress(value);
+                    if (!_viewClosed && ReferenceEquals(_pendingOffer, outgoingOffer) && _sendCancellation != null && !_sendCancellation.IsCancellationRequested)
+                        ShowTransferProgress(value);
                 });
                 await _coordinator.SendAsync(selected.Peer, outgoingOffer, progress, _sendCancellation.Token);
                 TelemetryService.Instance.TrackShareSucceeded(selected.Peer.Transport, "send", outgoingOffer);
@@ -673,7 +687,8 @@ namespace LiveDrop
                 TelemetryService.Instance.TrackShareCanceled(selected.Peer.Transport, "send", _pendingOffer);
                 if (!_viewClosed)
                 {
-                    StatusText.Text = "Share canceled.";
+                    if (!_shareTargetSession) ResetSelectedShare("Share canceled.");
+                    else StatusText.Text = "Share canceled.";
                 }
             }
             catch (Exception ex)

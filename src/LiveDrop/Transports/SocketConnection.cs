@@ -14,6 +14,8 @@ namespace LiveDrop.Transports
         private readonly DataReader _reader;
         private readonly DataWriter _writer;
         private readonly SemaphoreSlim _writeLock = new SemaphoreSlim(1, 1);
+        private int _aborted;
+        private int _disposed;
 
         internal SocketConnection(StreamSocket socket)
         {
@@ -36,25 +38,35 @@ namespace LiveDrop.Transports
                 using (var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
                 {
                     timeout.CancelAfter(TimeSpan.FromSeconds(15));
+                    using (timeout.Token.Register(() => { try { socket.Dispose(); } catch { } }))
                     await socket.ConnectAsync(new HostName(address), port.ToString(), SocketProtectionLevel.PlainSocket).AsTask(timeout.Token);
                 }
                 return new SocketConnection(socket);
             }
-            catch { socket.Dispose(); throw; }
+            catch (Exception ex)
+            {
+                socket.Dispose();
+                if (cancellationToken.IsCancellationRequested) throw new OperationCanceledException("Share canceled.", ex, cancellationToken);
+                if (ex is OperationCanceledException) throw new TimeoutException("The TCP connection timed out.", ex);
+                throw;
+            }
         }
 
         internal async Task WriteFrameAsync(byte[] frame, CancellationToken cancellationToken)
         {
             if (frame == null || frame.Length > Protocols.ProtocolUtilities.MaxFrameLength) throw new InvalidOperationException("Frame is too large.");
-            await _writeLock.WaitAsync(cancellationToken);
-            try
+            using (cancellationToken.Register(Abort))
             {
-                _writer.WriteUInt32((uint)frame.Length);
-                _writer.WriteBytes(frame);
-                await _writer.StoreAsync().AsTask(cancellationToken);
-                await _writer.FlushAsync().AsTask(cancellationToken);
+                await _writeLock.WaitAsync(cancellationToken);
+                try
+                {
+                    _writer.WriteUInt32((uint)frame.Length);
+                    _writer.WriteBytes(frame);
+                    await _writer.StoreAsync().AsTask(cancellationToken);
+                    await _writer.FlushAsync().AsTask(cancellationToken);
+                }
+                finally { _writeLock.Release(); }
             }
-            finally { _writeLock.Release(); }
         }
 
         internal async Task<byte[]> ReadFrameAsync(CancellationToken cancellationToken)
@@ -80,33 +92,53 @@ namespace LiveDrop.Transports
         internal async Task WriteRawAsync(byte[] data, CancellationToken cancellationToken)
         {
             if (data == null) throw new ArgumentNullException("data");
-            await _writeLock.WaitAsync(cancellationToken);
-            try
+            using (cancellationToken.Register(Abort))
             {
-                _writer.WriteBytes(data);
-                await _writer.StoreAsync().AsTask(cancellationToken);
-                await _writer.FlushAsync().AsTask(cancellationToken);
+                await _writeLock.WaitAsync(cancellationToken);
+                try
+                {
+                    _writer.WriteBytes(data);
+                    await _writer.StoreAsync().AsTask(cancellationToken);
+                    await _writer.FlushAsync().AsTask(cancellationToken);
+                }
+                finally { _writeLock.Release(); }
             }
-            finally { _writeLock.Release(); }
         }
 
         private async Task LoadExactlyAsync(uint length, CancellationToken cancellationToken)
         {
-            var loaded = 0u;
-            while (loaded < length)
+            using (cancellationToken.Register(Abort))
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var count = await _reader.LoadAsync(length - loaded).AsTask(cancellationToken);
-                if (count == 0) throw new EndOfStreamException("The peer closed the connection.");
-                loaded += count;
+                try
+                {
+                    var loaded = 0u;
+                    while (loaded < length)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        var count = await _reader.LoadAsync(length - loaded).AsTask(cancellationToken);
+                        if (count == 0) throw new EndOfStreamException("The peer closed the connection.");
+                        loaded += count;
+                    }
+                }
+                catch (Exception ex) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException("Share canceled.", ex, cancellationToken);
+                }
             }
+        }
+
+        private void Abort()
+        {
+            if (Interlocked.Exchange(ref _aborted, 1) != 0) return;
+            try { _socket.Dispose(); } catch { }
         }
 
         public void Dispose()
         {
-            _reader.Dispose();
-            _writer.Dispose();
-            _socket.Dispose();
+            if (Interlocked.Exchange(ref _disposed, 1) != 0) return;
+            Abort();
+            try { _reader.Dispose(); } catch { }
+            try { _writer.Dispose(); } catch { }
             _writeLock.Dispose();
         }
     }

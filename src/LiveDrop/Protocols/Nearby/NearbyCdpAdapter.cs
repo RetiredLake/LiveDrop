@@ -100,10 +100,17 @@ namespace LiveDrop.Protocols.Nearby
             if (ProtocolUtilities.IsLoopbackAddress(peer.Address) || IsLocalAddress(peer.Address))
                 throw new ShareProtocolException("Loopback transfers are disabled.");
 
-            using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port))
+            try
             {
-                var session = await CdpClientSession.ConnectAsync(connection, _identity, cancellationToken);
-                await session.SendFilesAsync(offer, progress, cancellationToken);
+                using (var connection = await SocketConnection.ConnectAsync(peer.Address, peer.Port, cancellationToken))
+                {
+                    var session = await CdpClientSession.ConnectAsync(connection, _identity, cancellationToken);
+                    await session.SendFilesAsync(offer, progress, cancellationToken);
+                }
+            }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
             }
         }
 

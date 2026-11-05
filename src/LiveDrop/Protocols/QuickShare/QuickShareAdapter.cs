@@ -141,6 +141,10 @@ namespace LiveDrop.Protocols.QuickShare
                         message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)));
                 }
             }
+            catch (Exception) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
             catch (Exception ex)
             {
                 var detail = "Quick Share outbound failed while " + stage + " to " + peer.Address + ":" + peer.Port +
