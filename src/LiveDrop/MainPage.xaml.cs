@@ -23,6 +23,7 @@ namespace LiveDrop
         private ShareCoordinator _coordinator;
         private ShareOperation _pendingShareOperation;
         private ShareOffer _pendingOffer;
+        private ShareOfferReceivedEventArgs _incomingTransfer;
         private CancellationTokenSource _sendCancellation;
         private readonly MenuFlyout _moreMenu;
         private bool _updateCheckInProgress;
@@ -95,6 +96,7 @@ namespace LiveDrop
 
         internal void BeginRegularSession()
         {
+            if (_incomingTransfer != null) return;
             _shareTargetSession = false;
             _pendingShareOperation = null;
             _pendingOffer = null;
@@ -340,11 +342,19 @@ namespace LiveDrop
             }
             TryReportShareError(AppText.Get("ShareCanceledMessage"));
             if (_sendCancellation != null) _sendCancellation.Cancel();
+            _incomingTransfer?.CancelTransfer();
             await ApplyProtocolsAsync();
         }
 
         private async void OnShareClicked(object sender, RoutedEventArgs e)
         {
+            if (_incomingTransfer != null)
+            {
+                ShareButton.IsEnabled = false;
+                StatusText.Text = AppText.Get("Canceling");
+                _incomingTransfer.CancelTransfer();
+                return;
+            }
             if (_shareTargetSession || _filePickerPending) return;
             _filePickerPending = true;
             try
@@ -623,7 +633,7 @@ namespace LiveDrop
         private async void OnSendClicked(object sender, RoutedEventArgs e)
         {
             var selected = PeersList.SelectedItem as PeerListItem;
-            if (_pendingOffer == null || _coordinator == null) return;
+            if (_incomingTransfer != null || _pendingOffer == null || _coordinator == null) return;
             if (selected == null)
             {
                 StatusText.Text = AppText.Get("SelectAPeerFirst");
@@ -722,8 +732,50 @@ namespace LiveDrop
 
         private async void OnOfferReceived(object sender, ShareOfferReceivedEventArgs e)
         {
+            var oldShareVisibility = Visibility.Collapsed;
+            var oldSendVisibility = Visibility.Collapsed;
+            var oldCancelVisibility = Visibility.Collapsed;
+            object oldShareContent = null;
+            var oldSendEnabled = false;
+            var oldNearbyEnabled = false;
+            var oldQuickShareEnabled = false;
             var fileName = GetOfferDisplayName(e.Offer);
+            await RunOnViewAsync(() =>
+            {
+                if (!_loaded || !ReferenceEquals(sender, _coordinator) || _incomingTransfer != null ||
+                    _sendCancellation != null || _filePickerPending) return;
+                _incomingTransfer = e;
+                oldShareVisibility = ShareButton.Visibility;
+                oldShareContent = ShareButton.Content;
+                oldSendVisibility = SendButton.Visibility;
+                oldSendEnabled = SendButton.IsEnabled;
+                oldCancelVisibility = CancelButton.Visibility;
+                oldNearbyEnabled = NearbyCheckBox.IsEnabled;
+                oldQuickShareEnabled = QuickShareCheckBox.IsEnabled;
+                ShareButton.Content = AppText.Get("Cancel");
+                ShareButton.IsEnabled = true;
+                ShareButton.Visibility = Visibility.Visible;
+                SendButton.Visibility = CancelButton.Visibility = Visibility.Collapsed;
+                NearbyCheckBox.IsEnabled = QuickShareCheckBox.IsEnabled = false;
+                SelectedFileText.Text = fileName;
+                SelectedFileText.Visibility = Visibility.Visible;
+                ResetTransferProgress();
+                TransferProgressPanel.Visibility = Visibility.Visible;
+                TransferProgressText.Text = AppText.Get("Accepting");
+                StatusText.Text = AppText.Format("ReceivingContent", fileName);
+            });
+            if (!ReferenceEquals(_incomingTransfer, e))
+            {
+                if (e.CompleteAsync != null) await e.CompleteAsync(false);
+                return;
+            }
+
+            Uri receivedLink = null;
             var notification = TransferNotification.Begin(AppText.Get("Receiving"), AppText.Format("ReceivingFileBody", fileName, e.Peer.DisplayName), fileName, AppText.Format("ReceivingFromDevice", e.Peer.DisplayName));
+            _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
+            _incomingTelemetryOffer = e.Offer;
+            _incomingTelemetryPending = true;
+            TelemetryService.Instance.TrackShareStarted(_incomingTelemetryTransport, "receive", e.Offer);
             e.TransferCompleted += (succeeded, message) =>
             {
                 notification.Complete(succeeded, message);
@@ -731,47 +783,60 @@ namespace LiveDrop
                 {
                     _incomingTelemetryPending = false;
                     if (succeeded) TelemetryService.Instance.TrackShareSucceeded(_incomingTelemetryTransport, "receive", e.Offer);
-                    else if (message != AppText.Get("ShareCanceledMessage"))
-                        TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", e.Offer, "transfer_failed");
+                    else if (e.IsCancellationRequested || message == AppText.Get("ShareCanceledMessage"))
+                        TelemetryService.Instance.TrackShareCanceled(_incomingTelemetryTransport, "receive", e.Offer);
+                    else TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", e.Offer, "transfer_failed");
                 }
+                _ = RunOnViewAsync(() =>
+                {
+                    if (!ReferenceEquals(_incomingTransfer, e)) return;
+                    _incomingTransfer = null;
+                    ShareButton.Content = oldShareContent;
+                    ShareButton.IsEnabled = true;
+                    ShareButton.Visibility = oldShareVisibility;
+                    SendButton.Visibility = oldSendVisibility;
+                    SendButton.IsEnabled = oldSendEnabled;
+                    CancelButton.Visibility = oldCancelVisibility;
+                    NearbyCheckBox.IsEnabled = oldNearbyEnabled;
+                    QuickShareCheckBox.IsEnabled = oldQuickShareEnabled;
+                    if (_pendingOffer != null) SelectedFileText.Text = GetOfferDisplayName(_pendingOffer);
+                    if (!succeeded) ResetTransferProgress();
+                    StatusText.Text = succeeded ? AppText.Get(receivedLink == null ? "FilesAreSavedInPicturesLiveDrop" : "WebLinkReceived") : message;
+                    // The receiver only reports URL metadata here, after the full
+                    // transfer succeeds. A regular .txt file never enters this path.
+                    if (succeeded && receivedLink != null) _ = OpenReceivedLinkAsync(receivedLink);
+                });
             };
-            _incomingTelemetryTransport = e.Peer == null ? ShareTransport.GoogleQuickShare : e.Peer.Transport;
-            _incomingTelemetryOffer = e.Offer;
-            _incomingTelemetryPending = true;
-            TelemetryService.Instance.TrackShareStarted(_incomingTelemetryTransport, "receive", e.Offer);
             e.ProgressChanged += progress =>
             {
+                if (progress.ReceivedWebLink != null && receivedLink == null) receivedLink = progress.ReceivedWebLink;
                 notification.Update(progress);
-                _ = RunOnViewAsync(() => ShowTransferProgress(progress));
+                _ = RunOnViewAsync(() =>
+                {
+                    if (ReferenceEquals(_incomingTransfer, e) && !e.IsCancellationRequested) ShowTransferProgress(progress);
+                });
             };
             try
             {
-                await RunOnViewAsync(() =>
-                {
-                    if (!_loaded || !ReferenceEquals(sender, _coordinator)) return;
-                    SelectedFileText.Text = fileName;
-                    SelectedFileText.Visibility = Visibility.Visible;
-                    ResetTransferProgress();
-                    TransferProgressPanel.Visibility = Visibility.Visible;
-                    TransferProgressText.Text = AppText.Get("Accepting");
-                    StatusText.Text = AppText.Format("ReceivingFileLocation", fileName);
-                });
-                // LiveDrop sessions accept automatically so two LiveDrop
-                // clients cannot wait forever for a consent UI. The protocol
-                // layer writes each completed file to Pictures/LiveDrop.
-                if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed);
+                if (e.CompleteAsync != null) await e.CompleteAsync(!_viewClosed && !e.IsCancellationRequested);
             }
             catch
             {
-                if (_incomingTelemetryPending)
-                {
-                    TelemetryService.Instance.TrackShareFailed(_incomingTelemetryTransport, "receive", _incomingTelemetryOffer, "receive_handler");
-                    _incomingTelemetryPending = false;
-                }
+                e.CancelTransfer();
                 try { if (e.CompleteAsync != null) await e.CompleteAsync(false); } catch { }
-                await RunOnViewAsync(() => ResetTransferProgress());
             }
         }
+
+        private async Task OpenReceivedLinkAsync(Uri link)
+        {
+            try
+            {
+                if (!link.IsAbsoluteUri || (link.Scheme != "https" && link.Scheme != "http")) return;
+                if (!await Launcher.LaunchUriAsync(link)) StatusText.Text = AppText.Get("CouldNotOpenReceivedLink");
+            }
+            catch { StatusText.Text = AppText.Get("CouldNotOpenReceivedLink"); }
+        }
+
     }
 
     [Windows.UI.Xaml.Data.Bindable]

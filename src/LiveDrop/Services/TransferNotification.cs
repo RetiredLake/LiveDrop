@@ -87,12 +87,17 @@ namespace LiveDrop.Services
         private static string RegisterSavedTarget(string path, bool folder)
         {
             if (string.IsNullOrWhiteSpace(path)) return "transfer";
+            return RegisterTarget((folder ? "folder|" : "file|") + path);
+        }
+
+        private static string RegisterTarget(string target)
+        {
             lock (TargetLock)
             {
             var tokens = ApplicationData.Current.LocalSettings.CreateContainer("SavedNotificationTargets", ApplicationDataCreateDisposition.Always).Values;
             while (tokens.Count >= 64) tokens.Remove(tokens.Keys.First());
             var token = Guid.NewGuid().ToString("N");
-            tokens[token] = (folder ? "folder|" : "file|") + path;
+            tokens[token] = target;
             return OpenPrefix + token;
             }
         }
@@ -109,7 +114,10 @@ namespace LiveDrop.Services
                 if (!tokens.TryGetValue(token.ToString("N"), out value)) return;
                 var target = value as string;
                 bool opened;
-                if (target != null && target.StartsWith("folder|", StringComparison.Ordinal))
+                Uri link;
+                if (TryGetWebLinkTarget(target, out link))
+                    opened = await Launcher.LaunchUriAsync(link);
+                else if (target != null && target.StartsWith("folder|", StringComparison.Ordinal))
                     opened = await Launcher.LaunchFolderAsync(await StorageFolder.GetFolderFromPathAsync(target.Substring(7)));
                 else if (target != null && target.StartsWith("file|", StringComparison.Ordinal))
                     opened = await Launcher.LaunchFileAsync(await StorageFile.GetFileFromPathAsync(target.Substring(5)));
@@ -117,6 +125,14 @@ namespace LiveDrop.Services
                 if (!opened) Show(AppText.Get("CouldNotOpenSavedContent"), AppText.Get("NoApplicationCouldOpenThisFileOrFolder"));
             }
             catch { Show(AppText.Get("CouldNotOpenSavedContent"), AppText.Get("TheSavedFileOrFolderIsNoLonger")); }
+        }
+
+        internal static bool TryGetWebLinkTarget(string target, out Uri link)
+        {
+            link = null;
+            return target != null && target.StartsWith("link|", StringComparison.Ordinal) &&
+                Uri.TryCreate(target.Substring(5), UriKind.Absolute, out link) &&
+                (link.Scheme == "http" || link.Scheme == "https");
         }
 
         internal sealed class Session
@@ -127,6 +143,7 @@ namespace LiveDrop.Services
             private readonly HashSet<string> _saved = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             private DateTime _lastUpdate = DateTime.MinValue;
             private bool _finished;
+            private Uri _receivedLink;
             private uint _sequence;
 
             internal Session(string title, string body, string fileName, string heading)
@@ -150,6 +167,7 @@ namespace LiveDrop.Services
                 lock (_sync)
                 {
                     if (_finished) return;
+                    if (progress.ReceivedWebLink != null && _receivedLink == null) _receivedLink = progress.ReceivedWebLink;
                     if (!string.IsNullOrWhiteSpace(progress.SavedFilePath)) _saved.Add(progress.SavedFilePath);
                     if (!_nativeProgress || DateTime.UtcNow - _lastUpdate < TimeSpan.FromSeconds(1)) return;
                     _lastUpdate = DateTime.UtcNow;
@@ -174,8 +192,12 @@ namespace LiveDrop.Services
                         {
                             if (succeeded && _saved.Count == 1) launch = RegisterSavedTarget(_saved.First(), false);
                             else if (succeeded && _saved.Count > 1) launch = RegisterSavedTarget(Path.GetDirectoryName(_saved.First()), true);
+                            else if (succeeded && _receivedLink != null && (_receivedLink.Scheme == "http" || _receivedLink.Scheme == "https"))
+                                launch = RegisterTarget("link|" + _receivedLink.AbsoluteUri);
                         }
                         catch { }
+                        if (succeeded && _saved.Count > 0) body = AppText.Get("PressToViewFiles");
+                        else if (succeeded && _receivedLink != null) body = AppText.Get("PressToViewLink");
                         ShowToast(succeeded ? AppText.Get("ShareComplete") : body == AppText.Get("ShareCanceledMessage") ? AppText.Get("ShareCanceledTitle") : AppText.Get("ShareFailed"), body, _tag, launch, false);
                     }
                     catch { }

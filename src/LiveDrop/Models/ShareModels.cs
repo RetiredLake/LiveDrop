@@ -82,16 +82,18 @@ namespace LiveDrop.Models
     public sealed class ShareProgress
     {
         public string SavedFilePath { get; private set; }
+        public Uri ReceivedWebLink { get; private set; }
         public long BytesTransferred { get; private set; }
         public long TotalBytes { get; private set; }
         public string FileName { get; private set; }
 
-        public ShareProgress(string fileName, long bytesTransferred, long totalBytes, string savedFilePath = null)
+        public ShareProgress(string fileName, long bytesTransferred, long totalBytes, string savedFilePath = null, Uri receivedWebLink = null)
         {
             FileName = fileName ?? string.Empty;
             BytesTransferred = bytesTransferred;
             TotalBytes = totalBytes;
             SavedFilePath = savedFilePath;
+            ReceivedWebLink = receivedWebLink;
         }
     }
 
@@ -106,14 +108,26 @@ namespace LiveDrop.Models
         public PeerDescriptor Peer { get; private set; }
         public ShareOffer Offer { get; private set; }
         public Func<bool, Task> CompleteAsync { get; private set; }
+        private readonly Action _cancelTransfer;
+        private int _cancelRequested;
+        private int _completed;
+        public bool IsCancellationRequested { get { return System.Threading.Volatile.Read(ref _cancelRequested) != 0; } }
         public event System.Action<ShareProgress> ProgressChanged;
         public event System.Action<bool, string> TransferCompleted;
 
-        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync)
+        public ShareOfferReceivedEventArgs(PeerDescriptor peer, ShareOffer offer, Func<bool, Task> completeAsync, Action cancelTransfer = null)
         {
             Peer = peer;
             Offer = offer;
             CompleteAsync = completeAsync;
+            _cancelTransfer = cancelTransfer;
+        }
+
+        public void CancelTransfer()
+        {
+            if (System.Threading.Volatile.Read(ref _completed) != 0 ||
+                System.Threading.Interlocked.Exchange(ref _cancelRequested, 1) != 0) return;
+            try { _cancelTransfer?.Invoke(); } catch (ObjectDisposedException) { }
         }
 
         internal void ReportProgress(ShareProgress progress)
@@ -124,7 +138,8 @@ namespace LiveDrop.Models
 
         internal void ReportCompletion(bool succeeded, string message)
         {
-            TransferCompleted?.Invoke(succeeded, message);
+            if (System.Threading.Interlocked.Exchange(ref _completed, 1) == 0)
+                TransferCompleted?.Invoke(succeeded, message);
         }
     }
 

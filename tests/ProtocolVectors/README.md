@@ -1,12 +1,12 @@
 # Protocol smoke tests
 
-`QuickShareCancellationSmoke.cs` uses isolated loopback sockets to verify cancellation of a blocked read and an outgoing partial file, including receiver cleanup. Production loopback guards remain enabled. `TransferNotificationSmoke.cs` checks the native filename/bar/status layout, legacy text fallback, XML escaping, and completion activation payloads. `PeerIdentitySmoke.cs` checks identity replacement and device-label change notifications.
+`QuickShareCancellationSmoke.cs` uses isolated loopback sockets to verify cancellation of a blocked read and partial transfers from both the sending and receiving side, including the receive Cancel callback and receiver cleanup. Production loopback guards remain enabled. `TransferNotificationSmoke.cs` checks the native filename/bar/status layout, legacy text fallback, XML escaping, and completion activation payloads. `PeerIdentitySmoke.cs` checks identity replacement and device-label change notifications.
 
 `P256Smoke.cs` validates the shared P-256, Quick Share encryption, CDP identity, and NearShare ValueSet paths. `CdpWireSmoke.cs` validates CDP header serialization, AES-CBC packet encryption, and HMAC rejection.
 
 `MdnsSmoke.cs` compiles with the production `Transports/MdnsCodec.cs` and checks DNS announcement counts, endpoint fields, records arriving in separate responses, and unrelated-service filtering. Its Base64 helper replaces only the UWP-dependent utility class for this standalone test.
 
-`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives two files (including a 700,000-byte payload), compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
+`QuickShareLoopbackSmoke.cs` is the only loopback transfer fixture. It runs the production Quick Share session over a private test socket, completes both sides of the handshake, receives multiple files (including two 700,000-byte payloads and a URL-looking .txt file), compares the exact bytes, and verifies that production socket connection attempts reject loopback addresses. An explicit web-link attachment produces a browser activation target without a text file; ordinary .txt files never produce a browser target. The app adapters reject loopback and local-interface routes, so this fixture is not a user-facing transfer path.
 
 Run from the repository root in a developer PowerShell:
 

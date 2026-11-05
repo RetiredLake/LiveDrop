@@ -22,6 +22,12 @@ internal static class TransferNotificationSmoke
             throw new Exception("Completion must remove progress and preserve file activation.");
         if (TransferNotification.IsTransferActivation("file:///C:/arbitrary.txt") || !TransferNotification.IsTransferActivation("transfer"))
             throw new Exception("Unexpected activation arguments were accepted.");
+        Uri target;
+        if (!TransferNotification.TryGetWebLinkTarget("link|https://example.org/path", out target) ||
+            TransferNotification.TryGetWebLinkTarget("link|file:///C:/private.txt", out target) ||
+            TransferNotification.TryGetWebLinkTarget("link|javascript:alert(1)", out target) ||
+            TransferNotification.TryGetWebLinkTarget("file|https://example.org/", out target))
+            throw new Exception("Notification URL targets must be explicit HTTP(S) links.");
         Console.WriteLine("PASS: legacy fallback, native progress binding, escaped filenames and completion activation XML");
     }
 }

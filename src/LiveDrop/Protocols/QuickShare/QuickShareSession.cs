@@ -106,7 +106,7 @@ namespace LiveDrop.Protocols.QuickShare
         }
 
         // The receive-folder overload is used only by the protocol loopback
-        // fixture. The app's adapters use the normal Downloads-backed overload
+        // fixture. The app's adapters use the normal Pictures-backed overload
         // above, so a local test socket cannot become a user-facing route.
         internal static async Task ReceiveAsync(StreamSocket socket, string displayName, Func<PeerDescriptor, ShareOffer, Task<bool>> consent, Action<string> status, Action<ShareProgress> progress, CancellationToken cancellationToken, StorageFolder receiveFolder)
         {
@@ -154,10 +154,10 @@ namespace LiveDrop.Protocols.QuickShare
                         var accepted = consent == null || await consent(peer, offer);
                         await SendSharingFrameAsync(connection, crypto, accepted ? QuickShareFrames.BuildAcceptTransfer() : QuickShareFrames.BuildRejectTransfer(), cancellationToken);
                         if (!accepted) return;
-                        status?.Invoke(AppText.Format("QuickShareReceivingPin", crypto.PinCode(authKey)));
+                        status?.Invoke(AppText.Format(System.Linq.Enumerable.All(metadata, item => item.IsText && item.TextType == 2) ? "QuickShareSecurityPin" : "QuickShareReceivingPin", crypto.PinCode(authKey)));
                         await ReceiveFilesAsync(connection, crypto, metadata, status, progress, cancellationToken, receiveFolder);
                         await CompleteIncomingSessionAsync(connection, crypto, cancellationToken);
-                        status?.Invoke(AppText.Get("QuickShareTransferReceivedFilesAreSavedIn"));
+                        status?.Invoke(AppText.Get(System.Linq.Enumerable.All(metadata, item => item.IsText && item.TextType == 2) ? "WebLinkReceived" : "QuickShareTransferReceivedFilesAreSavedIn"));
                     }
                     finally
                     {
@@ -202,11 +202,18 @@ namespace LiveDrop.Protocols.QuickShare
             var bytePayloadSizes = new Dictionary<long, long>();
             try
             {
-                var folder = receiveFolder ?? await TransferFileStore.GetReceiveFolderAsync(null);
+                StorageFolder folder = receiveFolder;
                 foreach (var item in metadata)
                 {
-                    var temp = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(item.Name) + ".part", CreationCollisionOption.GenerateUniqueName);
-                    var stream = item.IsText ? null : await temp.OpenAsync(FileAccessMode.ReadWrite);
+                    StorageFile temp = null;
+                    Windows.Storage.Streams.IRandomAccessStream stream = null;
+                    // URL attachments need no file, folder or storage permission.
+                    if (!(item.IsText && item.TextType == 2))
+                    {
+                        if (folder == null) folder = await TransferFileStore.GetReceiveFolderAsync(null);
+                        temp = await folder.CreateFileAsync("." + ProtocolUtilities.NormalizeFileName(item.Name) + ".part", CreationCollisionOption.GenerateUniqueName);
+                        if (!item.IsText) stream = await temp.OpenAsync(FileAccessMode.ReadWrite);
+                    }
                     writers[item.PayloadId] = new IncomingFile { Metadata = item, Temporary = temp, Stream = stream, Writer = stream == null ? null : new DataWriter(stream) };
                     progress?.Invoke(new ShareProgress(item.Name, 0, item.Size));
                 }
@@ -230,11 +237,15 @@ namespace LiveDrop.Protocols.QuickShare
                             {
                                 if (!Uri.TryCreate(text, UriKind.Absolute, out link) || (link.Scheme != "https" && link.Scheme != "http"))
                                     throw new ShareProtocolException(AppText.Get("QuickShareSentAnInvalidWebLink"));
-                                text = link.AbsoluteUri;
+                                textFile.Completed = true;
+                                completed++;
+                                progress?.Invoke(new ShareProgress(link.AbsoluteUri, controlBody.Length, textFile.Metadata.Size, receivedWebLink: link));
+                                status?.Invoke(AppText.Get("WebLinkReceived"));
+                                continue;
                             }
                             await FileIO.WriteTextAsync(textFile.Temporary, text);
-                            // WinRT storage blocks Internet Shortcut (.url)
-                            // files. Preserve the URL as text without opening it.
+                            // Plain TEXT attachments remain files. Only explicit URL
+                            // metadata above is eligible for browser activation.
                             await textFile.Temporary.RenameAsync(ProtocolUtilities.NormalizeFileName(textFile.Metadata.Name) + ".txt", NameCollisionOption.GenerateUniqueName);
                             textFile.Completed = true;
                             completed++;
@@ -270,7 +281,7 @@ namespace LiveDrop.Protocols.QuickShare
                 foreach (var file in writers.Values)
                 {
                     CloseIncomingFile(file);
-                    if (!file.Completed) { try { await file.Temporary.DeleteAsync(); } catch { } }
+                    if (!file.Completed && file.Temporary != null) { try { await file.Temporary.DeleteAsync(); } catch { } }
                 }
                 throw;
             }

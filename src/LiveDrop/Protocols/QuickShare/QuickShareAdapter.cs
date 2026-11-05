@@ -214,26 +214,34 @@ namespace LiveDrop.Protocols.QuickShare
                 socket.Dispose();
                 return;
             }
-            try
+            using (var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                // QuickShareSession owns the socket and its single reader/writer pair.
-                await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
+                cancellationToken = receiveCancellation.Token;
+                try
                 {
-                    var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                    var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
-                    if (OfferReceived == null) return true;
-                    received = new ShareOfferReceivedEventArgs(peer, offer, complete);
-                    OfferReceived(this, received);
-                    transferAccepted = await decision.Task;
-                    return transferAccepted;
-                }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken);
-                received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
-            }
-            catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
-            catch (Exception ex)
-            {
-                received?.ReportCompletion(false, ex.Message);
-                StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareTransferFailed", ex.Message)));
+                    // QuickShareSession owns the socket and its single reader/writer pair.
+                    await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
+                    {
+                        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                        var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                        if (OfferReceived == null) return true;
+                        received = new ShareOfferReceivedEventArgs(peer, offer, complete, receiveCancellation.Cancel);
+                        OfferReceived(this, received);
+                        transferAccepted = await decision.Task;
+                        return transferAccepted;
+                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), progress => received?.ReportProgress(progress), cancellationToken);
+                    received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
+                }
+                catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
+                catch (Exception) when (cancellationToken.IsCancellationRequested)
+                {
+                    received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage"));
+                }
+                catch (Exception ex)
+                {
+                    received?.ReportCompletion(false, ex.Message);
+                    StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareTransferFailed", ex.Message)));
+                }
             }
         }
 

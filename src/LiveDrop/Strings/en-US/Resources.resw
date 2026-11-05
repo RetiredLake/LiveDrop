@@ -1020,4 +1020,24 @@
     <value>Quick Share sent an unexpected encrypted control frame (type={0}).</value>
     <comment>Preserve numbered placeholders and protocol names.</comment>
   </data>
+  <data name="PressToViewFiles" xml:space="preserve">
+    <value>Press to view files</value>
+    <comment>Successful receive notification; tapping opens the saved file or batch folder.</comment>
+  </data>
+  <data name="PressToViewLink" xml:space="preserve">
+    <value>Press to view link</value>
+    <comment>Successful URL receive notification; tapping opens the received web link.</comment>
+  </data>
+  <data name="WebLinkReceived" xml:space="preserve">
+    <value>Web link received.</value>
+    <comment>Status for a completed URL attachment; no text file was saved.</comment>
+  </data>
+  <data name="CouldNotOpenReceivedLink" xml:space="preserve">
+    <value>Could not open the received link. Press its notification to try again.</value>
+    <comment>Browser activation failed; completion notification can retry the link.</comment>
+  </data>
+  <data name="ReceivingContent" xml:space="preserve">
+    <value>Receiving {0}...</value>
+    <comment>{0}: incoming filename or file count. May also be a URL attachment.</comment>
+  </data>
 </root>

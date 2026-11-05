@@ -197,25 +197,33 @@ namespace LiveDrop.Protocols.Nearby
             var peer = new PeerDescriptor("nearby:" + address, AppText.Get("NearbyDevice"), Transport, address, TcpPort, "CDP v3/TCP");
             ShareOfferReceivedEventArgs received = null;
             var transferAccepted = false;
-            try
+            using (var receiveCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
-                using (var connection = new SocketConnection(socket))
+                cancellationToken = receiveCancellation.Token;
+                try
                 {
-                    await CdpServerSession.ReceiveAsync(connection, _identity, peer, async (remote, offer) =>
+                    using (var connection = new SocketConnection(socket))
                     {
-                        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                        var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
-                        if (OfferReceived == null) return true;
-                        received = new ShareOfferReceivedEventArgs(remote, offer, complete);
-                        OfferReceived(this, received);
-                        transferAccepted = await decision.Task;
-                        return transferAccepted;
-                    }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken, progress => received?.ReportProgress(progress));
-                    received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
+                        await CdpServerSession.ReceiveAsync(connection, _identity, peer, async (remote, offer) =>
+                        {
+                            var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                            var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                            if (OfferReceived == null) return true;
+                            received = new ShareOfferReceivedEventArgs(remote, offer, complete, receiveCancellation.Cancel);
+                            OfferReceived(this, received);
+                            transferAccepted = await decision.Task;
+                            return transferAccepted;
+                        }, message => StatusChanged?.Invoke(this, new StatusChangedEventArgs(message)), cancellationToken, progress => received?.ReportProgress(progress));
+                        received?.ReportCompletion(transferAccepted, transferAccepted ? AppText.Get("FilesAreSavedInPicturesLiveDrop") : AppText.Get("ShareCanceledMessage"));
+                    }
                 }
+                catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
+                catch (Exception) when (cancellationToken.IsCancellationRequested)
+                {
+                    received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage"));
+                }
+                catch (Exception ex) { received?.ReportCompletion(false, ex.Message); StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("NearbyTransferFailed", ex.Message))); }
             }
-            catch (OperationCanceledException) { received?.ReportCompletion(false, AppText.Get("ShareCanceledMessage")); }
-            catch (Exception ex) { received?.ReportCompletion(false, ex.Message); StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("NearbyTransferFailed", ex.Message))); }
         }
 
         private async Task SendDatagramAsync(byte[] data, string address, CancellationToken cancellationToken)

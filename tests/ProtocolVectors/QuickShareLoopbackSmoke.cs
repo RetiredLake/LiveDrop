@@ -64,17 +64,22 @@ internal static class QuickShareLoopbackSmoke
             for (var i = 0; i < secondExpected.Length; i++) secondExpected[i] = (byte)((i * 17 + 3) & 0xFF);
             await FileIO.WriteBytesAsync(secondSource, secondExpected);
 
+            var urlText = System.Text.Encoding.UTF8.GetBytes("https://example.org/this-is-a-regular-text-file");
+            var urlTextSource = await root.CreateFileAsync("url-looking.txt", CreationCollisionOption.ReplaceExisting);
+            await FileIO.WriteBytesAsync(urlTextSource, urlText);
             var offer = new ShareOffer(
                 new List<ShareFileDescriptor>
                 {
                     new ShareFileDescriptor(source, "application/octet-stream", expected.Length),
-                    new ShareFileDescriptor(secondSource, "text/plain", secondExpected.Length)
+                    new ShareFileDescriptor(secondSource, "text/plain", secondExpected.Length),
+                    new ShareFileDescriptor(urlTextSource, "text/plain", urlText.Length)
                 },
                 string.Empty);
             await TransferAsync(offer, receivedFolder);
             var files = await receivedFolder.GetFilesAsync();
             await AssertFileContentsAsync(files, "loopback.bin", expected);
             await AssertFileContentsAsync(files, "loopback-second.txt", secondExpected);
+            await AssertFileContentsAsync(files, "url-looking.txt", urlText);
             var link = new Uri("https://example.org/path?q=phone%20test&second=2#anchor");
             var package = new Windows.ApplicationModel.DataTransfer.DataPackage();
             package.SetWebLink(link);
@@ -95,9 +100,8 @@ internal static class QuickShareLoopbackSmoke
                 throw new InvalidOperationException("Legacy browser Uri share was lost.");
             await TransferAsync(linkOffer, receivedFolder);
             files = await receivedFolder.GetFilesAsync();
-            var shortcut = files.FirstOrDefault(file => file.Name == link.Host + ".txt");
-            if (shortcut == null || (await FileIO.ReadTextAsync(shortcut)) != link.AbsoluteUri)
-                throw new InvalidOperationException("Native Quick Share URL did not round-trip.");
+            if (files.Count != 3 || files.Any(file => file.Name == link.Host + ".txt"))
+                throw new InvalidOperationException("Native URL attachments must not create text files.");
         }
         finally
         {
@@ -109,6 +113,7 @@ internal static class QuickShareLoopbackSmoke
     private static async Task TransferAsync(ShareOffer offer, StorageFolder receivedFolder)
     {
             var savedPaths = new List<string>();
+            var receivedLinks = new List<Uri>();
             var listener = new StreamSocketListener();
             var receiverTaskSource = new TaskCompletionSource<Task>(TaskCreationOptions.RunContinuationsAsynchronously);
             listener.ConnectionReceived += (sender, args) =>
@@ -118,7 +123,7 @@ internal static class QuickShareLoopbackSmoke
                     "Loopback receiver",
                     (peer, incoming) => Task.FromResult(true),
                     status => { },
-                    progress => { if (!string.IsNullOrWhiteSpace(progress.SavedFilePath)) savedPaths.Add(progress.SavedFilePath); },
+                    progress => { if (!string.IsNullOrWhiteSpace(progress.SavedFilePath)) savedPaths.Add(progress.SavedFilePath); if (progress.ReceivedWebLink != null) receivedLinks.Add(progress.ReceivedWebLink); },
                     CancellationToken.None,
                     receivedFolder);
                 if (!receiverTaskSource.TrySetResult(task)) args.Socket.Dispose();
@@ -157,8 +162,10 @@ internal static class QuickShareLoopbackSmoke
             try { await (await receiverTaskSource.Task); }
             catch (Exception ex) { throw new AggregateException("Loopback receiver failed.", sendError ?? ex, ex); }
             if (sendError != null) throw sendError;
-            if (savedPaths.Count != (offer.WebLink == null ? offer.Files.Count : 1) || savedPaths.Any(path => !File.Exists(path)))
+            if (savedPaths.Count != offer.Files.Count || savedPaths.Any(path => !File.Exists(path)))
                 throw new InvalidOperationException("Saved-file notification targets must exist after finalization.");
+            if (offer.WebLink == null ? receivedLinks.Count != 0 : receivedLinks.Count != 1 || receivedLinks[0] != offer.WebLink)
+                throw new InvalidOperationException("Only an explicit URL attachment may produce a browser activation target.");
 
     }
 

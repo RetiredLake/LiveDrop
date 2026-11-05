@@ -47,6 +47,12 @@ internal static class QuickShareCancellationSmoke
             }
         }
 
+        await TransferCancellationAsync(false);
+        await TransferCancellationAsync(true);
+    }
+
+    private static async Task TransferCancellationAsync(bool cancelReceiver)
+    {
         var path = Path.Combine(Path.GetTempPath(), "LiveDrop-cancel-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(path);
         try
@@ -61,15 +67,27 @@ internal static class QuickShareCancellationSmoke
             using (var source = new CancellationTokenSource(TimeSpan.FromSeconds(20)))
             {
                 var accepted = new TaskCompletionSource<Task>();
+                ShareOfferReceivedEventArgs incomingOffer = null;
+                var canceledMidFile = false;
                 listener.ConnectionReceived += (sender, args) => accepted.TrySetResult(QuickShareSession.ReceiveAsync(
-                    args.Socket, "Cancellation receiver", (peer, data) => Task.FromResult(true), null, null, CancellationToken.None, incoming));
+                    args.Socket, "Cancellation receiver", (peer, data) =>
+                    {
+                        incomingOffer = new ShareOfferReceivedEventArgs(peer, data, acceptedOffer => Task.CompletedTask, source.Cancel);
+                        return Task.FromResult(true);
+                    }, null, value =>
+                    {
+                        if (cancelReceiver && value.BytesTransferred > 0 && value.BytesTransferred < value.TotalBytes)
+                        {
+                            canceledMidFile = true;
+                            incomingOffer.CancelTransfer();
+                        }
+                    }, cancelReceiver ? source.Token : CancellationToken.None, incoming));
                 await listener.BindEndpointAsync(new HostName("127.0.0.1"), string.Empty);
                 var socket = new StreamSocket();
                 await socket.ConnectAsync(new HostName("127.0.0.1"), listener.Information.LocalPort);
-                var canceledMidFile = false;
                 var progress = new ImmediateProgress(value =>
                 {
-                    if (value.BytesTransferred > 0 && value.BytesTransferred < value.TotalBytes)
+                    if (!cancelReceiver && value.BytesTransferred > 0 && value.BytesTransferred < value.TotalBytes)
                     {
                         canceledMidFile = true;
                         source.Cancel();
@@ -77,13 +95,14 @@ internal static class QuickShareCancellationSmoke
                 });
                 using (var connection = new SocketConnection(socket))
                 {
-                    var send = QuickShareSession.SendAsync(connection, "Cancellation sender", "test", QuickShareFrames.BuildEndpointInfo("Cancellation sender", 3), offer, progress, source.Token);
+                    var send = QuickShareSession.SendAsync(connection, "Cancellation sender", "test", QuickShareFrames.BuildEndpointInfo("Cancellation sender", 3), offer, progress, cancelReceiver ? CancellationToken.None : source.Token);
                     await MustFinishAsync(send, "the mid-file sender");
                     var senderStopped = false;
                     try { await send; }
                     catch (Exception) when (source.IsCancellationRequested) { senderStopped = true; }
                     if (!senderStopped) throw new Exception("The canceled sender reported success.");
                 }
+                if (cancelReceiver && !incomingOffer.IsCancellationRequested) throw new Exception("The receive Cancel action was not propagated.");
                 if (!canceledMidFile) throw new Exception("The test never reached a partial file.");
                 var receive = await accepted.Task;
                 await MustFinishAsync(receive, "the disconnected receiver");
@@ -94,7 +113,7 @@ internal static class QuickShareCancellationSmoke
             }
         }
         finally { Directory.Delete(path, true); }
-        Console.WriteLine("PASS: blocked read aborts; mid-file sender stops; receiver closes and removes the partial file");
+        Console.WriteLine("PASS: mid-file " + (cancelReceiver ? "receive Cancel action" : "sender cancellation") + "; both peers stop and partial files are removed");
     }
 
     private sealed class ImmediateProgress : IProgress<ShareProgress>
