@@ -1,4 +1,4 @@
-# LiveDrop
+# LiveDrop 2
 
 <img width="300" height="300" alt="livedrop-300" src="https://github.com/user-attachments/assets/91001e2d-262a-407c-822b-ec63a1849bad" />
 
@@ -10,11 +10,11 @@ LiveDrop is an unofficial Windows 10/Mobile Google Quick Share client. It runs o
 
 LiveDrop connects to most Quick Share clients, including unofficial ones. This means you can connect to Windows, Android, Chrome OS, macOS (NearDrop), and linux (unofficial clients)
 
-Quick Share devices must be on the same network and should be set to "Everyone" mode for maximum reliability. Files can be shared in batches from inside the app or the share sheet. 
+Quick Share devices must be on the same network and should be set to "Everyone" mode for maximum reliability. Content can be shared from inside the app or the share sheet. 
 
-All incoming file types are supported and files are always saved to Pictures\LiveDrop\
+All incoming file types are supported and files are saved to ~/Pictures/LiveDrop
 
-LiveDrop does not support Apple Airdrop and does not support Microsoft Nearby Sharing on mobile.
+LiveDrop does not support Apple Airdrop. Microsoft Nearby Sharing is a WIP.
 
 ## Install
 
@@ -29,7 +29,7 @@ LiveDrop does not support Apple Airdrop and does not support Microsoft Nearby Sh
 </p>
 
 #### Sideloading
-Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/tag/v0.1.5.6), install the .cer certificate (to local machine > trusted people on pc), and install the .appxbundle
+Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/), install the .cer certificate (to local machine > trusted people on pc), and install the .appxbundle
 LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](https://github.com/RetiredLake/LiveBubbles)
 
 ## Build
@@ -45,7 +45,7 @@ LiveDrop uses the same LiveBubbles toolchain:
 
 ## Protocol references
 
-The adapter design and wire comments are based on these public projects and specifications:
+The adapter design is based on these projects:
 
 - [Microsoft MS-CDP](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-cdp/929c2238-6d49-4ba4-a36a-37e732c4f736)
 - [Microsoft MS-NFPS](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-nfps/421eed84-90a5-426d-8217-0a7f7667e9ee)
