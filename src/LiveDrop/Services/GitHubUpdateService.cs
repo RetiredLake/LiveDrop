@@ -114,7 +114,7 @@ namespace LiveDrop.Services
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(45) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.8.12");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.9.0");
             return client;
         }
 
