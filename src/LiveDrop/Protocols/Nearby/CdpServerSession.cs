@@ -327,7 +327,7 @@ namespace LiveDrop.Protocols.Nearby
         private CdpHeader NewSessionHeader(ulong channelId, uint sequence, ushort index, ushort count)
         {
             var header = new CdpHeader { Type = CdpHeader.Session, SessionId = _sessionId, ChannelId = channelId, SequenceNumber = sequence, FragmentIndex = index, FragmentCount = count };
-            header.AdditionalHeaders.Add(new CdpAdditionalHeader(2, Encoding.ASCII.GetBytes("A.1")));
+            header.AdditionalHeaders.Add(new CdpAdditionalHeader(2, Encoding.GetEncoding("us-ascii").GetBytes("A.1")));
             return header;
         }
 
@@ -376,7 +376,7 @@ namespace LiveDrop.Protocols.Nearby
         private static byte[] UInt64Bytes(ulong value) { var result = new byte[8]; for (var i = 7; i >= 0; i--) result[7 - i] = (byte)(value >> (i * 8)); return result; }
         private static byte[] UInt64Little(ulong value) { var result = new byte[8]; for (var i = 0; i < 8; i++) result[i] = (byte)(value >> (i * 8)); return result; }
         private static byte[] ReadBytesWithLength(Stream stream) { var length = ReadUInt16(stream); var result = new byte[length]; ReadExactly(stream, result); return result; }
-        private static string ReadUtf8WithLength(Stream stream) { return Encoding.UTF8.GetString(ReadBytesWithLength(stream)); }
+        private static string ReadUtf8WithLength(Stream stream) { var bytes = ReadBytesWithLength(stream); return Encoding.UTF8.GetString(bytes, 0, bytes.Length); }
         private static ulong ReadUInt64(Stream stream) { ulong result = 0; for (var i = 0; i < 8; i++) { var value = stream.ReadByte(); if (value < 0) throw new EndOfStreamException(); result = (result << 8) | (byte)value; } return result; }
         private static uint ReadUInt32(Stream stream) { return ((uint)ReadUInt16(stream) << 16) | ReadUInt16(stream); }
         private static ushort ReadUInt16(Stream stream) { var first = stream.ReadByte(); var second = stream.ReadByte(); if (first < 0 || second < 0) throw new EndOfStreamException(); return (ushort)((first << 8) | second); }

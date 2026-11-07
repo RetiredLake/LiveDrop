@@ -7,6 +7,10 @@ using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+#if LIVEDROP8
+using DatagramSocket = LiveDrop.Transports.LegacyMulticastSocket;
+using DatagramSocketMessageReceivedEventArgs = LiveDrop.Transports.LegacyDatagramReceived;
+#endif
 
 namespace LiveDrop.Transports
 {
@@ -29,6 +33,7 @@ namespace LiveDrop.Transports
         private bool _started;
         private readonly HostName _multicastAddress = new HostName("224.0.0.251");
         internal event EventHandler<IList<MdnsServiceRecord>> ServicesReceived;
+        internal event Action<Exception> ReceiveFailed;
 
         internal MdnsMulticastService(string serviceType) { _serviceType = serviceType; }
 
@@ -63,11 +68,20 @@ namespace LiveDrop.Transports
                 cancellationToken.ThrowIfCancellationRequested();
                 var socket = new DatagramSocket();
                 socket.MessageReceived += OnMessageReceived;
+#if LIVEDROP8
+                socket.ReceiveFailed += ex => { var failed = ReceiveFailed; if (failed != null) failed(ex); };
+#endif
                 socket.Control.OutboundUnicastHopLimit = 255;
+#if WINDOWS_UWP
                 socket.Control.MulticastOnly = true;
+#endif
                 try
                 {
+#if LIVEDROP8
+                    await socket.BindServiceNameAsync("5353", host);
+#else
                     await socket.BindServiceNameAsync("5353", host.IPInformation.NetworkAdapter);
+#endif
                     socket.JoinMulticastGroup(_multicastAddress);
                     _sockets.Add(socket, host.RawName);
                 }
@@ -79,7 +93,7 @@ namespace LiveDrop.Transports
                 }
             }
             _started = _sockets.Count > 0;
-            if (!_started) throw new InvalidOperationException(AppText.Get("NoLANInterfaceCouldStartMDNSDiscovery"), lastError);
+            if (!_started) throw new InvalidOperationException(AppText.Get("NoLANInterfaceCouldStartMDNSDiscovery") + (lastError == null ? " No eligible IPv4 LAN interface." : " " + lastError.Message + " (0x" + lastError.HResult.ToString("X8") + ")"), lastError);
         }
 
         internal async Task QueryAsync(CancellationToken cancellationToken)
@@ -109,6 +123,9 @@ namespace LiveDrop.Transports
         private async Task SendAsync(DatagramSocket socket, byte[] payload, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+#if LIVEDROP8
+            await socket.SendAsync(payload, cancellationToken);
+#else
             var output = await socket.GetOutputStreamAsync(_multicastAddress, "5353").AsTask(cancellationToken);
             var writer = new DataWriter(output);
             writer.WriteBytes(payload);
@@ -116,15 +133,19 @@ namespace LiveDrop.Transports
             await writer.FlushAsync().AsTask(cancellationToken);
             writer.DetachStream();
             writer.Dispose();
+#endif
         }
 
         private void OnMessageReceived(DatagramSocket sender, DatagramSocketMessageReceivedEventArgs args)
         {
             try
             {
-                var reader = args.GetDataReader();
-                var data = new byte[checked((int)reader.UnconsumedBufferLength)];
-                reader.ReadBytes(data);
+                byte[] data;
+                using (var reader = args.GetDataReader())
+                {
+                    data = new byte[checked((int)reader.UnconsumedBufferLength)];
+                    reader.ReadBytes(data);
+                }
                 IList<MdnsServiceRecord> records;
                 byte[] reply = null;
                 lock (_cacheLock)
@@ -147,7 +168,7 @@ namespace LiveDrop.Transports
                     records = MdnsCodec.Parse(data, _serviceType, cache.Records, cache.Addresses)
                         .Where(record => MdnsCodec.IsUsablePeerAnnouncement(record, args.RemoteAddress.RawName)).ToList();
                 }
-                if (reply != null) _ = ReplyAsync(sender, reply);
+                if (reply != null) { var replyTask = ReplyAsync(sender, reply); }
                 if (records.Count > 0) ServicesReceived?.Invoke(this, records);
             }
             catch { }

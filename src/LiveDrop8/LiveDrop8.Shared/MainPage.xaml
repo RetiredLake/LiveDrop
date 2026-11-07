@@ -1,0 +1,52 @@
+<Page x:Class="LiveDrop8.MainPage"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+ <Page.BottomAppBar>
+  <CommandBar Background="#2B2B2B" Foreground="White" Padding="0" Margin="0">
+   <CommandBar.Resources>
+    <SolidColorBrush x:Key="CommandBarBackgroundThemeBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="AppBarBackgroundThemeBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="PhoneChromeBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="CommandBarForegroundThemeBrush" Color="White"/>
+   </CommandBar.Resources>
+   <AppBarButton x:Name="SendCommand" Icon="Upload" Label="send" Click="OnMainCommand"/>
+   <CommandBar.SecondaryCommands>
+    <AppBarButton x:Name="FolderCommand" Icon="Folder" Label="LiveDrop Folder" Click="OnOpenFolder"/>
+    <AppBarButton x:Name="PeersCommand" Icon="People" Label="Supported peers" Click="OnSupportedPeers"/>
+    <AppBarButton x:Name="HostnameCommand" Icon="Edit" Label="Change hostname" Click="OnChangeHostname"/>
+    <AppBarButton x:Name="AboutCommand" Icon="Help" Label="About" Click="OnAbout"/>
+   </CommandBar.SecondaryCommands>
+  </CommandBar>
+ </Page.BottomAppBar>
+ <Grid Margin="20,20,20,12" MaxWidth="760" HorizontalAlignment="Stretch">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <TextBlock Text="LIVEDROP" FontSize="20" FontWeight="SemiBold"/>
+  <TextBlock Grid.Row="1" Text="discovery" FontSize="48" Margin="0,0,0,28"/>
+  <ListView x:Name="PeersList" Grid.Row="2" SelectionMode="Single" HorizontalContentAlignment="Left" SelectionChanged="OnPeerSelectionChanged">
+   <ListView.ItemContainerStyle>
+    <Style TargetType="ListViewItem">
+     <Setter Property="HorizontalContentAlignment" Value="Left"/>
+     <Setter Property="Padding" Value="0"/>
+     <Setter Property="Margin" Value="0,0,0,12"/>
+     <Setter Property="MinHeight" Value="48"/>
+     <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListViewItem">
+      <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalAlignment="Left"/>
+     </ControlTemplate></Setter.Value></Setter>
+    </Style>
+   </ListView.ItemContainerStyle>
+   <ListView.ItemTemplate><DataTemplate>
+    <Border BorderBrush="{Binding SelectionBrush}" BorderThickness="2" Padding="12">
+     <TextBlock Text="{Binding DisplayText}" Foreground="{Binding SelectionBrush}" FontSize="26" FontWeight="SemiBold" TextWrapping="Wrap"/>
+    </Border>
+   </DataTemplate></ListView.ItemTemplate>
+  </ListView>
+  <StackPanel Grid.Row="3" Margin="0,12,0,0">
+   <TextBlock x:Name="FileNameText" TextWrapping="Wrap"/>
+   <StackPanel x:Name="ConsentPanel" Orientation="Horizontal" Visibility="Collapsed"><Button Content="Accept" Click="OnAccept"/><Button Content="Deny" Click="OnDeny" Margin="12,0,0,0"/></StackPanel>
+   <StackPanel x:Name="ReceivedPanel" Visibility="Collapsed"><TextBlock Text="File(s) saved to the LiveDrop Folder"/><StackPanel Orientation="Horizontal"><Button Content="View Files" Click="OnViewFiles" Margin="0"/><Button Content="Dismiss" Click="OnDismiss" Margin="8,0,0,0"/></StackPanel></StackPanel>
+   <ProgressBar x:Name="TransferProgress" Visibility="Collapsed" Minimum="0" Maximum="100"/>
+   <TextBlock x:Name="StatusText" TextWrapping="Wrap"/>
+  </StackPanel>
+ </Grid>
+</Page>

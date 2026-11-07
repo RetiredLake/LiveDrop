@@ -1,0 +1,555 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="EmptyTransferSize" xml:space="preserve">
+    <value>0 B</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>Névjegy</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AboutVersion" xml:space="preserve">
+    <value>Verzió: {0}</value>
+    <comment>{0}: four-part app version, such as 0.1.8.8.</comment>
+  </data>
+  <data name="Accepting" xml:space="preserve">
+    <value>Elfogadás folyamatban</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AndroidDevice" xml:space="preserve">
+    <value>Android-eszköz</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Közeli fájlmegosztás Windows 10 Mobile rendszerhez</value>
+    <comment>Package description shown by Windows.</comment>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>LiveDrop</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Mégse</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CancelButton.Content" xml:space="preserve">
+    <value>Mégse</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="Canceling" xml:space="preserve">
+    <value>Megszakítás...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChangeHostname" xml:space="preserve">
+    <value>Gépnév módosítása</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckForUpdate" xml:space="preserve">
+    <value>Frissítések keresése</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckingGitHubForUpdates" xml:space="preserve">
+    <value>Frissítések keresése a GitHubon...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChooseAFileToShare" xml:space="preserve">
+    <value>Válasszon ki egy megosztandó fájlt.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Bezárás</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotCreatePicturesLiveDropForReceivedFiles" xml:space="preserve">
+    <value>Nem sikerült létrehozni a LiveDrop mappát a fogadott fájloknak.</value>
+    <comment>Shown by TransferFileStore.cs. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="CouldNotOpenSavedContent" xml:space="preserve">
+    <value>Nem sikerült megnyitni a mentett tartalmat</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotReachGitHubCheckYourConnectionAnd" xml:space="preserve">
+    <value>A GitHub nem érhető el. Ellenőrizze a kapcsolatot, és próbálja újra.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DevelopedBy" xml:space="preserve">
+    <value>Fejlesztő: {0}</value>
+    <comment>{0}: clickable developer name retiredlake. Include exactly once; it may move.</comment>
+  </data>
+  <data name="DiscoveryFailed" xml:space="preserve">
+    <value>Nem sikerült elindítani az eszközkeresést: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryHeading.Text" xml:space="preserve">
+    <value>Eszközkeresés</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="DiscoveryIsOffSelectAProtocolToFind" xml:space="preserve">
+    <value>Az eszközkeresés ki van kapcsolva. Válasszon protokollt az eszközök kereséséhez.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryShutdownFailed" xml:space="preserve">
+    <value>Eszközkeresés leállítása: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersion" xml:space="preserve">
+    <value>v{0} letöltése...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersionProgress" xml:space="preserve">
+    <value>v{0} letöltése - {1:P0}</value>
+    <comment>{0}: version; {1:P0}: fractional download progress formatted as a percentage. Keep :P0.</comment>
+  </data>
+  <data name="EnterAtLeastOneLetterOrNumber" xml:space="preserve">
+    <value>Adjon meg legalább egy betűt vagy számot.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="FileCount" xml:space="preserve">
+    <value>{0} fájl</value>
+    <comment>{0}: file count (two or more). Single files display their filename.</comment>
+  </data>
+  <data name="FileLabel" xml:space="preserve">
+    <value>fájl</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="FilesAreSavedInPicturesLiveDrop" xml:space="preserve">
+    <value>A fájlok a LiveDrop mappába kerültek.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="FilesReady" xml:space="preserve">
+    <value>Az eszköz kiválasztása után {0} fájl osztható meg.</value>
+    <comment>{0}: file count (two or more).</comment>
+  </data>
+  <data name="GitHubIsLimitingRequestsPleaseTryAgainLater" xml:space="preserve">
+    <value>A GitHub korlátozza a kéréseket. Próbálja újra később.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="GoogleQuickShare" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>LiveDrop 2</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HostnameMaximumLength" xml:space="preserve">
+    <value>Legfeljebb {0} karaktert használjon.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropCouldNotReadTheSharedContentPlease" xml:space="preserve">
+    <value>A LiveDrop nem tudta beolvasni a megosztott tartalmat. Ossza meg újra.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropIsUpToDate" xml:space="preserve">
+    <value>A LiveDrop naprakész.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyShare" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="MicrosoftNearbyShareIsUnavailableOnWindows10" xml:space="preserve">
+    <value>A Microsoft Nearby Share nem érhető el Windows 10 Mobile rendszeren; a Google Quick Share továbbra is használható.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>A fájlok a LiveDrop mappába kerültek.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="MoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Továbbiak</value>
+    <comment>XAML AutomationProperties.Name. Product names remain unchanged.</comment>
+  </data>
+  <data name="NativeWebLinkSharingCurrentlyRequiresGoogleQuick" xml:space="preserve">
+    <value>A webhivatkozások közvetlen megosztásához jelenleg Google Quick Share szükséges.</value>
+    <comment>Shown by ShareCoordinator.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDevice" xml:space="preserve">
+    <value>Közeli eszköz</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDiscoveryError" xml:space="preserve">
+    <value>Közeli eszközök keresése: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyProtocol.Content" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="NearbyReceivedBytes" xml:space="preserve">
+    <value>{0} fogadva ({1}/{2} bájt).</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="NoApplicationCouldOpenThisFileOrFolder" xml:space="preserve">
+    <value>Egyetlen alkalmazás sem tudta megnyitni ezt a fájlt vagy mappát.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoFileSelected" xml:space="preserve">
+    <value>Nincs kiválasztott fájl.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailable" xml:space="preserve">
+    <value>Nincs elérhető közzétett frissítés.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailableYet" xml:space="preserve">
+    <value>Még nincs elérhető közzétett frissítés.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoUpdateAvailable" xml:space="preserve">
+    <value>Nincs elérhető frissítés</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OneFileReady" xml:space="preserve">
+    <value>Az eszköz kiválasztása után egy fájl osztható meg.</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="OnlyHTTPAndHTTPSWebLinksAreSupported" xml:space="preserve">
+    <value>Csak HTTP- és HTTPS-webhivatkozások támogatottak.</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OpenShareFailed" xml:space="preserve">
+    <value>A LiveDrop nem tudta megnyitni ezt a megosztást: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="OpeningTheWindowsInstaller" xml:space="preserve">
+    <value>A Windows telepítőjének megnyitása...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="PickerFailed" xml:space="preserve">
+    <value>Nem sikerült megnyitni a fájlválasztót: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Adatvédelmi szabályzat</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnecting" xml:space="preserve">
+    <value>A Quick Share csatlakozik ide: {0}:{1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareDiscoveryError" xml:space="preserve">
+    <value>Quick Share-eszközkeresés: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareLanDiscoveryActive" xml:space="preserve">
+    <value>A Quick Share LAN-keresése aktív. Állítsa a másik eszközt Mindenki (Everyone) módba.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareMdnsUnavailable" xml:space="preserve">
+    <value>A Quick Share mDNS-szoftvercsatornája nem érhető el: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareName" xml:space="preserve">
+    <value>Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickSharePeerDisconnectedDuringTheTransfer" xml:space="preserve">
+    <value>A Quick Share-eszköz az átvitel közben bontotta a kapcsolatot.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareProtocol.Content" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickShareReceivingPin" xml:space="preserve">
+    <value>Quick Share biztonsági PIN: {0}. Hasonlítsa össze a másik eszközön látható kóddal.</value>
+    <comment>{0}: numeric security PIN; do not translate or reformat it.</comment>
+  </data>
+  <data name="QuickShareRecipientCancelledTheTransfer" xml:space="preserve">
+    <value>A Quick Share fogadója megszakította az átvitelt.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientDisconnectedDuringUpload" xml:space="preserve">
+    <value>A Quick Share fogadója feltöltés közben bontotta a kapcsolatot.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientRejectedTheTransfer" xml:space="preserve">
+    <value>A Quick Share fogadója elutasította az átvitelt.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRejectedTheConnection" xml:space="preserve">
+    <value>A Quick Share elutasította a kapcsolatot.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSecurityPin" xml:space="preserve">
+    <value>Quick Share biztonsági PIN: {0}. Hasonlítsa össze a másik eszközön látható kóddal.</value>
+    <comment>{0}: numeric security PIN; never translate or reformat the PIN.</comment>
+  </data>
+  <data name="QuickShareSenderCancelledTheTransfer" xml:space="preserve">
+    <value>A Quick Share küldője megszakította az átvitelt.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferFailed" xml:space="preserve">
+    <value>A Quick Share-átvitel sikertelen: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>A fájlok a LiveDrop mappába kerültek.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="ReadShareFailed" xml:space="preserve">
+    <value>Nem sikerült beolvasni a megosztott tartalmat: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileBatch" xml:space="preserve">
+    <value>{0} fogadva ({1}/{2}).</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileSaved" xml:space="preserve">
+    <value>{0} fogadva.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="Receiving" xml:space="preserve">
+    <value>Fogadás...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFileBody" xml:space="preserve">
+    <value>{0} fogadása innen: {1}.</value>
+    <comment>{0}: filename or file count; {1}: sender device name.</comment>
+  </data>
+  <data name="ReceivingFileLocation" xml:space="preserve">
+    <value>{0} fogadása.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFromDevice" xml:space="preserve">
+    <value>Fogadás innen: {0}</value>
+    <comment>{0}: sender device name.</comment>
+  </data>
+  <data name="RestartingDiscovery" xml:space="preserve">
+    <value>Eszközkeresés újraindítása {0} néven...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileFromPhotosOrFileExplorer" xml:space="preserve">
+    <value>Válasszon fájlt a Fényképekből vagy a Fájlkezelőből.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileOrWebLinkToShare" xml:space="preserve">
+    <value>Válasszon megosztandó fájlt vagy webhivatkozást.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerFirst" xml:space="preserve">
+    <value>Először válasszon eszközt. Állítsa a másik eszközt Mindenki (Everyone) módba.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerThenSendTheFile" xml:space="preserve">
+    <value>Válasszon eszközt, majd küldje el a fájlt.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectFilesButton.Content" xml:space="preserve">
+    <value>Fájlok kiválasztása</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendButton.Content" xml:space="preserve">
+    <value>Kiválasztott tartalom küldése</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendSelectedShare" xml:space="preserve">
+    <value>Kiválasztott tartalom küldése</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>Küldés...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SendingFileBody" xml:space="preserve">
+    <value>{0} küldése ide: {1}.</value>
+    <comment>{0}: filename or file count; {1}: recipient device name.</comment>
+  </data>
+  <data name="SendingFileStatus" xml:space="preserve">
+    <value>{0} küldése ide: {1}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SendingToDevice" xml:space="preserve">
+    <value>Küldés ide: {0}</value>
+    <comment>{0}: recipient device name.</comment>
+  </data>
+  <data name="SentFile" xml:space="preserve">
+    <value>{0} elküldve ide: {1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledMessage" xml:space="preserve">
+    <value>A megosztás megszakítva.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledTitle" xml:space="preserve">
+    <value>Megosztás megszakítva</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareComplete" xml:space="preserve">
+    <value>Megosztás kész</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCompleted" xml:space="preserve">
+    <value>A megosztás befejeződött.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>A megosztás sikertelen</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailedDetail" xml:space="preserve">
+    <value>A megosztás sikertelen: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SpacesCannotBeAtTheBeginningOrEnd" xml:space="preserve">
+    <value>Az elején és a végén nem lehet szóköz.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="StartingDiscovery.Text" xml:space="preserve">
+    <value>Előtérbeli eszközkeresés indítása...</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="SupportedPeers.Text" xml:space="preserve">
+    <value>Támogatott eszközök</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="ThePeerClosedTheConnection" xml:space="preserve">
+    <value>Az eszköz lezárta a kapcsolatot.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSavedFileOrFolderIsNoLonger" xml:space="preserve">
+    <value>A mentett fájl vagy mappa már nem érhető el.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedFileIsUnavailable" xml:space="preserve">
+    <value>A kiválasztott fájl nem érhető el.</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheTCPConnectionTimedOut" xml:space="preserve">
+    <value>A TCP-kapcsolat túllépte az időkorlátot.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheUpdateCheckTimedOutPleaseTryAgain" xml:space="preserve">
+    <value>A frissítéskeresés túllépte az időkorlátot. Próbálja újra.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheWebLinkIsTooLong" xml:space="preserve">
+    <value>A webhivatkozás túl hosszú.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThisShareContainsNoSupportedFilesOrText" xml:space="preserve">
+    <value>Ez a megosztás nem tartalmaz támogatott fájlt vagy szöveget.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Transferring" xml:space="preserve">
+    <value>Átvitel folyamatban</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UnknownPeer" xml:space="preserve">
+    <value>Ismeretlen eszköz</value>
+    <comment>Fallback device label.</comment>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>A frissítéskeresés sikertelen: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="UpdateDownloadCanceled" xml:space="preserve">
+    <value>A frissítés letöltése megszakítva.</value>
+    <comment>Shown by MainPage.xaml.cs when the user cancels an update download.</comment>
+  </data>
+  <data name="UpdateHttpError" xml:space="preserve">
+    <value>A GitHub HTTP {0} választ adott. Próbálja újra később.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="WebLinkIsReadyToShareAfterSelecting" xml:space="preserve">
+    <value>Az eszköz kiválasztása után a webhivatkozás megosztható.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsCouldNotOpenTheInstaller" xml:space="preserve">
+    <value>A Windows nem tudta megnyitni a telepítőt.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsPC" xml:space="preserve">
+    <value>Windows PC</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="YouAlreadyHaveTheLatestRelease" xml:space="preserve">
+    <value>Már a legújabb verzióval rendelkezik.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryLabel" xml:space="preserve">
+    <value>Eszközkeresés</value>
+    <comment>Preserve numbered placeholders and protocol names.</comment>
+  </data>
+  <data name="PressToViewFiles" xml:space="preserve">
+    <value>Koppintson a fájlok megtekintéséhez</value>
+    <comment>Successful receive notification; tapping opens the saved file or batch folder.</comment>
+  </data>
+  <data name="PressToViewLink" xml:space="preserve">
+    <value>Koppintson a hivatkozás megtekintéséhez</value>
+    <comment>Successful URL receive notification; tapping opens the received web link.</comment>
+  </data>
+  <data name="WebLinkReceived" xml:space="preserve">
+    <value>Webhivatkozás érkezett.</value>
+    <comment>Status for a completed URL attachment; no text file was saved.</comment>
+  </data>
+  <data name="CouldNotOpenReceivedLink" xml:space="preserve">
+    <value>Nem sikerült megnyitni a kapott hivatkozást. Koppintson az értesítésre az újrapróbálkozáshoz.</value>
+    <comment>Browser activation failed; completion notification can retry the link.</comment>
+  </data>
+  <data name="ReceivingContent" xml:space="preserve">
+    <value>{0} fogadása...</value>
+    <comment>{0}: incoming filename or file count. May also be a URL attachment.</comment>
+  </data>
+  <data name="AcceptIncomingButton.Content" xml:space="preserve">
+    <value>Elfogadás</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DenyIncomingButton.Content" xml:space="preserve">
+    <value>Elutasítás</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DismissReceivedButton.Content" xml:space="preserve">
+    <value>Bezárás</value>
+    <comment>Dismisses the successful receive notice.</comment>
+  </data>
+  <data name="FilesSavedToLiveDropFolder" xml:space="preserve">
+    <value>A fájlok a LiveDrop mappába kerültek.</value>
+    <comment>Shown after receiving files; do not reveal the storage path.</comment>
+  </data>
+  <data name="IncomingShareRequest" xml:space="preserve">
+    <value>Bejövő megosztási kérés.</value>
+    <comment>Consent prompt when the incoming protocol does not provide a verification PIN.</comment>
+  </data>
+  <data name="IncomingShareQueueFull" xml:space="preserve">
+    <value>Túl sok megosztási kérés várakozik. Próbálja újra később.</value>
+    <comment>Shown when the bounded incoming consent queue is full.</comment>
+  </data>
+  <data name="LiveDropFolder" xml:space="preserve">
+    <value>LiveDrop mappa</value>
+    <comment>Menu item that opens the app's receive folder.</comment>
+  </data>
+  <data name="ViewFilesButton.Content" xml:space="preserve">
+    <value>Fájlok megtekintése</value>
+    <comment>Opens the most recently received file or folder.</comment>
+  </data>
+  <data name="HostnameInstructions" xml:space="preserve">
+    <value>Válassza ki a más eszközökön látható nevet (1–32 betű, szám, szóköz és ' _ - . ( ) &amp; +).</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LettersNumbersSpaces" xml:space="preserve">
+    <value>betűk, számok, szóközök és ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UseLettersNumbersSpacesAndOnly" xml:space="preserve">
+    <value>Csak betűket, számokat, szóközöket és ezeket használja: ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+</root>

@@ -74,7 +74,8 @@ namespace LiveDrop.Protocols.QuickShare
             return value;
         }
 
-        internal string ReadString() { return Encoding.UTF8.GetString(ReadBytes()); }
+        private static string ReadUtf8(byte[] bytes) { return Encoding.UTF8.GetString(bytes, 0, bytes.Length); }
+        internal string ReadString() { return ReadUtf8(ReadBytes()); }
 
         internal void Skip(int wireType)
         {

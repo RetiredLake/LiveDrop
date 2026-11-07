@@ -1,0 +1,555 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="EmptyTransferSize" xml:space="preserve">
+    <value>0 B</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>تعارف</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AboutVersion" xml:space="preserve">
+    <value>ورژن {0}</value>
+    <comment>{0}: four-part app version, such as 0.1.8.8.</comment>
+  </data>
+  <data name="Accepting" xml:space="preserve">
+    <value>قبول کیا جا رہا ہے</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AndroidDevice" xml:space="preserve">
+    <value>Android آلہ</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Windows 10 Mobile کے لیے قریبی آلات سے فائلوں کا اشتراک</value>
+    <comment>Package description shown by Windows.</comment>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>LiveDrop</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>منسوخ کریں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CancelButton.Content" xml:space="preserve">
+    <value>منسوخ کریں</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="Canceling" xml:space="preserve">
+    <value>منسوخ کیا جا رہا ہے...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChangeHostname" xml:space="preserve">
+    <value>میزبان کا نام تبدیل کریں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckForUpdate" xml:space="preserve">
+    <value>اپ ڈیٹس تلاش کریں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckingGitHubForUpdates" xml:space="preserve">
+    <value>GitHub پر اپ ڈیٹس تلاش کی جا رہی ہیں...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChooseAFileToShare" xml:space="preserve">
+    <value>اشتراک کے لیے فائل منتخب کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>بند کریں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotCreatePicturesLiveDropForReceivedFiles" xml:space="preserve">
+    <value>موصولہ فائلوں کے لیے LiveDrop فولڈر نہیں بنایا جا سکا۔</value>
+    <comment>Shown by TransferFileStore.cs. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="CouldNotOpenSavedContent" xml:space="preserve">
+    <value>محفوظ مواد نہیں کھولا جا سکا</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotReachGitHubCheckYourConnectionAnd" xml:space="preserve">
+    <value>GitHub سے رابطہ نہیں ہو سکا۔ اپنا کنکشن چیک کریں اور دوبارہ کوشش کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DevelopedBy" xml:space="preserve">
+    <value>{0} کی تیار کردہ</value>
+    <comment>{0}: clickable developer name retiredlake. Include exactly once; it may move.</comment>
+  </data>
+  <data name="DiscoveryFailed" xml:space="preserve">
+    <value>آلات کی تلاش شروع نہیں ہو سکی: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryHeading.Text" xml:space="preserve">
+    <value>آلات کی تلاش</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="DiscoveryIsOffSelectAProtocolToFind" xml:space="preserve">
+    <value>آلات کی تلاش بند ہے۔ آلات تلاش کرنے کے لیے پروٹوکول منتخب کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryShutdownFailed" xml:space="preserve">
+    <value>آلات کی تلاش بند کی جا رہی ہے: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersion" xml:space="preserve">
+    <value>v{0} ڈاؤن لوڈ ہو رہا ہے...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersionProgress" xml:space="preserve">
+    <value>v{0} ڈاؤن لوڈ ہو رہا ہے - {1:P0}</value>
+    <comment>{0}: version; {1:P0}: fractional download progress formatted as a percentage. Keep :P0.</comment>
+  </data>
+  <data name="EnterAtLeastOneLetterOrNumber" xml:space="preserve">
+    <value>کم از کم ایک حرف یا ہندسہ درج کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="FileCount" xml:space="preserve">
+    <value>{0} فائلیں</value>
+    <comment>{0}: file count (two or more). Single files display their filename.</comment>
+  </data>
+  <data name="FileLabel" xml:space="preserve">
+    <value>فائل</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="FilesAreSavedInPicturesLiveDrop" xml:space="preserve">
+    <value>فائلیں LiveDrop فولڈر میں محفوظ ہو گئیں۔</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="FilesReady" xml:space="preserve">
+    <value>آلہ منتخب کرنے کے بعد {0} فائلیں اشتراک کے لیے تیار ہیں۔</value>
+    <comment>{0}: file count (two or more).</comment>
+  </data>
+  <data name="GitHubIsLimitingRequestsPleaseTryAgainLater" xml:space="preserve">
+    <value>GitHub درخواستوں کو محدود کر رہا ہے۔ بعد میں دوبارہ کوشش کریں۔</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="GoogleQuickShare" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>LiveDrop 2</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HostnameMaximumLength" xml:space="preserve">
+    <value>زیادہ سے زیادہ {0} حروف استعمال کریں۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropCouldNotReadTheSharedContentPlease" xml:space="preserve">
+    <value>LiveDrop مشترکہ مواد نہیں پڑھ سکا۔ اسے دوبارہ شیئر کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropIsUpToDate" xml:space="preserve">
+    <value>LiveDrop تازہ ترین ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyShare" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="MicrosoftNearbyShareIsUnavailableOnWindows10" xml:space="preserve">
+    <value>Windows 10 Mobile پر Microsoft Nearby Share دستیاب نہیں؛ Google Quick Share دستیاب ہے۔</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>فائلیں LiveDrop فولڈر میں محفوظ ہو گئیں۔</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="MoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>مزید</value>
+    <comment>XAML AutomationProperties.Name. Product names remain unchanged.</comment>
+  </data>
+  <data name="NativeWebLinkSharingCurrentlyRequiresGoogleQuick" xml:space="preserve">
+    <value>ویب لنکس کے براہ راست اشتراک کے لیے فی الحال Google Quick Share درکار ہے۔</value>
+    <comment>Shown by ShareCoordinator.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDevice" xml:space="preserve">
+    <value>قریبی آلہ</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDiscoveryError" xml:space="preserve">
+    <value>قریبی آلات کی تلاش: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyProtocol.Content" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="NearbyReceivedBytes" xml:space="preserve">
+    <value>{0} موصول ہوا ({1}/{2} بائٹس)۔</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="NoApplicationCouldOpenThisFileOrFolder" xml:space="preserve">
+    <value>کوئی ایپ اس فائل یا فولڈر کو نہیں کھول سکی۔</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoFileSelected" xml:space="preserve">
+    <value>کوئی فائل منتخب نہیں کی گئی۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailable" xml:space="preserve">
+    <value>کوئی جاری شدہ اپ ڈیٹ دستیاب نہیں ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailableYet" xml:space="preserve">
+    <value>ابھی تک کوئی جاری شدہ اپ ڈیٹ دستیاب نہیں ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoUpdateAvailable" xml:space="preserve">
+    <value>کوئی اپ ڈیٹ دستیاب نہیں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>ٹھیک ہے</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OneFileReady" xml:space="preserve">
+    <value>آلہ منتخب کرنے کے بعد ایک فائل اشتراک کے لیے تیار ہے۔</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="OnlyHTTPAndHTTPSWebLinksAreSupported" xml:space="preserve">
+    <value>صرف HTTP اور HTTPS ویب لنکس معاون ہیں۔</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OpenShareFailed" xml:space="preserve">
+    <value>LiveDrop یہ اشتراک نہیں کھول سکا: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="OpeningTheWindowsInstaller" xml:space="preserve">
+    <value>Windows انسٹالر کھولا جا رہا ہے...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="PickerFailed" xml:space="preserve">
+    <value>فائل منتخب کرنے کا مکالمہ نہیں کھولا جا سکا: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>رازداری کی پالیسی</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnecting" xml:space="preserve">
+    <value>Quick Share کا {0}:{1} سے کنکشن قائم ہو رہا ہے۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareDiscoveryError" xml:space="preserve">
+    <value>Quick Share آلات کی تلاش: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareLanDiscoveryActive" xml:space="preserve">
+    <value>Quick Share کی LAN تلاش فعال ہے۔ دوسرے آلے کو سبھی (Everyone) موڈ پر سیٹ کریں۔</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareMdnsUnavailable" xml:space="preserve">
+    <value>Quick Share کا mDNS ساکٹ دستیاب نہیں: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareName" xml:space="preserve">
+    <value>Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickSharePeerDisconnectedDuringTheTransfer" xml:space="preserve">
+    <value>منتقلی کے دوران Quick Share آلے کا کنکشن منقطع ہو گیا۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareProtocol.Content" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickShareReceivingPin" xml:space="preserve">
+    <value>Quick Share کا حفاظتی PIN: {0}۔ اسے دوسرے آلے کے PIN سے ملائیں۔</value>
+    <comment>{0}: numeric security PIN; do not translate or reformat it.</comment>
+  </data>
+  <data name="QuickShareRecipientCancelledTheTransfer" xml:space="preserve">
+    <value>Quick Share کے وصول کنندہ نے منتقلی منسوخ کر دی۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientDisconnectedDuringUpload" xml:space="preserve">
+    <value>اپ لوڈ کے دوران Quick Share کے وصول کنندہ کا کنکشن منقطع ہو گیا۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientRejectedTheTransfer" xml:space="preserve">
+    <value>Quick Share کے وصول کنندہ نے منتقلی مسترد کر دی۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRejectedTheConnection" xml:space="preserve">
+    <value>Quick Share نے کنکشن مسترد کر دیا۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSecurityPin" xml:space="preserve">
+    <value>Quick Share کا حفاظتی PIN: {0}۔ اسے دوسرے آلے کے PIN سے ملائیں۔</value>
+    <comment>{0}: numeric security PIN; never translate or reformat the PIN.</comment>
+  </data>
+  <data name="QuickShareSenderCancelledTheTransfer" xml:space="preserve">
+    <value>Quick Share کے بھیجنے والے نے منتقلی منسوخ کر دی۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferFailed" xml:space="preserve">
+    <value>Quick Share کی منتقلی ناکام: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>فائلیں LiveDrop فولڈر میں محفوظ ہو گئیں۔</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="ReadShareFailed" xml:space="preserve">
+    <value>مشترکہ مواد نہیں پڑھا جا سکا: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileBatch" xml:space="preserve">
+    <value>{0} موصول ہوا ({1}/{2})۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileSaved" xml:space="preserve">
+    <value>{0} موصول ہوا۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="Receiving" xml:space="preserve">
+    <value>موصول ہو رہا ہے...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFileBody" xml:space="preserve">
+    <value>{1} سے {0} موصول ہو رہا ہے۔</value>
+    <comment>{0}: filename or file count; {1}: sender device name.</comment>
+  </data>
+  <data name="ReceivingFileLocation" xml:space="preserve">
+    <value>{0} موصول ہو رہا ہے۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFromDevice" xml:space="preserve">
+    <value>{0} سے موصول ہو رہا ہے</value>
+    <comment>{0}: sender device name.</comment>
+  </data>
+  <data name="RestartingDiscovery" xml:space="preserve">
+    <value>{0} کے نام سے آلات کی تلاش دوبارہ شروع ہو رہی ہے...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileFromPhotosOrFileExplorer" xml:space="preserve">
+    <value>تصاویر یا فائل ایکسپلورر سے فائل منتخب کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileOrWebLinkToShare" xml:space="preserve">
+    <value>اشتراک کے لیے فائل یا ویب لنک منتخب کریں۔</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerFirst" xml:space="preserve">
+    <value>پہلے آلہ منتخب کریں۔ دوسرے آلے کو سبھی (Everyone) موڈ پر سیٹ کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerThenSendTheFile" xml:space="preserve">
+    <value>آلہ منتخب کریں، پھر فائل بھیجیں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectFilesButton.Content" xml:space="preserve">
+    <value>فائلیں منتخب کریں</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendButton.Content" xml:space="preserve">
+    <value>منتخب مواد بھیجیں</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendSelectedShare" xml:space="preserve">
+    <value>منتخب مواد بھیجیں</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>بھیجا جا رہا ہے...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SendingFileBody" xml:space="preserve">
+    <value>{1} کو {0} بھیجا جا رہا ہے۔</value>
+    <comment>{0}: filename or file count; {1}: recipient device name.</comment>
+  </data>
+  <data name="SendingFileStatus" xml:space="preserve">
+    <value>{1} کو {0} بھیجا جا رہا ہے...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SendingToDevice" xml:space="preserve">
+    <value>{0} کو بھیجا جا رہا ہے</value>
+    <comment>{0}: recipient device name.</comment>
+  </data>
+  <data name="SentFile" xml:space="preserve">
+    <value>{1} کو {0} بھیج دیا گیا۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledMessage" xml:space="preserve">
+    <value>اشتراک منسوخ کر دیا گیا۔</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledTitle" xml:space="preserve">
+    <value>اشتراک منسوخ</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareComplete" xml:space="preserve">
+    <value>اشتراک مکمل</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCompleted" xml:space="preserve">
+    <value>اشتراک مکمل ہو گیا۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>اشتراک ناکام</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailedDetail" xml:space="preserve">
+    <value>اشتراک ناکام: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SpacesCannotBeAtTheBeginningOrEnd" xml:space="preserve">
+    <value>شروع یا آخر میں خالی جگہ نہیں ہو سکتی۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="StartingDiscovery.Text" xml:space="preserve">
+    <value>پیش منظر میں آلات کی تلاش شروع ہو رہی ہے...</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="SupportedPeers.Text" xml:space="preserve">
+    <value>معاون آلات</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="ThePeerClosedTheConnection" xml:space="preserve">
+    <value>آلے نے کنکشن بند کر دیا۔</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSavedFileOrFolderIsNoLonger" xml:space="preserve">
+    <value>محفوظ فائل یا فولڈر اب دستیاب نہیں۔</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedFileIsUnavailable" xml:space="preserve">
+    <value>منتخب فائل دستیاب نہیں۔</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheTCPConnectionTimedOut" xml:space="preserve">
+    <value>TCP کنکشن کا وقت ختم ہو گیا۔</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheUpdateCheckTimedOutPleaseTryAgain" xml:space="preserve">
+    <value>اپ ڈیٹس کی تلاش کا وقت ختم ہو گیا۔ دوبارہ کوشش کریں۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheWebLinkIsTooLong" xml:space="preserve">
+    <value>ویب لنک بہت طویل ہے۔</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThisShareContainsNoSupportedFilesOrText" xml:space="preserve">
+    <value>اس اشتراک میں کوئی معاون فائل یا متن نہیں ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Transferring" xml:space="preserve">
+    <value>منتقلی جاری ہے</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UnknownPeer" xml:space="preserve">
+    <value>نامعلوم آلہ</value>
+    <comment>Fallback device label.</comment>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>اپ ڈیٹس کی تلاش ناکام: {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="UpdateDownloadCanceled" xml:space="preserve">
+    <value>اپ ڈیٹ کا ڈاؤن لوڈ منسوخ کر دیا گیا۔</value>
+    <comment>Shown by MainPage.xaml.cs when the user cancels an update download.</comment>
+  </data>
+  <data name="UpdateHttpError" xml:space="preserve">
+    <value>GitHub نے HTTP {0} واپس کیا۔ بعد میں دوبارہ کوشش کریں۔</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="WebLinkIsReadyToShareAfterSelecting" xml:space="preserve">
+    <value>آلہ منتخب کرنے کے بعد ویب لنک اشتراک کے لیے تیار ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsCouldNotOpenTheInstaller" xml:space="preserve">
+    <value>Windows انسٹالر نہیں کھول سکا۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsPC" xml:space="preserve">
+    <value>Windows PC</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="YouAlreadyHaveTheLatestRelease" xml:space="preserve">
+    <value>آپ کے پاس پہلے ہی تازہ ترین ورژن ہے۔</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryLabel" xml:space="preserve">
+    <value>آلات کی تلاش</value>
+    <comment>Preserve numbered placeholders and protocol names.</comment>
+  </data>
+  <data name="PressToViewFiles" xml:space="preserve">
+    <value>فائلیں دیکھنے کے لیے دبائیں</value>
+    <comment>Successful receive notification; tapping opens the saved file or batch folder.</comment>
+  </data>
+  <data name="PressToViewLink" xml:space="preserve">
+    <value>لنک دیکھنے کے لیے دبائیں</value>
+    <comment>Successful URL receive notification; tapping opens the received web link.</comment>
+  </data>
+  <data name="WebLinkReceived" xml:space="preserve">
+    <value>ویب لنک موصول ہوا۔</value>
+    <comment>Status for a completed URL attachment; no text file was saved.</comment>
+  </data>
+  <data name="CouldNotOpenReceivedLink" xml:space="preserve">
+    <value>موصولہ لنک نہیں کھولا جا سکا۔ دوبارہ کوشش کے لیے اس کی اطلاع دبائیں۔</value>
+    <comment>Browser activation failed; completion notification can retry the link.</comment>
+  </data>
+  <data name="ReceivingContent" xml:space="preserve">
+    <value>{0} موصول ہو رہا ہے...</value>
+    <comment>{0}: incoming filename or file count. May also be a URL attachment.</comment>
+  </data>
+  <data name="AcceptIncomingButton.Content" xml:space="preserve">
+    <value>قبول کریں</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DenyIncomingButton.Content" xml:space="preserve">
+    <value>مسترد کریں</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DismissReceivedButton.Content" xml:space="preserve">
+    <value>بند کریں</value>
+    <comment>Dismisses the successful receive notice.</comment>
+  </data>
+  <data name="FilesSavedToLiveDropFolder" xml:space="preserve">
+    <value>فائلیں LiveDrop فولڈر میں محفوظ ہو گئیں۔</value>
+    <comment>Shown after receiving files; do not reveal the storage path.</comment>
+  </data>
+  <data name="IncomingShareRequest" xml:space="preserve">
+    <value>اشتراک کی آنے والی درخواست۔</value>
+    <comment>Consent prompt when the incoming protocol does not provide a verification PIN.</comment>
+  </data>
+  <data name="IncomingShareQueueFull" xml:space="preserve">
+    <value>اشتراک کی بہت زیادہ درخواستیں انتظار میں ہیں۔ بعد میں دوبارہ کوشش کریں۔</value>
+    <comment>Shown when the bounded incoming consent queue is full.</comment>
+  </data>
+  <data name="LiveDropFolder" xml:space="preserve">
+    <value>LiveDrop فولڈر</value>
+    <comment>Menu item that opens the app's receive folder.</comment>
+  </data>
+  <data name="ViewFilesButton.Content" xml:space="preserve">
+    <value>فائلیں دیکھیں</value>
+    <comment>Opens the most recently received file or folder.</comment>
+  </data>
+  <data name="HostnameInstructions" xml:space="preserve">
+    <value>دوسرے آلات پر نظر آنے والا نام منتخب کریں (1–32 حروف، ہندسے، خالی جگہیں اور ' _ - . ( ) &amp; +).</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LettersNumbersSpaces" xml:space="preserve">
+    <value>حروف، ہندسے، خالی جگہیں اور ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UseLettersNumbersSpacesAndOnly" xml:space="preserve">
+    <value>صرف حروف، ہندسے، خالی جگہیں اور یہ علامات استعمال کریں: ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+</root>

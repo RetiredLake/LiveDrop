@@ -30,6 +30,16 @@ namespace LiveDrop
         protected override async void OnActivated(IActivatedEventArgs args)
         {
             base.OnActivated(args);
+            var picker = args as FileOpenPickerContinuationEventArgs;
+            if (picker != null && picker.ContinuationData.ContainsKey("LiveDrop.Picker") &&
+                (string)picker.ContinuationData["LiveDrop.Picker"] == "SelectFiles")
+            {
+                NavigateToMainPage();
+                Window.Current.Activate();
+                var page = (Window.Current.Content as Frame)?.Content as MainPage;
+                if (page != null) await page.ContinueFilePickerAsync(picker);
+                return;
+            }
             var toast = args as ToastNotificationActivatedEventArgs;
             if (toast == null) return;
             NavigateToMainPage();

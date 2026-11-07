@@ -1,0 +1,555 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="EmptyTransferSize" xml:space="preserve">
+    <value>0 B</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="About" xml:space="preserve">
+    <value>À propos</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AboutVersion" xml:space="preserve">
+    <value>Version {0}</value>
+    <comment>{0}: four-part app version, such as 0.1.8.8.</comment>
+  </data>
+  <data name="Accepting" xml:space="preserve">
+    <value>Acceptation en cours</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AndroidDevice" xml:space="preserve">
+    <value>Appareil Android</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="AppDescription" xml:space="preserve">
+    <value>Partage de fichiers à proximité pour Windows 10 Mobile</value>
+    <comment>Package description shown by Windows.</comment>
+  </data>
+  <data name="AppDisplayName" xml:space="preserve">
+    <value>LiveDrop</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="Cancel" xml:space="preserve">
+    <value>Annuler</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CancelButton.Content" xml:space="preserve">
+    <value>Annuler</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="Canceling" xml:space="preserve">
+    <value>Annulation...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChangeHostname" xml:space="preserve">
+    <value>Modifier le nom d’hôte</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckForUpdate" xml:space="preserve">
+    <value>Rechercher des mises à jour</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CheckingGitHubForUpdates" xml:space="preserve">
+    <value>Recherche de mises à jour sur GitHub...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ChooseAFileToShare" xml:space="preserve">
+    <value>Choisissez un fichier à partager.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Close" xml:space="preserve">
+    <value>Fermer</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotCreatePicturesLiveDropForReceivedFiles" xml:space="preserve">
+    <value>Impossible de créer le dossier LiveDrop pour les fichiers reçus.</value>
+    <comment>Shown by TransferFileStore.cs. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="CouldNotOpenSavedContent" xml:space="preserve">
+    <value>Impossible d’ouvrir le contenu enregistré</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="CouldNotReachGitHubCheckYourConnectionAnd" xml:space="preserve">
+    <value>Impossible de joindre GitHub. Vérifiez votre connexion et réessayez.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DevelopedBy" xml:space="preserve">
+    <value>Développé par {0}</value>
+    <comment>{0}: clickable developer name retiredlake. Include exactly once; it may move.</comment>
+  </data>
+  <data name="DiscoveryFailed" xml:space="preserve">
+    <value>Impossible de lancer la détection : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryHeading.Text" xml:space="preserve">
+    <value>Détection</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="DiscoveryIsOffSelectAProtocolToFind" xml:space="preserve">
+    <value>La détection est désactivée. Sélectionnez un protocole pour trouver des appareils.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryShutdownFailed" xml:space="preserve">
+    <value>Arrêt de la détection : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersion" xml:space="preserve">
+    <value>Téléchargement de v{0}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="DownloadingVersionProgress" xml:space="preserve">
+    <value>Téléchargement de v{0} - {1:P0}</value>
+    <comment>{0}: version; {1:P0}: fractional download progress formatted as a percentage. Keep :P0.</comment>
+  </data>
+  <data name="EnterAtLeastOneLetterOrNumber" xml:space="preserve">
+    <value>Saisissez au moins une lettre ou un chiffre.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="FileCount" xml:space="preserve">
+    <value>{0} fichiers</value>
+    <comment>{0}: file count (two or more). Single files display their filename.</comment>
+  </data>
+  <data name="FileLabel" xml:space="preserve">
+    <value>fichier</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="FilesAreSavedInPicturesLiveDrop" xml:space="preserve">
+    <value>Fichiers enregistrés dans le dossier LiveDrop.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="FilesReady" xml:space="preserve">
+    <value>{0} fichiers seront prêts à être partagés après la sélection d’un appareil.</value>
+    <comment>{0}: file count (two or more).</comment>
+  </data>
+  <data name="GitHubIsLimitingRequestsPleaseTryAgainLater" xml:space="preserve">
+    <value>GitHub limite les requêtes. Réessayez plus tard.</value>
+    <comment>Shown by GitHubUpdateService.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="GoogleQuickShare" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HeaderTitle.Text" xml:space="preserve">
+    <value>LiveDrop 2</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="HostnameMaximumLength" xml:space="preserve">
+    <value>Utilisez au maximum {0} caractères.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropCouldNotReadTheSharedContentPlease" xml:space="preserve">
+    <value>LiveDrop n’a pas pu lire le contenu partagé. Partagez-le à nouveau.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LiveDropIsUpToDate" xml:space="preserve">
+    <value>LiveDrop est à jour.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyShare" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="MicrosoftNearbyShareIsUnavailableOnWindows10" xml:space="preserve">
+    <value>Microsoft Nearby Share n’est pas disponible sur Windows 10 Mobile ; Google Quick Share reste disponible.</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="MicrosoftNearbyTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>Fichiers enregistrés dans le dossier LiveDrop.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="MoreButton.[using:Windows.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve">
+    <value>Plus</value>
+    <comment>XAML AutomationProperties.Name. Product names remain unchanged.</comment>
+  </data>
+  <data name="NativeWebLinkSharingCurrentlyRequiresGoogleQuick" xml:space="preserve">
+    <value>Le partage direct de liens web nécessite actuellement Google Quick Share.</value>
+    <comment>Shown by ShareCoordinator.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDevice" xml:space="preserve">
+    <value>Appareil à proximité</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NearbyDiscoveryError" xml:space="preserve">
+    <value>Détection à proximité : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="NearbyProtocol.Content" xml:space="preserve">
+    <value>Microsoft Nearby Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="NearbyReceivedBytes" xml:space="preserve">
+    <value>{0} reçu ({1}/{2} octets).</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="NoApplicationCouldOpenThisFileOrFolder" xml:space="preserve">
+    <value>Aucune application n’a pu ouvrir ce fichier ou ce dossier.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoFileSelected" xml:space="preserve">
+    <value>Aucun fichier sélectionné.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailable" xml:space="preserve">
+    <value>Aucune mise à jour publiée n’est disponible.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoPublishedUpdateIsAvailableYet" xml:space="preserve">
+    <value>Aucune mise à jour publiée n’est encore disponible.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="NoUpdateAvailable" xml:space="preserve">
+    <value>Aucune mise à jour disponible</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OK" xml:space="preserve">
+    <value>OK</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OneFileReady" xml:space="preserve">
+    <value>Un fichier sera prêt à être partagé après la sélection d’un appareil.</value>
+    <comment>Preserve numbered placeholders and product/protocol names.</comment>
+  </data>
+  <data name="OnlyHTTPAndHTTPSWebLinksAreSupported" xml:space="preserve">
+    <value>Seuls les liens web HTTP et HTTPS sont pris en charge.</value>
+    <comment>Shown by QuickShareFrames.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="OpenShareFailed" xml:space="preserve">
+    <value>LiveDrop n’a pas pu ouvrir ce partage : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="OpeningTheWindowsInstaller" xml:space="preserve">
+    <value>Ouverture du programme d’installation Windows...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="PickerFailed" xml:space="preserve">
+    <value>Impossible d’ouvrir le sélecteur de fichiers : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="PrivacyPolicy" xml:space="preserve">
+    <value>Politique de confidentialité</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareConnecting" xml:space="preserve">
+    <value>Quick Share se connecte à {0}:{1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareDiscoveryError" xml:space="preserve">
+    <value>Détection Quick Share : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareLanDiscoveryActive" xml:space="preserve">
+    <value>La détection Quick Share sur le réseau local est active. Réglez l’autre appareil sur le mode Tout le monde (Everyone).</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareMdnsUnavailable" xml:space="preserve">
+    <value>Socket mDNS Quick Share indisponible : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareName" xml:space="preserve">
+    <value>Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickSharePeerDisconnectedDuringTheTransfer" xml:space="preserve">
+    <value>L’appareil Quick Share s’est déconnecté pendant le transfert.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareProtocol.Content" xml:space="preserve">
+    <value>Google Quick Share</value>
+    <comment>Product/brand name. Do not translate.</comment>
+  </data>
+  <data name="QuickShareReceivingPin" xml:space="preserve">
+    <value>Code PIN de sécurité Quick Share : {0}. Comparez-le à celui de l’autre appareil.</value>
+    <comment>{0}: numeric security PIN; do not translate or reformat it.</comment>
+  </data>
+  <data name="QuickShareRecipientCancelledTheTransfer" xml:space="preserve">
+    <value>Le destinataire Quick Share a annulé le transfert.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientDisconnectedDuringUpload" xml:space="preserve">
+    <value>Le destinataire Quick Share s’est déconnecté pendant l’envoi.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRecipientRejectedTheTransfer" xml:space="preserve">
+    <value>Le destinataire Quick Share a refusé le transfert.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareRejectedTheConnection" xml:space="preserve">
+    <value>Quick Share a refusé la connexion.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareSecurityPin" xml:space="preserve">
+    <value>Code PIN de sécurité Quick Share : {0}. Comparez-le à celui de l’autre appareil.</value>
+    <comment>{0}: numeric security PIN; never translate or reformat the PIN.</comment>
+  </data>
+  <data name="QuickShareSenderCancelledTheTransfer" xml:space="preserve">
+    <value>L’expéditeur Quick Share a annulé le transfert.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferFailed" xml:space="preserve">
+    <value>Échec du transfert Quick Share : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="QuickShareTransferReceivedFilesAreSavedIn" xml:space="preserve">
+    <value>Fichiers enregistrés dans le dossier LiveDrop.</value>
+    <comment>Receive completion status. Do not expose the storage path to users.</comment>
+  </data>
+  <data name="ReadShareFailed" xml:space="preserve">
+    <value>Impossible de lire le contenu partagé : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileBatch" xml:space="preserve">
+    <value>{0} reçu ({1}/{2}).</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivedFileSaved" xml:space="preserve">
+    <value>{0} reçu.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="Receiving" xml:space="preserve">
+    <value>Réception...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFileBody" xml:space="preserve">
+    <value>Réception de {0} depuis {1}.</value>
+    <comment>{0}: filename or file count; {1}: sender device name.</comment>
+  </data>
+  <data name="ReceivingFileLocation" xml:space="preserve">
+    <value>Réception de {0}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ReceivingFromDevice" xml:space="preserve">
+    <value>Réception depuis {0}</value>
+    <comment>{0}: sender device name.</comment>
+  </data>
+  <data name="RestartingDiscovery" xml:space="preserve">
+    <value>Redémarrage de la détection sous le nom {0}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileFromPhotosOrFileExplorer" xml:space="preserve">
+    <value>Sélectionnez un fichier dans Photos ou l’Explorateur de fichiers.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAFileOrWebLinkToShare" xml:space="preserve">
+    <value>Sélectionnez un fichier ou un lien web à partager.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerFirst" xml:space="preserve">
+    <value>Sélectionnez d’abord un appareil. Réglez l’autre appareil sur le mode Tout le monde (Everyone).</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectAPeerThenSendTheFile" xml:space="preserve">
+    <value>Sélectionnez un appareil, puis envoyez le fichier.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SelectFilesButton.Content" xml:space="preserve">
+    <value>Sélectionner des fichiers</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendButton.Content" xml:space="preserve">
+    <value>Envoyer le contenu sélectionné</value>
+    <comment>XAML Content. Product names remain unchanged.</comment>
+  </data>
+  <data name="SendSelectedShare" xml:space="preserve">
+    <value>Envoyer le contenu sélectionné</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Sending" xml:space="preserve">
+    <value>Envoi...</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="SendingFileBody" xml:space="preserve">
+    <value>Envoi de {0} à {1}.</value>
+    <comment>{0}: filename or file count; {1}: recipient device name.</comment>
+  </data>
+  <data name="SendingFileStatus" xml:space="preserve">
+    <value>Envoi de {0} à {1}...</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SendingToDevice" xml:space="preserve">
+    <value>Envoi à {0}</value>
+    <comment>{0}: recipient device name.</comment>
+  </data>
+  <data name="SentFile" xml:space="preserve">
+    <value>{0} envoyé à {1}.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledMessage" xml:space="preserve">
+    <value>Partage annulé.</value>
+    <comment>Shown by QuickShareAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCanceledTitle" xml:space="preserve">
+    <value>Partage annulé</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareComplete" xml:space="preserve">
+    <value>Partage terminé</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareCompleted" xml:space="preserve">
+    <value>Le partage est terminé.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailed" xml:space="preserve">
+    <value>Échec du partage</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ShareFailedDetail" xml:space="preserve">
+    <value>Échec du partage : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="SpacesCannotBeAtTheBeginningOrEnd" xml:space="preserve">
+    <value>Les espaces ne peuvent pas se trouver au début ou à la fin.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="StartingDiscovery.Text" xml:space="preserve">
+    <value>Démarrage de la détection au premier plan...</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="SupportedPeers.Text" xml:space="preserve">
+    <value>Appareils pris en charge</value>
+    <comment>XAML Text. Product names remain unchanged.</comment>
+  </data>
+  <data name="ThePeerClosedTheConnection" xml:space="preserve">
+    <value>L’appareil a fermé la connexion.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSavedFileOrFolderIsNoLonger" xml:space="preserve">
+    <value>Le fichier ou le dossier enregistré n’est plus disponible.</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheSelectedFileIsUnavailable" xml:space="preserve">
+    <value>Le fichier sélectionné est indisponible.</value>
+    <comment>Shown by TransferFileStore.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheTCPConnectionTimedOut" xml:space="preserve">
+    <value>La connexion TCP a expiré.</value>
+    <comment>Shown by SocketConnection.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheUpdateCheckTimedOutPleaseTryAgain" xml:space="preserve">
+    <value>La recherche de mises à jour a expiré. Réessayez.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="TheWebLinkIsTooLong" xml:space="preserve">
+    <value>Le lien web est trop long.</value>
+    <comment>Shown by QuickShareSession.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="ThisShareContainsNoSupportedFilesOrText" xml:space="preserve">
+    <value>Ce partage ne contient aucun fichier ni texte pris en charge.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="Transferring" xml:space="preserve">
+    <value>Transfert en cours</value>
+    <comment>Shown by TransferNotification.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UnknownPeer" xml:space="preserve">
+    <value>Appareil inconnu</value>
+    <comment>Fallback device label.</comment>
+  </data>
+  <data name="UpdateCheckFailed" xml:space="preserve">
+    <value>Échec de la recherche de mises à jour : {0}</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="UpdateDownloadCanceled" xml:space="preserve">
+    <value>Téléchargement de la mise à jour annulé.</value>
+    <comment>Shown by MainPage.xaml.cs when the user cancels an update download.</comment>
+  </data>
+  <data name="UpdateHttpError" xml:space="preserve">
+    <value>GitHub a renvoyé HTTP {0}. Réessayez plus tard.</value>
+    <comment>User-visible text. Preserve product names and protocol identifiers; preserve numbered placeholders.</comment>
+  </data>
+  <data name="WebLinkIsReadyToShareAfterSelecting" xml:space="preserve">
+    <value>Le lien web sera prêt à être partagé après la sélection d’un appareil.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsCouldNotOpenTheInstaller" xml:space="preserve">
+    <value>Windows n’a pas pu ouvrir le programme d’installation.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="WindowsPC" xml:space="preserve">
+    <value>PC Windows</value>
+    <comment>Shown by NearbyCdpAdapter.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="YouAlreadyHaveTheLatestRelease" xml:space="preserve">
+    <value>Vous disposez déjà de la dernière version.</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="DiscoveryLabel" xml:space="preserve">
+    <value>Détection</value>
+    <comment>Preserve numbered placeholders and protocol names.</comment>
+  </data>
+  <data name="PressToViewFiles" xml:space="preserve">
+    <value>Appuyez pour voir les fichiers</value>
+    <comment>Successful receive notification; tapping opens the saved file or batch folder.</comment>
+  </data>
+  <data name="PressToViewLink" xml:space="preserve">
+    <value>Appuyez pour voir le lien</value>
+    <comment>Successful URL receive notification; tapping opens the received web link.</comment>
+  </data>
+  <data name="WebLinkReceived" xml:space="preserve">
+    <value>Lien web reçu.</value>
+    <comment>Status for a completed URL attachment; no text file was saved.</comment>
+  </data>
+  <data name="CouldNotOpenReceivedLink" xml:space="preserve">
+    <value>Impossible d’ouvrir le lien reçu. Appuyez sur sa notification pour réessayer.</value>
+    <comment>Browser activation failed; completion notification can retry the link.</comment>
+  </data>
+  <data name="ReceivingContent" xml:space="preserve">
+    <value>Réception de {0}...</value>
+    <comment>{0}: incoming filename or file count. May also be a URL attachment.</comment>
+  </data>
+  <data name="AcceptIncomingButton.Content" xml:space="preserve">
+    <value>Accepter</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DenyIncomingButton.Content" xml:space="preserve">
+    <value>Refuser</value>
+    <comment>Consent action for an incoming share.</comment>
+  </data>
+  <data name="DismissReceivedButton.Content" xml:space="preserve">
+    <value>Fermer</value>
+    <comment>Dismisses the successful receive notice.</comment>
+  </data>
+  <data name="FilesSavedToLiveDropFolder" xml:space="preserve">
+    <value>Fichiers enregistrés dans le dossier LiveDrop.</value>
+    <comment>Shown after receiving files; do not reveal the storage path.</comment>
+  </data>
+  <data name="IncomingShareRequest" xml:space="preserve">
+    <value>Demande de partage entrante.</value>
+    <comment>Consent prompt when the incoming protocol does not provide a verification PIN.</comment>
+  </data>
+  <data name="IncomingShareQueueFull" xml:space="preserve">
+    <value>Trop de demandes de partage sont en attente. Réessayez plus tard.</value>
+    <comment>Shown when the bounded incoming consent queue is full.</comment>
+  </data>
+  <data name="LiveDropFolder" xml:space="preserve">
+    <value>Dossier LiveDrop</value>
+    <comment>Menu item that opens the app's receive folder.</comment>
+  </data>
+  <data name="ViewFilesButton.Content" xml:space="preserve">
+    <value>Voir les fichiers</value>
+    <comment>Opens the most recently received file or folder.</comment>
+  </data>
+  <data name="HostnameInstructions" xml:space="preserve">
+    <value>Choisissez le nom visible par les autres appareils (1 à 32 lettres, chiffres, espaces et ' _ - . ( ) &amp; +).</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="LettersNumbersSpaces" xml:space="preserve">
+    <value>Lettres, chiffres, espaces et ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+  <data name="UseLettersNumbersSpacesAndOnly" xml:space="preserve">
+    <value>Utilisez uniquement des lettres, chiffres, espaces et ' _ - . ( ) &amp; +</value>
+    <comment>Shown by MainPage.xaml.cs. Keep technical names unchanged. Preserve any numbered placeholders.</comment>
+  </data>
+</root>

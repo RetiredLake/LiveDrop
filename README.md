@@ -34,6 +34,11 @@ LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](ht
 
 ## Build
 
+The Windows 8.1 / Windows Phone 8.1 WinRT port is under development in
+[`src/LiveDrop8`](src/LiveDrop8/README.md), with its own `LiveDrop8.sln`.
+It has no automatic updater. Source on `main` may include changes that have not
+been built or released; use GitHub Releases for published UWP packages.
+
 LiveDrop uses the same LiveBubbles toolchain:
 
 1. Visual Studio 2019 with Universal Windows Platform development.

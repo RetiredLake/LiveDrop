@@ -10,8 +10,10 @@ using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
+#if WINDOWS_UWP
 using Windows.Foundation.Metadata;
 using Windows.System.Profile;
+#endif
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 using LiveDrop.Transports;
@@ -158,7 +160,7 @@ namespace LiveDrop.Protocols.Nearby
                 PeerDiscovered?.Invoke(this, new PeerDiscoveredEventArgs(peer));
             }
             catch { }
-            await Task.CompletedTask;
+            await Task.FromResult(true);
         }
 
         private static string[] GetBroadcastAddresses()
@@ -183,7 +185,7 @@ namespace LiveDrop.Protocols.Nearby
         {
             try { args.Socket.Control.NoDelay = true; } catch { }
             var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
-            _ = HandleIncomingAsync(args.Socket, token);
+            var incomingTask = HandleIncomingAsync(args.Socket, token);
         }
 
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
@@ -206,8 +208,23 @@ namespace LiveDrop.Protocols.Nearby
                     {
                         await CdpServerSession.ReceiveAsync(connection, _identity, peer, async (remote, offer) =>
                         {
-                            var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                            var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                            var decision = new TaskCompletionSource<bool>(
+#if WINDOWS_UWP
+                            TaskCreationOptions.RunContinuationsAsynchronously
+#else
+                            TaskCreationOptions.None
+#endif
+                        );
+                            var complete = new Func<bool, Task>(accepted =>
+                        {
+#if WINDOWS_UWP
+                            decision.TrySetResult(accepted); return Task.FromResult(true);
+#else
+                            // 8.1 predates RunContinuationsAsynchronously. Resolve off
+                            // the UI thread so protocol work cannot run inside a click.
+                            return Task.Run(() => decision.TrySetResult(accepted));
+#endif
+                        });
                             if (OfferReceived == null) return true;
                             using (cancellationToken.Register(() => decision.TrySetResult(false)))
                             {
@@ -334,8 +351,14 @@ namespace LiveDrop.Protocols.Nearby
 
         private static bool IsWindowsMobile()
         {
+#if WINDOWS_UWP
             return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
                 ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
+#elif WINDOWS_PHONE_APP
+            return true;
+#else
+            return false;
+#endif
         }
 
         private static bool IsLocalAddress(string address)

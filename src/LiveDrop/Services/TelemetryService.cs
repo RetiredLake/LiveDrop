@@ -10,7 +10,9 @@ using System.Threading.Tasks;
 using Windows.ApplicationModel;
 using Windows.Data.Json;
 using Windows.Storage;
+#if !LIVEDROP8
 using Windows.System.Profile;
+#endif
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 
@@ -142,6 +144,7 @@ namespace LiveDrop.Services
                 {
                     { "protocol", ProtocolName(transport) },
                     { "direction", string.IsNullOrWhiteSpace(direction) ? "unknown" : direction },
+                    { "content_type", offer != null && offer.WebLink != null ? "link" : "file" },
                     { "file_count", FileCount(offer).ToString(CultureInfo.InvariantCulture) },
                     { "size_bucket", SizeBucket(TotalBytes(offer)) }
                 };
@@ -188,6 +191,12 @@ namespace LiveDrop.Services
                 properties["$process_person_profile"] = JsonValue.CreateBooleanValue(false);
                 properties["app_version"] = JsonValue.CreateStringValue(_appVersion ?? "unknown");
                 properties["device_family"] = JsonValue.CreateStringValue(_deviceFamily ?? "unknown");
+                properties["language"] = JsonValue.CreateStringValue(GetLanguage());
+#if LIVEDROP8
+                properties["app_variant"] = JsonValue.CreateStringValue("winrt81");
+#else
+                properties["app_variant"] = JsonValue.CreateStringValue("uwp");
+#endif
                 if (additionalProperties != null)
                 {
                     foreach (var property in additionalProperties)
@@ -199,13 +208,16 @@ namespace LiveDrop.Services
 
                 var item = new JsonObject();
                 item["event"] = JsonValue.CreateStringValue(eventName);
+                item["distinct_id"] = JsonValue.CreateStringValue(_installationId);
+                item["timestamp"] = JsonValue.CreateStringValue(DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+                item["uuid"] = JsonValue.CreateStringValue(Guid.NewGuid().ToString("D"));
                 item["properties"] = properties;
                 lock (_queueLock)
                 {
                     _pendingEvents.Add(item.Stringify());
                     TrimQueueLocked();
                 }
-                _ = FlushSilentlyAsync();
+                var flush = FlushSilentlyAsync();
             }
             catch { }
         }
@@ -333,7 +345,7 @@ namespace LiveDrop.Services
         private static HttpClient CreateClient()
         {
             var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
-            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/0.1.9.0");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("LiveDrop/" + GetAppVersion());
             return client;
         }
 
@@ -349,7 +361,24 @@ namespace LiveDrop.Services
 
         private static string GetDeviceFamily()
         {
+#if LIVEDROP8
+#if WINDOWS_PHONE_APP
+            return "Windows.Mobile";
+#else
+            return "Windows.Desktop";
+#endif
+#else
             try { return AnalyticsInfo.VersionInfo.DeviceFamily ?? "unknown"; }
+            catch { return "unknown"; }
+#endif
+        }
+
+        private static string GetLanguage()
+        {
+            try
+            {
+                return Windows.Globalization.ApplicationLanguages.Languages.FirstOrDefault() ?? "unknown";
+            }
             catch { return "unknown"; }
         }
 

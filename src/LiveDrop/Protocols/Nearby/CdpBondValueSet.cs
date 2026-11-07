@@ -148,9 +148,9 @@ namespace LiveDrop.Protocols.Nearby
         }
 
         private static void WriteWString(Stream stream, string value) { var bytes = Encoding.Unicode.GetBytes(value ?? string.Empty); WriteVarUInt(stream, (uint)(bytes.Length / 2)); stream.Write(bytes, 0, bytes.Length); }
-        private static string ReadWString(Stream stream) { var length = ReadVarUInt(stream); if (length > 65535) throw new InvalidDataException(); var bytes = new byte[checked((int)length * 2)]; ReadExactly(stream, bytes); return Encoding.Unicode.GetString(bytes); }
+        private static string ReadWString(Stream stream) { var length = ReadVarUInt(stream); if (length > 65535) throw new InvalidDataException(); var bytes = new byte[checked((int)length * 2)]; ReadExactly(stream, bytes); return Encoding.Unicode.GetString(bytes, 0, bytes.Length); }
         private static void WriteString(Stream stream, string value) { var bytes = Encoding.UTF8.GetBytes(value ?? string.Empty); WriteVarUInt(stream, (uint)bytes.Length); stream.Write(bytes, 0, bytes.Length); }
-        private static string ReadString(Stream stream) { var length = ReadVarUInt(stream); if (length > 1024 * 1024) throw new InvalidDataException(); var bytes = new byte[checked((int)length)]; ReadExactly(stream, bytes); return Encoding.UTF8.GetString(bytes); }
+        private static string ReadString(Stream stream) { var length = ReadVarUInt(stream); if (length > 1024 * 1024) throw new InvalidDataException(); var bytes = new byte[checked((int)length)]; ReadExactly(stream, bytes); return Encoding.UTF8.GetString(bytes, 0, bytes.Length); }
         private static void WriteVarUInt(Stream stream, ulong value) { while (value >= 0x80) { stream.WriteByte((byte)(value | 0x80)); value >>= 7; } stream.WriteByte((byte)value); }
         private static ulong ReadVarUInt(Stream stream) { ulong result = 0; var shift = 0; while (shift < 64) { var item = stream.ReadByte(); if (item < 0) throw new EndOfStreamException(); result |= ((ulong)item & 0x7F) << shift; if ((item & 0x80) == 0) return result; shift += 7; } throw new InvalidDataException(); }
         private static void ReadExactly(Stream stream, byte[] buffer) { var offset = 0; while (offset < buffer.Length) { var read = stream.Read(buffer, offset, buffer.Length - offset); if (read == 0) throw new EndOfStreamException(); offset += read; } }

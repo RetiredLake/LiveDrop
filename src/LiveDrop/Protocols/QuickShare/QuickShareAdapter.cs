@@ -6,8 +6,10 @@ using System.Threading.Tasks;
 using Windows.Networking;
 using Windows.Networking.Connectivity;
 using Windows.Networking.Sockets;
+#if WINDOWS_UWP
 using Windows.Foundation.Metadata;
 using Windows.System.Profile;
+#endif
 using LiveDrop.Models;
 using LiveDrop.Protocols;
 using LiveDrop.Transports;
@@ -62,6 +64,8 @@ namespace LiveDrop.Protocols.QuickShare
             _address = FindLocalIpv4();
             _mdns = new MdnsMulticastService(MdnsCodec.QuickShareService);
             _mdns.ServicesReceived += OnServicesReceived;
+            _mdns.ReceiveFailed += ex => StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareMdnsUnavailable", ex.Message)));
+            Exception mdnsError = null;
             try
             {
                 await _mdns.StartAsync(_stopSource.Token);
@@ -69,6 +73,7 @@ namespace LiveDrop.Protocols.QuickShare
             }
             catch (Exception ex)
             {
+                mdnsError = ex;
                 StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareMdnsUnavailable", ex.Message)));
             }
             _dnssd = new QuickShareDnssdPublisher(_serviceInstanceName, _endpointInfo);
@@ -79,7 +84,7 @@ namespace LiveDrop.Protocols.QuickShare
             if (!_mdnsStarted && !dnssdStarted)
             {
                 await StopAsync();
-                throw new InvalidOperationException(AppText.Get("WindowsCouldNotRegisterTheQuickShareDNS"));
+                throw new InvalidOperationException(AppText.Get("WindowsCouldNotRegisterTheQuickShareDNS") + (mdnsError == null ? "" : " " + mdnsError.Message), mdnsError);
             }
             var discoveryToken = _stopSource.Token;
             _queryLoop = Task.Run(() => QueryLoopAsync(discoveryToken));
@@ -201,7 +206,7 @@ namespace LiveDrop.Protocols.QuickShare
             StatusChanged?.Invoke(this, new StatusChangedEventArgs(AppText.Format("QuickShareConnectionReceived", (remote == null ? AppText.Get("UnknownPeer") : remote.RawName))));
             try { args.Socket.Control.NoDelay = true; } catch { }
             var token = _stopSource == null ? CancellationToken.None : _stopSource.Token;
-            _ = HandleIncomingAsync(args.Socket, token);
+            var incomingTask = HandleIncomingAsync(args.Socket, token);
         }
 
         private async Task HandleIncomingAsync(StreamSocket socket, CancellationToken cancellationToken)
@@ -223,8 +228,23 @@ namespace LiveDrop.Protocols.QuickShare
                     // QuickShareSession owns the socket and its single reader/writer pair.
                     await QuickShareSession.ReceiveAsync(socket, _displayName, async (peer, offer) =>
                     {
-                        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-                        var complete = new Func<bool, Task>(accepted => { decision.TrySetResult(accepted); return Task.CompletedTask; });
+                        var decision = new TaskCompletionSource<bool>(
+#if WINDOWS_UWP
+                            TaskCreationOptions.RunContinuationsAsynchronously
+#else
+                            TaskCreationOptions.None
+#endif
+                        );
+                        var complete = new Func<bool, Task>(accepted =>
+                        {
+#if WINDOWS_UWP
+                            decision.TrySetResult(accepted); return Task.FromResult(true);
+#else
+                            // 8.1 predates RunContinuationsAsynchronously. Resolve off
+                            // the UI thread so protocol work cannot run inside a click.
+                            return Task.Run(() => decision.TrySetResult(accepted));
+#endif
+                        });
                         if (OfferReceived == null) return true;
                         using (cancellationToken.Register(() => decision.TrySetResult(false)))
                         {
@@ -260,8 +280,14 @@ namespace LiveDrop.Protocols.QuickShare
 
         private static bool IsWindowsMobile()
         {
+#if WINDOWS_UWP
             return string.Equals(AnalyticsInfo.VersionInfo.DeviceFamily, "Windows.Mobile", StringComparison.OrdinalIgnoreCase) ||
                 ApiInformation.IsTypePresent("Windows.Phone.UI.Input.HardwareButtons");
+#elif WINDOWS_PHONE_APP
+            return true;
+#else
+            return false;
+#endif
         }
 
         private static string CreateInstanceName(string endpointId)
@@ -278,7 +304,7 @@ namespace LiveDrop.Protocols.QuickShare
                 var label = rawName.Split('.')[0];
                 var raw = Convert.FromBase64String(label.Replace('-', '+').Replace('_', '/').PadRight(((label.Length + 3) / 4) * 4, '='));
                 if (raw.Length < 8 || raw[0] != 0x23 || raw[5] != 0xFC || raw[6] != 0x9F || raw[7] != 0x5E) return string.Empty;
-                return System.Text.Encoding.ASCII.GetString(raw, 1, 4);
+                return System.Text.Encoding.GetEncoding("us-ascii").GetString(raw, 1, 4);
             }
             catch { return string.Empty; }
         }

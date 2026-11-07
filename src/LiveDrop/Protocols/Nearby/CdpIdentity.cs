@@ -157,7 +157,7 @@ namespace LiveDrop.Protocols.Nearby
         private static byte[] Explicit(int tag, byte[] value) { return Wrap((byte)(0xA0 | tag), value); }
         private static byte[] Integer(byte[] value) { return Wrap(0x02, value); }
         private static byte[] BitString(byte[] value) { var data = new byte[value.Length + 1]; Buffer.BlockCopy(value, 0, data, 1, value.Length); return Wrap(0x03, data); }
-        private static byte[] UtcTime(DateTime value) { return Wrap(0x17, Encoding.ASCII.GetBytes(value.ToUniversalTime().ToString("yyMMddHHmmss'Z'", CultureInfo.InvariantCulture))); }
+        private static byte[] UtcTime(DateTime value) { return Wrap(0x17, Encoding.GetEncoding("us-ascii").GetBytes(value.ToUniversalTime().ToString("yyMMddHHmmss'Z'", CultureInfo.InvariantCulture))); }
         private static byte[] Name(string commonName)
         {
             return Sequence(Wrap(0x31, Sequence(Oid(new[] { 2, 5, 4, 3 }), Wrap(0x0C, Encoding.UTF8.GetBytes(commonName)))));

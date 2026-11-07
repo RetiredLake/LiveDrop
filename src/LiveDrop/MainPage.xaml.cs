@@ -171,7 +171,7 @@ namespace LiveDrop
 
             SendButton.Visibility = (_shareTargetSession || _pendingOffer != null) && !transferInProgress && !incomingOfferQueued && !_receiveCompleteVisible
                 ? Visibility.Visible : Visibility.Collapsed;
-            SendButton.IsEnabled = !transferInProgress && !_updateCheckInProgress && !incomingOfferQueued && _pendingOffer != null &&
+            SendButton.IsEnabled = !transferInProgress && !_updateCheckInProgress && !_filePickerPending && !incomingOfferQueued && _pendingOffer != null &&
                 _pendingOffer.HasContent && (!_shareTargetSession || PeersList.SelectedItem != null);
 
             CancelButton.Visibility = transferInProgress ? Visibility.Visible : Visibility.Collapsed;
@@ -536,31 +536,55 @@ namespace LiveDrop
             DismissReceiveCompleteNotice();
             _filePickerPending = true;
             RefreshTransferActions();
+            var continued = false;
             try
             {
                 var phonePicker = IsWindowsPhonePicker();
                 var picker = CreateFilePicker(phonePicker);
                 StatusText.Text = AppText.Get("SelectAFileFromPhotosOrFileExplorer");
-                // Use the multiple-file broker on every UWP target. This keeps
-                // regular launches consistent with the Windows share target and
-                // preserves every item selected by Quick Share-compatible sources.
+                if (phonePicker && ApiInformation.IsMethodPresent("Windows.Storage.Pickers.FileOpenPicker", "PickMultipleFilesAndContinue"))
+                {
+                    try
+                    {
+                        // Use the same provider/location picker flow as LiveDrop8.
+#pragma warning disable 618
+                        picker.ContinuationData["LiveDrop.Picker"] = "SelectFiles";
+                        picker.PickMultipleFilesAndContinue();
+#pragma warning restore 618
+                        continued = true;
+                        return;
+                    }
+                    catch (Exception ex) when (ex is NotSupportedException || ex is NotImplementedException ||
+                        ex.HResult == unchecked((int)0x80070032) || ex.HResult == unchecked((int)0x80004001))
+                    {
+                        // Some W10M brokers expose the old method but reject it.
+                        picker = CreateFilePicker(true);
+                        picker.SuggestedStartLocation = PickerLocationId.DocumentsLibrary;
+                    }
+                }
                 await CompletePickedFilesAsync(await picker.PickMultipleFilesAsync());
             }
-            catch (Exception ex)
-            {
-                StatusText.Text = AppText.Format("PickerFailed", ex.Message);
-            }
+            catch (Exception ex) { StatusText.Text = AppText.Format("PickerFailed", ex.Message); }
             finally
             {
-                _filePickerPending = false;
+                if (!continued) _filePickerPending = false;
                 RefreshTransferActions();
             }
+        }
+
+        internal async Task ContinueFilePickerAsync(FileOpenPickerContinuationEventArgs args)
+        {
+            _filePickerPending = true;
+            RefreshTransferActions();
+            try { await CompletePickedFilesAsync(args.Files); }
+            catch (Exception ex) { StatusText.Text = AppText.Format("PickerFailed", ex.Message); }
+            finally { _filePickerPending = false; RefreshTransferActions(); }
         }
 
         private static FileOpenPicker CreateFilePicker(bool phonePicker)
         {
             var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
-            if (!phonePicker) picker.ViewMode = PickerViewMode.Thumbnail;
+            picker.ViewMode = phonePicker ? PickerViewMode.List : PickerViewMode.Thumbnail;
             picker.FileTypeFilter.Add("*");
             return picker;
         }

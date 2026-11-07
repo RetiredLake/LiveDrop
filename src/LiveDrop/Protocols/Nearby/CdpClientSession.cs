@@ -181,7 +181,7 @@ namespace LiveDrop.Protocols.Nearby
         private CdpHeader NewSessionHeader(byte type, ulong channelId, ulong requestId, uint sequence, ushort index, ushort count)
         {
             var header = new CdpHeader { Type = type, SessionId = _sessionId, ChannelId = channelId, RequestId = requestId, SequenceNumber = sequence, FragmentIndex = index, FragmentCount = count };
-            if (type == CdpHeader.Session) header.AdditionalHeaders.Add(new CdpAdditionalHeader(2, Encoding.ASCII.GetBytes("A.1")));
+            if (type == CdpHeader.Session) header.AdditionalHeaders.Add(new CdpAdditionalHeader(2, Encoding.GetEncoding("us-ascii").GetBytes("A.1")));
             return header;
         }
 

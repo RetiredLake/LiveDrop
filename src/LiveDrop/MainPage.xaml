@@ -47,7 +47,7 @@
         </StackPanel>
         <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
           <Button x:Name="ShareButton" x:Uid="SelectFilesButton" Click="OnShareClicked" />
-          <Button x:Name="ViewFilesButton" x:Uid="ViewFilesButton" Visibility="Collapsed" Margin="8,0,0,0" Click="OnViewFilesClicked" />
+          <Button x:Name="ViewFilesButton" x:Uid="ViewFilesButton" Visibility="Collapsed" Margin="0" Click="OnViewFilesClicked" />
           <Button x:Name="DismissReceivedButton" x:Uid="DismissReceivedButton" Visibility="Collapsed" Margin="8,0,0,0" Click="OnDismissReceivedClicked" />
         </StackPanel>
         <Button x:Name="SendButton" x:Uid="SendButton" Visibility="Collapsed" IsEnabled="False" HorizontalAlignment="Left" Margin="0,12,0,0" Click="OnSendClicked" />
