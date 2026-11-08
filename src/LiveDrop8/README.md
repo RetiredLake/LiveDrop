@@ -40,7 +40,7 @@ A bounded local `LocalState/discovery.log` records startup errors (including the
 
 `Legacy8DiscoverySmoke.cs`, compiled with LIVEDROP8 and the 8.1 metadata, exercises two multicast listeners sharing UDP 5353 alongside existing host listeners and checks announcement decoding and repeated teardown/restart.
 
-## Current testing build (0.1.0.7)
+## Current testing build (0.1.0.8)
 
 Peer borders and text stay white. Unselected peers have black interiors; selected peers use the system accent color inside the border, without a separate check mark. The 0.1.0.6 custom phone bar has been removed. The original 0.1.0.5 Page.BottomAppBar/CommandBar, native AppBarButtons, secondary menu and OS Back/animation behavior are restored. Appearance corrections only: lighter command-strip background, darker native overflow background, 48px menu rows and zero extra overflow-container padding. Existing native template parts are styled when available; no replacement template or menu is used. Desktop retains its original left command group.
 
@@ -49,3 +49,5 @@ The phone appearance corrections still require device visual verification.
 Telemetry is linked from the existing UWP service. It reports installation, application-open and transfer started/succeeded/failed/canceled events to the same PostHog project. `app_variant=winrt81` distinguishes this project from `uwp`; `language` is the app language tag. Payloads retain protocol, direction, file count and size bucket, add file/link type, and omit names, paths, peer addresses and PINs. Reporting and offline queue errors remain silent. No updater events are emitted because LiveDrop8 has no updater.
 
 ARM/x86 phone and x86 desktop packages have been built. The desktop installation starts discovery and finds peers. Phone appearance needs device verification. Full UI localization and native transfer notifications remain pending.
+
+0.1.0.8 keeps the native bar restoration and all other 0.1.0.7 functionality. Empty filename labels collapse instead of reserving a line; received-file actions use zero leading margin and a locally scoped zero phone-button overhang, while retaining a 48px minimum touch height. UWP 0.2.0.0 is locked and is not changed by this fix.

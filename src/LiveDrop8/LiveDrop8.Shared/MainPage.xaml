@@ -49,9 +49,20 @@
    </DataTemplate></ListView.ItemTemplate>
   </ListView>
   <StackPanel Grid.Row="3" Margin="0,12,0,0">
-   <TextBlock x:Name="FileNameText" TextWrapping="Wrap"/>
+   <TextBlock x:Name="FileNameText" TextWrapping="Wrap" Visibility="Collapsed"/>
    <StackPanel x:Name="ConsentPanel" Orientation="Horizontal" Visibility="Collapsed"><Button Content="Accept" Click="OnAccept"/><Button Content="Deny" Click="OnDeny" Margin="12,0,0,0"/></StackPanel>
-   <StackPanel x:Name="ReceivedPanel" Visibility="Collapsed"><TextBlock Text="File(s) saved to the LiveDrop Folder"/><StackPanel Orientation="Horizontal"><Button Content="View Files" Click="OnViewFiles" Margin="0"/><Button Content="Dismiss" Click="OnDismiss" Margin="8,0,0,0"/></StackPanel></StackPanel>
+   <StackPanel x:Name="ReceivedPanel" Visibility="Collapsed" Margin="0">
+    <TextBlock Text="File(s) saved to the LiveDrop Folder" Margin="0"/>
+    <StackPanel x:Name="ReceivedActions" Orientation="Horizontal" Margin="0">
+     <StackPanel.Resources>
+      <!-- Remove only the receive buttons' native visual overhang. Their
+           48px minimum height preserves the phone touch target. -->
+      <Thickness x:Key="PhoneTouchTargetOverhang">0</Thickness>
+     </StackPanel.Resources>
+     <Button Content="View Files" Click="OnViewFiles" Margin="0" MinHeight="48" VerticalAlignment="Top"/>
+     <Button Content="Dismiss" Click="OnDismiss" Margin="8,0,0,0" MinHeight="48" VerticalAlignment="Top"/>
+    </StackPanel>
+   </StackPanel>
    <ProgressBar x:Name="TransferProgress" Visibility="Collapsed" Minimum="0" Maximum="100"/>
    <TextBlock x:Name="StatusText" TextWrapping="Wrap"/>
   </StackPanel>

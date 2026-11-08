@@ -3,7 +3,7 @@
 
   <Identity Name="7f0604a7-2b78-4161-9222-86cfa3290ae1"
             Publisher="CN=7618A306-3963-4C2D-9E07-C5B799CBDCC5"
-            Version="0.1.0.7" />
+            Version="0.1.0.8" />
 
   <mp:PhoneIdentity PhoneProductId="7f0604a7-2b78-4161-9222-86cfa3290ae1" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
 

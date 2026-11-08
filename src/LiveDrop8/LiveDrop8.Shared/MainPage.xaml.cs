@@ -243,7 +243,7 @@ namespace LiveDrop8
                 ClearReceived(); await ClearSelectedAsync();
                 _selected = await ShareOfferFactory.FromPickedFilesAsync(files);
                 if (!_selected.HasContent) _selected = null;
-                FileNameText.Text = _selected == null ? "" : OfferName(_selected);
+                SetFileName(_selected == null ? "" : OfferName(_selected));
                 StatusText.Text = _selected == null ? "" : AppText.Get("SelectAPeerThenSendTheFile");
             }
             catch (Exception ex) { StatusText.Text = ex.Message; await ClearSelectedAsync(); }
@@ -258,8 +258,8 @@ namespace LiveDrop8
                 await ClearSelectedAsync();
                 _selected = await ShareOfferFactory.FromShareOperationAsync(operation);
                 operation.ReportDataRetrieved();
-                FileNameText.Text = OfferName(_selected);
-                if (!_selected.HasContent) { _selected = null; FileNameText.Text = ""; StatusText.Text = "No supported content was shared."; }
+                SetFileName(OfferName(_selected));
+                if (!_selected.HasContent) { _selected = null; SetFileName(""); StatusText.Text = "No supported content was shared."; }
                 else StatusText.Text = AppText.Get("SelectAPeerThenSendTheFile");
             }
             catch (Exception ex) { StatusText.Text = ex.Message; }
@@ -269,7 +269,7 @@ namespace LiveDrop8
         { return offer.WebLink != null ? offer.WebLink.AbsoluteUri : offer.Files.Count == 1 ? offer.Files[0].Name : AppText.Format("FileCount", offer.Files.Count); }
         private async Task ClearSelectedAsync()
         {
-            var offer = _selected; _selected = null; FileNameText.Text = "";
+            var offer = _selected; _selected = null; SetFileName("");
             if (offer != null) foreach (var file in offer.Files)
                 if (file.SourceFile != null) try { await file.SourceFile.DeleteAsync(); } catch { }
         }
@@ -299,9 +299,14 @@ namespace LiveDrop8
                 await ClearSelectedAsync(); RefreshActions(); ShowNextOffer();
             }
         }
+        private void SetFileName(string value)
+        {
+            FileNameText.Text = value ?? string.Empty;
+            FileNameText.Visibility = string.IsNullOrEmpty(value) ? Visibility.Collapsed : Visibility.Visible;
+        }
         private void ShowProgress(ShareProgress progress)
         {
-            FileNameText.Text = progress.FileName;
+            SetFileName(progress.FileName);
             TransferProgress.IsIndeterminate = progress.TotalBytes <= 0;
             TransferProgress.Value = progress.TotalBytes <= 0 ? 0 : Math.Min(100, 100.0 * progress.BytesTransferred / progress.TotalBytes);
         }
@@ -332,7 +337,7 @@ namespace LiveDrop8
                 var offer = _offers.Dequeue();
                 if (_finished.Remove(offer) || offer.IsCancellationRequested) continue;
                 ClearReceived(); _pending = offer;
-                FileNameText.Text = "";
+                SetFileName("");
                 StatusText.Text = string.IsNullOrEmpty(offer.SecurityPin) ? "Incoming share. Accept or deny?" : AppText.Format("QuickShareSecurityPin", offer.SecurityPin);
                 ConsentPanel.Visibility = Visibility.Visible; RefreshActions(); return;
             }
@@ -342,7 +347,7 @@ namespace LiveDrop8
             var offer = _pending; if (offer == null) return;
             _pending = null; _receiving = offer; ConsentPanel.Visibility = Visibility.Collapsed;
             await ClearSelectedAsync();
-            FileNameText.Text = OfferName(offer.Offer);
+            SetFileName(OfferName(offer.Offer));
             TransferProgress.IsIndeterminate = true; TransferProgress.Visibility = Visibility.Visible;
             StatusText.Text = "Receiving..."; RefreshActions();
             _trackedIncoming.Add(offer);
@@ -373,7 +378,7 @@ namespace LiveDrop8
             if (!current) return;
             _finished.Remove(offer); _pending = null; _receiving = null;
             ConsentPanel.Visibility = TransferProgress.Visibility = Visibility.Collapsed;
-            FileNameText.Text = _selected == null ? "" : OfferName(_selected); StatusText.Text = ok ? "Share complete" : message;
+            SetFileName(_selected == null ? "" : OfferName(_selected)); StatusText.Text = ok ? "Share complete" : message;
             if (ok && link != null) { var ignored = OpenLinkAsync(link); }
             else if (ok && paths != null && paths.Count > 0) { _lastSaved = paths; ReceivedPanel.Visibility = Visibility.Visible; }
             RefreshActions(); ShowNextOffer();
