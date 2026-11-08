@@ -40,10 +40,10 @@ A bounded local `LocalState/discovery.log` records startup errors (including the
 
 `Legacy8DiscoverySmoke.cs`, compiled with LIVEDROP8 and the 8.1 metadata, exercises two multicast listeners sharing UDP 5353 alongside existing host listeners and checks announcement decoding and repeated teardown/restart.
 
-## Pending source update (0.1.0.5)
+## Current testing build (0.1.0.6)
 
-Peer selection uses explicit gray/white text and outline binding on both platforms, without the stock accent fill/check mark. Desktop settings remain in the left command group; phone uses a consistent charcoal bar/menu and compact command spacing. The completed receive exposes a Done toolbar action to dismiss the notice without an empty command row.
+Peer borders and text stay white. Unselected peers have black interiors; selected peers use the system accent color inside the border, without a separate check mark. Desktop settings remain in the left command group. Phone uses an app-owned dark gray menu above a lighter command strip, with 48px menu rows and a circular action button. This avoids native CommandBar popup color/padding behavior. Hardware Back closes the menu. The completed receive exposes a Done toolbar action to dismiss the notice without an empty command row.
 
 Telemetry is linked from the existing UWP service. It reports installation, application-open and transfer started/succeeded/failed/canceled events to the same PostHog project. `app_variant=winrt81` distinguishes this project from `uwp`; `language` is the app language tag. Payloads retain protocol, direction, file count and size bucket, add file/link type, and omit names, paths, peer addresses and PINs. Reporting and offline queue errors remain silent. No updater events are emitted because LiveDrop8 has no updater.
 
-This source update has not been built or device-tested. Full UI localization and native transfer notifications remain pending.
+ARM/x86 phone and x86 desktop packages have been built. The desktop installation starts discovery and finds peers. Phone appearance needs device verification. Full UI localization and native transfer notifications remain pending.

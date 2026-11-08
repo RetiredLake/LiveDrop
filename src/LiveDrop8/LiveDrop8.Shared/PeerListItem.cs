@@ -7,14 +7,13 @@ namespace LiveDrop8
     {
         private readonly bool _showProtocol;
         private bool _selected;
-        public Windows.UI.Xaml.Media.Brush SelectionBrush
-        { get { return new Windows.UI.Xaml.Media.SolidColorBrush(_selected ? Windows.UI.Colors.White : Windows.UI.Colors.Gray); } }
+        public double SelectionOpacity { get { return _selected ? 1 : 0; } }
         internal void SetSelected(bool selected)
         {
             if (_selected == selected) return;
             _selected = selected;
             var changed = PropertyChanged;
-            if (changed != null) changed(this, new System.ComponentModel.PropertyChangedEventArgs("SelectionBrush"));
+            if (changed != null) changed(this, new System.ComponentModel.PropertyChangedEventArgs("SelectionOpacity"));
         }
         internal PeerDescriptor Peer { get; private set; }
         internal PeerListItem(PeerDescriptor peer, bool showProtocol) { Peer = peer; _showProtocol = showProtocol; }

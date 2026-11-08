@@ -1,5 +1,7 @@
 # Pending source update
 
+Historical source-only checkpoint. Subsequent packaging and LiveDrop8 UI changes are recorded in [release validation](release-0.2.0.0-validation.md).
+
 UWP GitHub and Store manifests are set to 0.2.0.0. This update is source-only: no app builds, release tags, GitHub releases, or Store submissions were created.
 
 - Regenerate transparent UWP tile/list/Store icons from the existing vector, including 200% and 400% assets.
