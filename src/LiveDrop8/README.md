@@ -40,9 +40,11 @@ A bounded local `LocalState/discovery.log` records startup errors (including the
 
 `Legacy8DiscoverySmoke.cs`, compiled with LIVEDROP8 and the 8.1 metadata, exercises two multicast listeners sharing UDP 5353 alongside existing host listeners and checks announcement decoding and repeated teardown/restart.
 
-## Current testing build (0.1.0.6)
+## Current testing build (0.1.0.7)
 
-Peer borders and text stay white. Unselected peers have black interiors; selected peers use the system accent color inside the border, without a separate check mark. Desktop settings remain in the left command group. Phone uses an app-owned dark gray menu above a lighter command strip, with 48px menu rows and a circular action button. This avoids native CommandBar popup color/padding behavior. Hardware Back closes the menu. The completed receive exposes a Done toolbar action to dismiss the notice without an empty command row.
+Peer borders and text stay white. Unselected peers have black interiors; selected peers use the system accent color inside the border, without a separate check mark. The 0.1.0.6 custom phone bar has been removed. The original 0.1.0.5 Page.BottomAppBar/CommandBar, native AppBarButtons, secondary menu and OS Back/animation behavior are restored. Appearance corrections only: lighter command-strip background, darker native overflow background, 48px menu rows and zero extra overflow-container padding. Existing native template parts are styled when available; no replacement template or menu is used. Desktop retains its original left command group.
+
+The phone appearance corrections still require device visual verification.
 
 Telemetry is linked from the existing UWP service. It reports installation, application-open and transfer started/succeeded/failed/canceled events to the same PostHog project. `app_variant=winrt81` distinguishes this project from `uwp`; `language` is the app language tag. Payloads retain protocol, direction, file count and size bucket, add file/link type, and omit names, paths, peer addresses and PINs. Reporting and offline queue errors remain silent. No updater events are emitted because LiveDrop8 has no updater.
 

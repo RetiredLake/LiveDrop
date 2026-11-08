@@ -4,25 +4,13 @@
  Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
  <Page.Resources>
   <SolidColorBrush x:Key="PeerAccentBrush" Color="{ThemeResource SystemColorControlAccentColor}"/>
-  <Style x:Key="PhoneBarButtonStyle" TargetType="Button">
-   <Setter Property="Foreground" Value="White"/>
-   <Setter Property="Background" Value="Transparent"/>
-   <Setter Property="BorderThickness" Value="0"/>
-   <Setter Property="Margin" Value="0"/>
-   <Setter Property="Padding" Value="0"/>
-   <Setter Property="MinWidth" Value="0"/>
-   <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
-    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-     <ContentPresenter Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
-    </Border>
-   </ControlTemplate></Setter.Value></Setter>
-  </Style>
+
  </Page.Resources>
  <Page.BottomAppBar>
-  <CommandBar Background="#2B2B2B" Foreground="White" Padding="0" Margin="0">
+  <CommandBar Background="#3B3B3B" Foreground="White" Padding="0" Margin="0">
    <CommandBar.Resources>
-    <SolidColorBrush x:Key="CommandBarBackgroundThemeBrush" Color="#2B2B2B"/>
-    <SolidColorBrush x:Key="AppBarBackgroundThemeBrush" Color="#2B2B2B"/>
+    <SolidColorBrush x:Key="CommandBarBackgroundThemeBrush" Color="#3B3B3B"/>
+    <SolidColorBrush x:Key="AppBarBackgroundThemeBrush" Color="#3B3B3B"/>
     <SolidColorBrush x:Key="PhoneChromeBrush" Color="#2B2B2B"/>
     <SolidColorBrush x:Key="CommandBarForegroundThemeBrush" Color="White"/>
    </CommandBar.Resources>
@@ -35,8 +23,6 @@
    </CommandBar.SecondaryCommands>
   </CommandBar>
  </Page.BottomAppBar>
- <Grid>
-  <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
  <Grid Margin="20,20,20,12" MaxWidth="760" HorizontalAlignment="Stretch">
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
   <TextBlock Text="LIVEDROP" FontSize="20" FontWeight="SemiBold"/>
@@ -69,25 +55,5 @@
    <ProgressBar x:Name="TransferProgress" Visibility="Collapsed" Minimum="0" Maximum="100"/>
    <TextBlock x:Name="StatusText" TextWrapping="Wrap"/>
   </StackPanel>
- </Grid>
-  <!-- Phone bar is app-owned: the 8.1 native CommandBar ignores popup styling
-       and reserves an empty primary-command row when commands are hidden. -->
-  <Border x:Name="PhoneMenu" Grid.RowSpan="2" VerticalAlignment="Bottom" Margin="0,0,0,72" Background="#2B2B2B" Visibility="Collapsed">
-   <StackPanel Margin="0,4,0,4">
-    <Button x:Name="PhoneFolderItem" Style="{StaticResource PhoneBarButtonStyle}" Content="LiveDrop Folder" Click="OnOpenFolder" FontSize="24" Height="48" Padding="20,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-    <Button x:Name="PhonePeersItem" Style="{StaticResource PhoneBarButtonStyle}" Content="Supported peers" Click="OnSupportedPeers" FontSize="24" Height="48" Padding="20,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-    <Button x:Name="PhoneHostnameItem" Style="{StaticResource PhoneBarButtonStyle}" Content="Change hostname" Click="OnChangeHostname" FontSize="24" Height="48" Padding="20,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-    <Button x:Name="PhoneAboutItem" Style="{StaticResource PhoneBarButtonStyle}" Content="About" Click="OnAbout" FontSize="24" Height="48" Padding="20,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"/>
-   </StackPanel>
-  </Border>
-  <Grid x:Name="PhoneBar" Grid.Row="1" Height="72" Background="#3B3B3B" Visibility="Collapsed">
-   <Button x:Name="PhoneSendCommand" Style="{StaticResource PhoneBarButtonStyle}" HorizontalAlignment="Center" Width="112" Height="72" Click="OnMainCommand">
-    <StackPanel>
-     <Border Width="42" Height="42" BorderBrush="White" BorderThickness="2" CornerRadius="21" HorizontalAlignment="Center"><SymbolIcon x:Name="PhoneSendIcon" Symbol="Upload" Foreground="White" Width="24" Height="24"/></Border>
-     <TextBlock x:Name="PhoneSendLabel" Text="select files" FontSize="12" Foreground="White" HorizontalAlignment="Center" Margin="0,3,0,0"/>
-    </StackPanel>
-   </Button>
-   <Button x:Name="PhoneMoreCommand" Style="{StaticResource PhoneBarButtonStyle}" HorizontalAlignment="Right" Width="56" Height="72" Click="OnPhoneMore"><TextBlock Text="&#x2026;" FontSize="28" Foreground="White"/></Button>
-  </Grid>
  </Grid>
 </Page>

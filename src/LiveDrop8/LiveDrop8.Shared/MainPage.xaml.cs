@@ -39,18 +39,12 @@ namespace LiveDrop8
         {
             InitializeComponent();
 #if WINDOWS_PHONE_APP
-            BottomAppBar = null;
-            PhoneBar.Visibility = Visibility.Visible;
-            Loaded += (s, e) => Windows.Phone.UI.Input.HardwareButtons.BackPressed += OnPhoneBackPressed;
-            Unloaded += (s, e) => Windows.Phone.UI.Input.HardwareButtons.BackPressed -= OnPhoneBackPressed;
+            ConfigureNativePhoneBar((CommandBar)BottomAppBar);
 #endif
             TelemetryService.Instance.TrackApplicationStarted();
             FolderCommand.Label = AppText.Get("LiveDropFolder");
             HostnameCommand.Label = AppText.Get("ChangeHostname");
             AboutCommand.Label = AppText.Get("About");
-            PhoneFolderItem.Content = FolderCommand.Label;
-            PhoneHostnameItem.Content = HostnameCommand.Label;
-            PhoneAboutItem.Content = AboutCommand.Label;
             Loaded += async (s, e) => { _active = true; await RestartAsync(); };
             Unloaded += async (s, e) => { _active = false; await ShutdownAsync(); };
             _expiry.Tick += (s, e) => ExpirePeers();
@@ -65,23 +59,63 @@ namespace LiveDrop8
             SendCommand.Icon = new SymbolIcon(Busy ? Symbol.Cancel : ReceivedPanel.Visibility == Visibility.Visible ? Symbol.Accept : Symbol.Upload);
             SendCommand.Label = Busy ? "cancel" : ReceivedPanel.Visibility == Visibility.Visible ? "done" : _selected != null ? "send" : "select files";
             PeersCommand.IsEnabled = HostnameCommand.IsEnabled = !Busy && _pending == null && !_preparing;
-            PhoneSendCommand.Visibility = SendCommand.Visibility;
-            PhoneSendCommand.IsEnabled = SendCommand.IsEnabled;
-            PhoneSendCommand.Opacity = SendCommand.IsEnabled ? 1 : 0.4;
-            PhoneSendIcon.Symbol = Busy ? Symbol.Cancel : ReceivedPanel.Visibility == Visibility.Visible ? Symbol.Accept : Symbol.Upload;
-            PhoneSendLabel.Text = SendCommand.Label;
-            PhonePeersItem.IsEnabled = PhoneHostnameItem.IsEnabled = PeersCommand.IsEnabled;
-            PhoneMoreCommand.IsEnabled = !Busy && _pending == null && !_preparing;
-            if (!PhoneMoreCommand.IsEnabled) ClosePhoneMenu();
         }
-        private void ClosePhoneMenu() { PhoneMenu.Visibility = Visibility.Collapsed; }
-        private void OnPhoneMore(object sender, RoutedEventArgs e)
-        { PhoneMenu.Visibility = PhoneMenu.Visibility == Visibility.Visible ? Visibility.Collapsed : Visibility.Visible; }
 #if WINDOWS_PHONE_APP
-        private void OnPhoneBackPressed(object sender, Windows.Phone.UI.Input.BackPressedEventArgs e)
+        private void ConfigureNativePhoneBar(CommandBar bar)
         {
-            if (PhoneMenu.Visibility != Visibility.Visible) return;
-            ClosePhoneMenu(); e.Handled = true;
+            foreach (var command in bar.SecondaryCommands.OfType<AppBarButton>())
+            {
+                command.FontSize = 24;
+                command.Padding = new Thickness(20, 8, 20, 8);
+                command.Margin = new Thickness(0);
+                command.MinHeight = 0;
+                command.Height = 48;
+                command.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 43, 43, 43));
+            }
+            bar.Opened += async (sender, args) =>
+            {
+                // Style only the native template's containers. Keep its native
+                // buttons, popup, ellipsis, animation and Back handling intact.
+                try
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.Low, () =>
+                    {
+                        PolishNativeBarParts(bar);
+                        foreach (var popup in Windows.UI.Xaml.Media.VisualTreeHelper.GetOpenPopups(Window.Current))
+                            if (ContainsNativeCommand(popup.Child)) PolishNativeBarParts(popup.Child);
+                    });
+                }
+                catch (TaskCanceledException) { }
+                catch (ObjectDisposedException) { }
+            };
+        }
+        private bool ContainsNativeCommand(DependencyObject node)
+        {
+            if (node == null) return false;
+            if (ReferenceEquals(node, FolderCommand) || ReferenceEquals(node, AboutCommand)) return true;
+            for (int i = 0; i < Windows.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node); i++)
+                if (ContainsNativeCommand(Windows.UI.Xaml.Media.VisualTreeHelper.GetChild(node, i))) return true;
+            return false;
+        }
+        private static void PolishNativeBarParts(DependencyObject node)
+        {
+            if (node == null) return;
+            var element = node as FrameworkElement;
+            if (element != null && (element.Name == "SecondaryItemsControl" || element.Name == "OverflowContentRoot"))
+            {
+                element.Margin = new Thickness(0);
+                element.MinHeight = 0;
+                var control = element as Control;
+                if (control != null)
+                {
+                    control.Padding = new Thickness(0);
+                    control.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 43, 43, 43));
+                }
+                var panel = element as Panel;
+                if (panel != null) panel.Background = new Windows.UI.Xaml.Media.SolidColorBrush(Windows.UI.Color.FromArgb(255, 43, 43, 43));
+            }
+            for (int i = 0; i < Windows.UI.Xaml.Media.VisualTreeHelper.GetChildrenCount(node); i++)
+                PolishNativeBarParts(Windows.UI.Xaml.Media.VisualTreeHelper.GetChild(node, i));
         }
 #endif
         private async Task RestartAsync()
@@ -181,7 +215,6 @@ namespace LiveDrop8
         }
         private async void OnMainCommand(object sender, RoutedEventArgs e)
         {
-            ClosePhoneMenu();
             if (ReceivedPanel.Visibility == Visibility.Visible && !Busy) { OnDismiss(sender, e); return; }
             if (_transfer != null) { _transfer.Cancel(); return; }
             if (_receiving != null) { _receiving.CancelTransfer(); return; }
@@ -219,7 +252,6 @@ namespace LiveDrop8
         internal async Task LoadShareAsync(Windows.ApplicationModel.DataTransfer.ShareTarget.ShareOperation operation)
         {
             _shareOperation = operation; _preparing = true; RefreshActions();
-            PhoneMoreCommand.Visibility = Visibility.Collapsed; ClosePhoneMenu();
             FolderCommand.Visibility = PeersCommand.Visibility = HostnameCommand.Visibility = AboutCommand.Visibility = Visibility.Collapsed;
             try
             {
@@ -371,7 +403,6 @@ namespace LiveDrop8
         private void OnDismiss(object sender, RoutedEventArgs e) { ClearReceived(); RefreshActions(); }
         private async void OnSupportedPeers(object sender, RoutedEventArgs e)
         {
-            ClosePhoneMenu();
             var values = ApplicationData.Current.LocalSettings.Values;
             var quick = new CheckBox { Content = "Google Quick Share", IsChecked = !values.ContainsKey("QuickShareEnabled") || (bool)values["QuickShareEnabled"] };
             var nearby = new CheckBox { Content = "Microsoft Nearby Share", IsChecked = values.ContainsKey("NearbyEnabled") && (bool)values["NearbyEnabled"] };
@@ -382,7 +413,6 @@ namespace LiveDrop8
         }
         private async void OnChangeHostname(object sender, RoutedEventArgs e)
         {
-            ClosePhoneMenu();
             var values = ApplicationData.Current.LocalSettings.Values;
             var input = new TextBox { Text = values.ContainsKey("DisplayName") ? (string)values["DisplayName"] : ShareCoordinator.GetHostDisplayName("LiveDrop"), MaxLength = 32 };
             var dialog = new ContentDialog { Title = AppText.Get("ChangeHostname"), Content = input, PrimaryButtonText = "OK", SecondaryButtonText = "Cancel" };
@@ -397,7 +427,6 @@ namespace LiveDrop8
         }
         private async void OnOpenFolder(object sender, RoutedEventArgs e)
         {
-            ClosePhoneMenu();
             try
             {
                 var folder = await TransferFileStore.GetReceiveFolderAsync(null);
@@ -417,7 +446,6 @@ namespace LiveDrop8
         }
         private async void OnAbout(object sender, RoutedEventArgs e)
         {
-            ClosePhoneMenu();
             var panel = new StackPanel();
             panel.Children.Add(new TextBlock { FontSize = 14, Text = "Version " + Windows.ApplicationModel.Package.Current.Id.Version.Major + "." + Windows.ApplicationModel.Package.Current.Id.Version.Minor + "." + Windows.ApplicationModel.Package.Current.Id.Version.Build + "." + Windows.ApplicationModel.Package.Current.Id.Version.Revision });
             panel.Children.Add(new HyperlinkButton { FontSize = 14, Padding = new Thickness(0, 4, 0, 4), Content = "Developed by retiredlake", NavigateUri = new Uri("https://github.com/RetiredLake/LiveDrop") });

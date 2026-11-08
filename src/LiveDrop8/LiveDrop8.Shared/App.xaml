@@ -4,4 +4,12 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:LiveDrop8">
 
+ <Application.Resources>
+  <!-- Popup resources live at app scope because native overflow is a popup. -->
+  <SolidColorBrush x:Key="CommandBarOverflowPresenterBackground" Color="#2B2B2B"/>
+  <SolidColorBrush x:Key="CommandBarOverflowPresenterBorderBrush" Color="#2B2B2B"/>
+  <Thickness x:Key="CommandBarOverflowPresenterBorderPadding">0</Thickness>
+  <Thickness x:Key="CommandBarOverflowPresenterBorderDownPadding">0</Thickness>
+  <Thickness x:Key="CommandBarOverflowPresenterBorderUpPadding">0</Thickness>
+ </Application.Resources>
 </Application>
