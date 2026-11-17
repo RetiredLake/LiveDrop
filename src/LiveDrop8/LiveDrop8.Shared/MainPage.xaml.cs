@@ -251,13 +251,29 @@ namespace LiveDrop8
             foreach (var item in e.RemovedItems.OfType<PeerListItem>()) item.SetSelected(false);
             foreach (var item in e.AddedItems.OfType<PeerListItem>()) item.SetSelected(true);
         }
+        private async void OnPeerClicked(object sender, ItemClickEventArgs e)
+        {
+#if !WINDOWS_PHONE_APP
+            // The desktop share pane does not expose the page's bottom app bar.
+            // Only an explicit user click in share-target mode starts a send.
+            if (_shareOperation == null || _selected == null || Busy || _preparing || _pending != null || _outboundTask != null) return;
+            PeersList.SelectedItem = e.ClickedItem;
+            await StartOutboundAsync();
+#endif
+        }
+        private async Task StartOutboundAsync()
+        {
+            if (_outboundTask != null || Busy || _selected == null || _preparing || _pending != null) return;
+            try { _outboundTask = SendAsync(); await _outboundTask; }
+            finally { _outboundTask = null; }
+        }
         private async void OnMainCommand(object sender, RoutedEventArgs e)
         {
             if (ReceivedPanel.Visibility == Visibility.Visible && !Busy) { OnDismiss(sender, e); return; }
             if (_transfer != null) { _transfer.Cancel(); return; }
             if (_receiving != null) { _receiving.CancelTransfer(); return; }
             if (_pending != null || _preparing) return;
-            if (_selected != null) { _outboundTask = SendAsync(); await _outboundTask; _outboundTask = null; return; }
+            if (_selected != null) { await StartOutboundAsync(); return; }
             _preparing = true; RefreshActions();
             var picker = new FileOpenPicker { SuggestedStartLocation = PickerLocationId.PicturesLibrary };
             picker.FileTypeFilter.Add("*");
@@ -293,15 +309,34 @@ namespace LiveDrop8
             FolderCommand.Visibility = PeersCommand.Visibility = HostnameCommand.Visibility = AboutCommand.Visibility = Visibility.Collapsed;
             try
             {
+                operation.ReportStarted();
                 await ClearSelectedAsync();
                 _selected = await ShareOfferFactory.FromShareOperationAsync(operation);
                 operation.ReportDataRetrieved();
                 SetFileName(OfferName(_selected));
-                if (!_selected.HasContent) { _selected = null; SetFileName(""); StatusText.Text = "No supported content was shared."; }
+                if (!_selected.HasContent) { _selected = null; SetFileName(""); StatusText.Text = "No supported content was shared."; FinishShareOperation(StatusText.Text); }
                 else StatusText.Text = AppText.Get("SelectAPeerThenSendTheFile");
             }
-            catch (Exception ex) { StatusText.Text = ex.Message; }
+            catch (Exception ex) { StatusText.Text = ex.Message; FinishShareOperation(ex.Message); }
             finally { _preparing = false; RefreshActions(); }
+        }
+        private void FinishShareOperation(string error)
+        {
+            var operation = _shareOperation;
+            _shareOperation = null;
+            if (operation == null) return;
+            try
+            {
+#if WINDOWS_PHONE_APP
+                // Phone has no DismissUI; ReportCompleted returns to the source.
+                // The failure is recorded before closing, never as a successful share.
+                operation.ReportCompleted();
+#else
+                if (error == null) operation.ReportCompleted();
+                else operation.ReportError(error);
+#endif
+            }
+            catch (Exception ex) { var ignored = RecordDiscoveryAsync("Share pane completion: " + ex.Message); }
         }
         private static string OfferName(ShareOffer offer)
         { return offer.WebLink != null ? offer.WebLink.AbsoluteUri : offer.Files.Count == 1 ? offer.Files[0].Name : AppText.Format("FileCount", offer.Files.Count); }
@@ -318,23 +353,31 @@ namespace LiveDrop8
             if (_coordinator == null || Busy) return;
             ClearReceived();
             var source = new CancellationTokenSource(); _transfer = source;
+            string shareError = null;
             TransferProgress.IsIndeterminate = true; TransferProgress.Visibility = Visibility.Visible; RefreshActions();
             try
             {
                 TelemetryService.Instance.TrackShareStarted(peer.Peer.Transport, "send", _selected);
-                await _coordinator.SendAsync(peer.Peer, _selected, new Progress<ShareProgress>(p => { if (ReferenceEquals(source, _transfer)) ShowProgress(p); }), source.Token);
+                var host = _coordinator;
+                var offer = _selected;
+                var progress = new Progress<ShareProgress>(p => { if (ReferenceEquals(source, _transfer)) ShowProgress(p); });
+                // Keep handshake/crypto and socket continuations off the hosted
+                // share pane's UI dispatcher; progress is marshalled back above.
+                await Task.Run(() => host.SendAsync(peer.Peer, offer, progress, source.Token));
                 TelemetryService.Instance.TrackShareSucceeded(peer.Peer.Transport, "send", _selected);
                 StatusText.Text = "Share complete";
-                if (_shareOperation != null) _shareOperation.ReportCompleted();
             }
             catch (OperationCanceledException)
-            { TelemetryService.Instance.TrackShareCanceled(peer.Peer.Transport, "send", _selected); StatusText.Text = AppText.Get("ShareCanceledMessage"); }
+            { TelemetryService.Instance.TrackShareCanceled(peer.Peer.Transport, "send", _selected); StatusText.Text = AppText.Get("ShareCanceledMessage"); shareError = StatusText.Text; }
             catch (Exception ex)
-            { TelemetryService.Instance.TrackShareFailed(peer.Peer.Transport, "send", _selected, TelemetryService.ClassifyFailure(ex)); StatusText.Text = ex.Message; }
+            { TelemetryService.Instance.TrackShareFailed(peer.Peer.Transport, "send", _selected, TelemetryService.ClassifyFailure(ex)); StatusText.Text = ex.Message; shareError = ex.Message; }
             finally
             {
                 _transfer = null; source.Dispose(); TransferProgress.Visibility = Visibility.Collapsed;
                 await ClearSelectedAsync(); RefreshActions(); ShowNextOffer();
+                // Clean up before closing: the OS may suspend the share target
+                // as soon as it receives the terminal report.
+                FinishShareOperation(shareError);
             }
         }
         private void SetFileName(string value)
