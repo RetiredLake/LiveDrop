@@ -5,7 +5,7 @@ $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $version = $manifest.Package.Identity.Version
 $destination = Join-Path $repoRoot ('builds\LiveDrop8\' + $version)
 New-Item -ItemType Directory -Path $destination -Force | Out-Null
-foreach ($target in @(@{Name='WindowsPhone';Architecture='ARM'}, @{Name='WindowsPhone';Architecture='x86'}, @{Name='Windows';Architecture='x86'})) {
+foreach ($target in @(@{Name='WindowsPhone';Architecture='ARM'}, @{Name='WindowsPhone';Architecture='x86'}, @{Name='Windows';Architecture='ARM'}, @{Name='Windows';Architecture='x86'})) {
     $project = Join-Path $PSScriptRoot ('LiveDrop8.' + $target.Name + '\LiveDrop8.' + $target.Name + '.csproj')
     & $MSBuild $project /t:Build /p:Configuration=Release (('/p:Platform=' + $target.Architecture)) /p:AppxBundle=Never /p:AppxPackageSigningEnabled=true /v:minimal
     if ($LASTEXITCODE -ne 0) { throw "Build failed: $($target.Name)" }

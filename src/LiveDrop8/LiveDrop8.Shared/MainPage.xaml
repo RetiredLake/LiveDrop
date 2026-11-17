@@ -17,7 +17,7 @@
    <AppBarButton x:Name="SendCommand" Icon="Upload" Label="send" Click="OnMainCommand"/>
    <CommandBar.SecondaryCommands>
     <AppBarButton x:Name="FolderCommand" Icon="Folder" Label="LiveDrop Folder" Click="OnOpenFolder"/>
-    <AppBarButton x:Name="PeersCommand" Icon="People" Label="Supported peers" Click="OnSupportedPeers"/>
+    <AppBarButton x:Name="PeersCommand" Icon="People" Label="Supported Peers" Click="OnSupportedPeers"/>
     <AppBarButton x:Name="HostnameCommand" Icon="Edit" Label="Change hostname" Click="OnChangeHostname"/>
     <AppBarButton x:Name="AboutCommand" Icon="Help" Label="About" Click="OnAbout"/>
    </CommandBar.SecondaryCommands>

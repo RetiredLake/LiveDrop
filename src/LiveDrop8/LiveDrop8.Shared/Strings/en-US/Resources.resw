@@ -885,7 +885,7 @@
     <comment>XAML Text. Product names remain unchanged.</comment>
   </data>
   <data name="SupportedPeers.Text" xml:space="preserve">
-    <value>Supported peers</value>
+    <value>Supported Peers</value>
     <comment>XAML Text. Product names remain unchanged.</comment>
   </data>
   <data name="TheGitHubReleaseDoesNotContainADownloadable" xml:space="preserve">

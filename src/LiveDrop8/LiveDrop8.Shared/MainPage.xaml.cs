@@ -35,6 +35,34 @@ namespace LiveDrop8
         private readonly DispatcherTimer _expiry = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
         private List<string> _lastSaved = new List<string>();
         private bool _active, _preparing;
+#if !WINDOWS_PHONE_APP
+        private Windows.UI.ApplicationSettings.SettingsPane _settingsPane;
+        private void RegisterSettingsCommands()
+        {
+            if (_settingsPane != null) return;
+            _settingsPane = Windows.UI.ApplicationSettings.SettingsPane.GetForCurrentView();
+            _settingsPane.CommandsRequested += OnSettingsCommandsRequested;
+        }
+        private void UnregisterSettingsCommands()
+        {
+            if (_settingsPane == null) return;
+            _settingsPane.CommandsRequested -= OnSettingsCommandsRequested;
+            _settingsPane = null;
+        }
+        private void OnSettingsCommandsRequested(Windows.UI.ApplicationSettings.SettingsPane sender,
+            Windows.UI.ApplicationSettings.SettingsPaneCommandsRequestedEventArgs args)
+        {
+            var commands = args.Request.ApplicationCommands;
+            commands.Add(new Windows.UI.ApplicationSettings.SettingsCommand("LiveDropFolder", FolderCommand.Label,
+                command => OnOpenFolder(this, new RoutedEventArgs())));
+            commands.Add(new Windows.UI.ApplicationSettings.SettingsCommand("SupportedPeers", PeersCommand.Label,
+                command => { if (PeersCommand.IsEnabled) OnSupportedPeers(this, new RoutedEventArgs()); }));
+            commands.Add(new Windows.UI.ApplicationSettings.SettingsCommand("ChangeHostname", HostnameCommand.Label,
+                command => { if (HostnameCommand.IsEnabled) OnChangeHostname(this, new RoutedEventArgs()); }));
+            commands.Add(new Windows.UI.ApplicationSettings.SettingsCommand("About", AboutCommand.Label,
+                command => OnAbout(this, new RoutedEventArgs())));
+        }
+#endif
         public MainPage()
         {
             InitializeComponent();
@@ -45,8 +73,18 @@ namespace LiveDrop8
             FolderCommand.Label = AppText.Get("LiveDropFolder");
             HostnameCommand.Label = AppText.Get("ChangeHostname");
             AboutCommand.Label = AppText.Get("About");
-            Loaded += async (s, e) => { _active = true; await RestartAsync(); };
-            Unloaded += async (s, e) => { _active = false; await ShutdownAsync(); };
+            Loaded += async (s, e) => {
+#if !WINDOWS_PHONE_APP
+                RegisterSettingsCommands();
+#endif
+                _active = true; await RestartAsync();
+            };
+            Unloaded += async (s, e) => {
+#if !WINDOWS_PHONE_APP
+                UnregisterSettingsCommands();
+#endif
+                _active = false; await ShutdownAsync();
+            };
             _expiry.Tick += (s, e) => ExpirePeers();
             RefreshActions();
         }
@@ -412,7 +450,7 @@ namespace LiveDrop8
             var quick = new CheckBox { Content = "Google Quick Share", IsChecked = !values.ContainsKey("QuickShareEnabled") || (bool)values["QuickShareEnabled"] };
             var nearby = new CheckBox { Content = "Microsoft Nearby Share", IsChecked = values.ContainsKey("NearbyEnabled") && (bool)values["NearbyEnabled"] };
             var panel = new StackPanel(); panel.Children.Add(nearby); panel.Children.Add(quick);
-            var dialog = new ContentDialog { Title = "Supported peers", Content = panel, PrimaryButtonText = "OK", SecondaryButtonText = "Cancel" };
+            var dialog = new ContentDialog { Title = "Supported Peers", Content = panel, PrimaryButtonText = "OK", SecondaryButtonText = "Cancel" };
             if (await dialog.ShowAsync() == ContentDialogResult.Primary)
             { values["QuickShareEnabled"] = quick.IsChecked == true; values["NearbyEnabled"] = nearby.IsChecked == true; await RestartAsync(); }
         }
