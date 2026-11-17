@@ -1,4 +1,4 @@
-# LiveDrop 2
+# LiveDrop
 
 <img width="300" height="300" alt="livedrop-300" src="https://github.com/user-attachments/assets/91001e2d-262a-407c-822b-ec63a1849bad" />
 
@@ -14,9 +14,9 @@ Quick Share devices must be on the same network and should be set to "Everyone" 
 
 All incoming file types are supported and files are saved to ~/Pictures/LiveDrop
 
-LiveDrop does not support Apple Airdrop. Microsoft Nearby Sharing is a WIP.
+LiveDrop does not support Apple Airdrop. Microsoft Nearby Sharing is currently broken.
 
-## Install
+## Install LiveDrop UWP (Windows 10 and Windows 10 Mobile)
 
 #### App Stores
 <p>
@@ -24,20 +24,40 @@ LiveDrop does not support Apple Airdrop. Microsoft Nearby Sharing is a WIP.
     <img src="https://get.microsoft.com/images/en-us%20dark.svg" alt="Get it from Microsoft" height="48">
   </a>
   <a href="https://store.live.net.co/app/842">
-    <img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get LiveBubbles from Live Store" height="48">
+    <img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get LiveDrop from Live Store" height="48">
   </a>
 </p>
 
 #### Sideloading
-Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/), install the .cer certificate (to local machine > trusted people on pc), and install the .appxbundle
+Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/latest), install the .cer certificate (to local machine > trusted people on pc), and install the .appxbundle
+
 LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](https://github.com/RetiredLake/LiveBubbles)
+
+
+## Install LiveDrop 8 (Windows 8.1 and Windows Phone 8.1)
+
+#### App Stores
+<p>
+  <a href="https://store.live.net.co/app/842">
+    <img src="https://edge.live.net.co/images/store/2025_GetButton_SmallBlack.png" alt="Get LiveDrop from Live Store" height="48">
+  </a>
+
+  Coming soon to [OctoStore](https://octostore.dankassassin368.com/)
+</p>
+
+#### Sideloading
+Windows phone: Deploy the latest unsigned [LiveDrop 8](https://github.com/RetiredLake/LiveDrop/releases/) .appx using the Windows Phone Application Deployment Tool (8.1)
+
+PC: Open the [latest release](https://github.com/RetiredLake/LiveDrop/releases/latest), install the .cer certificate (to local machine > trusted people on pc), and install the .appx for your architecture
+
+LiveDrop uses the same dependencies and the same certificate as [LiveBubbles](https://github.com/RetiredLake/LiveBubbles)
+
 
 ## Build
 
 The Windows 8.1 / Windows Phone 8.1 WinRT port is under development in
 [`src/LiveDrop8`](src/LiveDrop8/README.md), with its own `LiveDrop8.sln`.
-It has no automatic updater. Source on `main` may include changes that have not
-been built or released; use GitHub Releases for published UWP packages.
+It has no automatic updater.
 
 LiveDrop uses the same LiveBubbles toolchain:
 
