@@ -1,3 +1,4 @@
+param([ValidateSet('Windows', 'WindowsPhone')][string[]]$Platforms = @('Windows', 'WindowsPhone'))
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName PresentationCore, WindowsBase
 [xml]$source = Get-Content (Join-Path $PSScriptRoot '..\LiveDrop\Assets\LiveDropLogo.svg') -Raw
@@ -9,7 +10,7 @@ $body = New-Object Windows.Media.RectangleGeometry ([Windows.Rect]::new([double]
 $panes = [Windows.Media.Geometry]::Parse($source.SelectSingleNode('/s:svg/s:defs/s:mask/s:path', $ns).GetAttribute('d'))
 $window = New-Object Windows.Media.CombinedGeometry ([Windows.Media.GeometryCombineMode]::Exclude), $body, $panes
 $pen = New-Object Windows.Media.Pen ([Windows.Media.Brushes]::White), 14
-foreach ($platform in @('Windows', 'WindowsPhone')) {
+foreach ($platform in $Platforms) {
     foreach ($file in Get-ChildItem (Join-Path $PSScriptRoot "LiveDrop8.$platform\Assets") -Filter '*.png') {
         # Retain each platform template's exact required dimensions.
         $bytes = [IO.File]::ReadAllBytes($file.FullName)
@@ -19,6 +20,9 @@ foreach ($platform in @('Windows', 'WindowsPhone')) {
         if ($file.Name -like 'SplashScreen*') { $size = [Math]::Min($size, $(if ($platform -eq 'WindowsPhone') { 360 } else { 150 })) }
         $visual = New-Object Windows.Media.DrawingVisual
         $drawing = $visual.RenderOpen()
+        if ($platform -eq 'Windows') {
+            $drawing.DrawRectangle([Windows.Media.Brushes]::Black, $null, [Windows.Rect]::new(0, 0, $width, $height))
+        }
         $drawing.PushTransform([Windows.Media.TranslateTransform]::new(($width - $size) / 2, ($height - $size) / 2))
         $drawing.PushTransform([Windows.Media.ScaleTransform]::new($size / 300, $size / 300))
         $drawing.DrawGeometry($null, $pen, $ring)
