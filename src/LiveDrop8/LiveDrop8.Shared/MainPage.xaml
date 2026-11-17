@@ -27,7 +27,7 @@
   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
   <TextBlock Text="LIVEDROP" FontSize="20" FontWeight="SemiBold"/>
   <TextBlock Grid.Row="1" Text="discovery" FontSize="48" Margin="0,0,0,28"/>
-  <ListView x:Name="PeersList" Grid.Row="2" SelectionMode="Single" HorizontalContentAlignment="Left" SelectionChanged="OnPeerSelectionChanged" IsItemClickEnabled="True" ItemClick="OnPeerClicked">
+  <ListView x:Name="PeersList" Grid.Row="2" SelectionMode="Single" HorizontalContentAlignment="Left" SelectionChanged="OnPeerSelectionChanged">
    <ListView.ItemContainerStyle>
     <Style TargetType="ListViewItem">
      <Setter Property="HorizontalContentAlignment" Value="Left"/>

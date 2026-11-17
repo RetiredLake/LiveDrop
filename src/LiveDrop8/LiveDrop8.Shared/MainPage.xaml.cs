@@ -246,19 +246,16 @@ namespace LiveDrop8
                 { PeersList.Items.Remove(peer); _seen.Remove(peer.Key); }
             }
         }
-        private void OnPeerSelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void OnPeerSelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             foreach (var item in e.RemovedItems.OfType<PeerListItem>()) item.SetSelected(false);
             foreach (var item in e.AddedItems.OfType<PeerListItem>()) item.SetSelected(true);
-        }
-        private async void OnPeerClicked(object sender, ItemClickEventArgs e)
-        {
 #if !WINDOWS_PHONE_APP
-            // The desktop share pane does not expose the page's bottom app bar.
-            // Only an explicit user click in share-target mode starts a send.
-            if (_shareOperation == null || _selected == null || Busy || _preparing || _pending != null || _outboundTask != null) return;
-            PeersList.SelectedItem = e.ClickedItem;
-            await StartOutboundAsync();
+            // Let ListView finish normal selection. Never change SelectedItem
+            // from an ItemClick handler while ListView is processing that tap.
+            if (e.AddedItems.Count > 0 && _shareOperation != null && _selected != null &&
+                !Busy && !_preparing && _pending == null && _outboundTask == null)
+                await StartOutboundAsync();
 #endif
         }
         private async Task StartOutboundAsync()
@@ -361,16 +358,19 @@ namespace LiveDrop8
                 var host = _coordinator;
                 var offer = _selected;
                 var progress = new Progress<ShareProgress>(p => { if (ReferenceEquals(source, _transfer)) ShowProgress(p); });
-                // Keep handshake/crypto and socket continuations off the hosted
-                // share pane's UI dispatcher; progress is marshalled back above.
-                await Task.Run(() => host.SendAsync(peer.Peer, offer, progress, source.Token));
+                // Preserve the working WinRT send context used before 0.1.1.2.
+                await host.SendAsync(peer.Peer, offer, progress, source.Token);
                 TelemetryService.Instance.TrackShareSucceeded(peer.Peer.Transport, "send", _selected);
                 StatusText.Text = "Share complete";
             }
             catch (OperationCanceledException)
             { TelemetryService.Instance.TrackShareCanceled(peer.Peer.Transport, "send", _selected); StatusText.Text = AppText.Get("ShareCanceledMessage"); shareError = StatusText.Text; }
             catch (Exception ex)
-            { TelemetryService.Instance.TrackShareFailed(peer.Peer.Transport, "send", _selected, TelemetryService.ClassifyFailure(ex)); StatusText.Text = ex.Message; shareError = ex.Message; }
+            {
+                TelemetryService.Instance.TrackShareFailed(peer.Peer.Transport, "send", _selected, TelemetryService.ClassifyFailure(ex));
+                StatusText.Text = ex.Message; shareError = ex.Message;
+                await RecordDiscoveryAsync("Outbound transfer failed: " + ex);
+            }
             finally
             {
                 _transfer = null; source.Dispose(); TransferProgress.Visibility = Visibility.Collapsed;
